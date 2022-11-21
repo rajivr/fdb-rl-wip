@@ -1,0 +1,13 @@
+{
+  "type" : "record",
+  "name" : "KeyValueContinuation",
+  "fields" : [ {
+    "name" : "continuation",
+    "type" : [ "null", "bytes" ],
+    "default" : null
+  }, {
+    "name" : "continuation_type",
+    "type" : "int",
+    "default" : 0
+  } ]
+}
