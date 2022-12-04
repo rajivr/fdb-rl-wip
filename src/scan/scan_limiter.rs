@@ -622,10 +622,10 @@ mod tests {
             let limited = TimeScanLimiter::new(100);
             let limited_zero = TimeScanLimiter::new(0);
 
-            sleep(Duration::from_millis(50));
-
-            assert!(limited.try_keyvalue_scan());
             assert!(!limited_zero.try_keyvalue_scan());
+
+            sleep(Duration::from_millis(50));
+            assert!(limited.try_keyvalue_scan());
 
             sleep(Duration::from_millis(50));
             assert!(!limited.try_keyvalue_scan());

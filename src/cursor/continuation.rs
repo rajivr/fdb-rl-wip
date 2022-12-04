@@ -46,9 +46,10 @@ pub trait Continuation: private::Sealed {
     fn is_end_marker(&self) -> bool;
 }
 
-#[allow(clippy::recursive_format_impl)]
 impl Debug for (dyn Continuation + Send + Sync + 'static) {
     fn fmt<'a>(&self, f: &mut fmt::Formatter<'a>) -> fmt::Result {
-        write!(f, "{:?}", self)
+        // *Note:* In the output you will see `Ok(b"...")` because of
+        // Avro serialization.
+        write!(f, "{:?}", self.to_bytes())
     }
 }

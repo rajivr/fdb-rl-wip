@@ -25,7 +25,16 @@ impl ScanPropertiesBuilder {
     }
 
     /// Set [`RangeOptions`] using a closure.
-    pub fn set_range_options<F>(&mut self, f: F) -> &mut ScanPropertiesBuilder
+    ///
+    /// # Safety
+    ///
+    /// There is **no way** in the [`RangeOptions`] API to set a limit
+    /// of `0`. *Infact* if you set the limit to `0`, you are
+    /// indicating that you want [unlimited] rows, which almost always
+    /// is not the behavior that you want.
+    ///
+    /// [unlimited]: fdb::range::KEYVALUE_LIMIT_UNLIMITED
+    pub unsafe fn set_range_options<F>(&mut self, f: F) -> &mut ScanPropertiesBuilder
     where
         F: FnOnce(&mut RangeOptions),
     {
@@ -120,16 +129,17 @@ mod tests {
         // Smoke test on the API usage
         let scan_properties = {
             let mut builder = ScanPropertiesBuilder::new();
-            builder
-                .set_range_options(|r| {
+            unsafe {
+                builder.set_range_options(|r| {
                     r.set_limit(100);
                     r.set_reverse(true);
                 })
-                .set_scan_limiter(ScanLimiter::new(
-                    Some(KeyValueScanLimiter::tracking()),
-                    Some(ByteScanLimiter::tracking()),
-                    None,
-                ));
+            }
+            .set_scan_limiter(ScanLimiter::new(
+                Some(KeyValueScanLimiter::tracking()),
+                Some(ByteScanLimiter::tracking()),
+                None,
+            ));
             builder.build()
         };
 

@@ -33,3 +33,7 @@ tokio-stream = "0.1"
 [[example]]
 name = "test-cursor-key_value_cursor-KeyValueCursorBuilder-build_range"
 path = "examples/test/cursor/key_value_cursor/KeyValueCursorBuilder/build_range.rs"
+
+[[example]]
+name = "test-cursor-KeyValueCursor-Cursor-KeyValue-next"
+path = "examples/test/cursor/KeyValueCursor/Cursor-KeyValue/next.rs"

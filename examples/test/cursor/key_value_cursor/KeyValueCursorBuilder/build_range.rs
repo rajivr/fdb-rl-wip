@@ -1337,9 +1337,9 @@ fn setup_no_subspace() -> Result<(), Box<dyn Error>> {
     rt.block_on({
         let fdb_database = fdb_database_ref.clone();
         async move {
-            // Clear the database.
             fdb_database
                 .run(|tr| async move {
+                    // Clear the database.
                     tr.clear_range(Range::new(Bytes::new(), Bytes::from_static(b"\xFF")));
 
                     for i in 0x00..=0x09 {
@@ -1363,9 +1363,9 @@ fn setup_subspace() -> Result<(), Box<dyn Error>> {
     rt.block_on({
         let fdb_database = fdb_database_ref.clone();
         async move {
-            // Clear the database.
             fdb_database
                 .run(|tr| async move {
+                    // Clear the database.
                     tr.clear_range(Range::new(Bytes::new(), Bytes::from_static(b"\xFF")));
 
                     for (key, value) in vec![

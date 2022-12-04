@@ -16,7 +16,6 @@ use tokio_stream::StreamExt;
 
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
-use std::future::Future;
 use std::sync::{Arc, LazyLock};
 
 use crate::cursor::{
@@ -307,7 +306,27 @@ impl TryFrom<KeyValueContinuationV0> for KeyValueContinuationInternal {
 
 /// A builder for [`KeyValueCursor`].
 ///
-/// TODO write an example.
+/// ```ignore
+/// let kv_cursor = {
+///     let mut kv_cursor_builder = KeyValueCursorBuilder::new();
+///
+///     kv_cursor_builder
+///         .subspace(Subspace::new(Bytes::new()).subspace(&{
+///             let tup: (&str, &str) = ("sub", "space");
+///
+///             let mut t = Tuple::new();
+///             t.push_back::<String>(tup.0.to_string());
+///             t.push_back::<String>(tup.1.to_string());
+///
+///             t
+///         }))
+///         .key_range(TupleRange::all().into_key_range(&None))
+///         .continuation(continuation_bytes)
+///         .scan_properties(ScanPropertiesBuilder::default().build());
+///
+///     kv_cursor_builder.build(&tr)
+/// }?;
+/// ```
 //
 // TODO: Need to setup `cfg` for `PartialEq` for tests.
 #[cfg(not(test))]
@@ -352,12 +371,22 @@ impl KeyValueCursorBuilder {
 
     /// Sets the [`ScanProperties`].
     ///
-    /// **Note:** If you intend to set a continuation, then you *must*
-    /// use the same [`RangeOptions`] (within [`ScanProperties`]) used
-    /// to build the [`KeyValueCursor`] that returned the
-    /// continuation.
+    /// # Note
+    ///
+    /// There is **no way** in the [`RangeOptions`] API (within
+    /// [`ScanProperties`]) to set a limit of `0`. *Infact* if you set
+    /// the limit to `0`, you are indicating that you want [unlimited]
+    /// rows, which almost always is not the behavior that you
+    /// want. The correct way to handle this is not to create the
+    /// [`KeyValueCursor`], when you want a limit of `0`.
+    ///
+    /// If you intend to set a continuation, then you *must* use the
+    /// same [`RangeOptions`] (within [`ScanProperties`]) used to
+    /// build the [`KeyValueCursor`] that returned the continuation
+    /// and if limit is used adjust then its value accordingly.
     ///
     /// [`RangeOptions`]: fdb::range::RangeOptions
+    /// [unlimited]: fdb::range::KEYVALUE_LIMIT_UNLIMITED
     pub fn scan_properties(
         &mut self,
         scan_properties: ScanProperties,
@@ -586,163 +615,161 @@ impl KeyValueCursor {
 }
 
 impl Cursor<KeyValue> for KeyValueCursor {
-    type Next<'a> = impl Future<Output = CursorResult<KeyValue>> + 'a;
-
-    fn next(&mut self) -> Self::Next<'_> {
-        async move {
-            if let Some(e) = self.error.as_ref() {
-                // First check if `KeyValueCursor` is already in an error
-                // state. If so, return the previous error.
-                Err(e.clone())
-            } else {
-                match self.limit_manager.try_keyvalue_scan() {
-                    Ok(()) => {
-                        // Check if `values_limit` has been hit or if
-                        // `KeyValueCursor` was created using end
-                        // marker contiunation? In that case, we can
-                        // return an error.
-                        if self.values_seen == self.values_limit {
-                            let cursor_error = {
-                                // The complier complains if we try to use
-                                // `CursorResultContinuation::new`
-                                // here. Therefore use `Arc::new`.
-                                let cursor_result_continuation =
-                                    Arc::new(self.continuation.clone());
-                                CursorError::NoNextReason(NoNextReason::ReturnLimitReached(
-                                    cursor_result_continuation,
-                                ))
-                            };
-
-                            // Move cursor into error state and return
-                            // error.
-                            self.error = Some(cursor_error.clone());
-                            Err(cursor_error)
-                        } else if let KeyValueContinuationInternal::EndMarker = self.continuation {
-                            // KeyValueCursor was built using a
-                            // end marker continuation. If so, set
-                            // the error state and just return
-                            // `SourceExhausted`, without having
-                            // to await on the keyvalue stream.
-                            let cursor_error = {
-                                // The complier complains if we try to
-                                // use `CursorResultContinuation::new`
-                                // here. Therefore use `Arc::new`.
-                                let cursor_result_continuation =
-                                    Arc::new(KeyValueContinuationInternal::EndMarker);
-                                CursorError::NoNextReason(NoNextReason::SourceExhausted(
-                                    cursor_result_continuation,
-                                ))
-                            };
-
-                            // Move cursor into error state and return
-                            // error.
-                            self.error = Some(cursor_error.clone());
-                            Err(cursor_error)
-                        } else {
-                            self.fdb_stream_keyvalue
-                                .next()
-                                .await
-                                .ok_or_else(|| {
-                                    // Range exhausted
-                                    let cursor_error = {
-                                        // The complier complains if we try to use
-                                        // `CursorResultContinuation::new`
-                                        // here. Therefore use `Arc::new`.
-                                        let cursor_result_continuation =
-                                            Arc::new(KeyValueContinuationInternal::EndMarker);
-                                        CursorError::NoNextReason(NoNextReason::SourceExhausted(
-                                            cursor_result_continuation,
-                                        ))
-                                    };
-
-                                    // Move cursor into error state and return
-                                    // error.
-                                    self.error = Some(cursor_error.clone());
-                                    cursor_error
-                                })
-                                .and_then(|kv_res| {
-                                    kv_res
-                                        .map(|kv| {
-                                            let (key, value) = kv.into_parts();
-
-                                            let key_bytes = Bytes::from(key);
-                                            let value_bytes = Bytes::from(value);
-
-                                            // Update the scanned
-                                            // bytes if we are
-                                            // tracking it and values
-                                            // seen.
-                                            self.limit_manager.register_scanned_bytes(
-                                                key_bytes.len() + value_bytes.len(),
-                                            );
-                                            self.values_seen += 1;
-
-                                            // Extract key without subspace
-                                            let key =
-                                                Key::from(key_bytes.slice(self.subspace_length..));
-
-                                            // Update continuation
-                                            self.continuation =
-                                                KeyValueContinuationInternal::Continuation(
-                                                    key.clone(),
-                                                );
-
-                                            let keyvalue = KeyValue::new(key, value_bytes);
-
-                                            // The complier complains if we try to use
-                                            // `CursorResultContinuation::new`
-                                            // here. Therefore use `Arc::new`.
-                                            let cursor_result_continuation =
-                                                Arc::new(self.continuation.clone());
-
-                                            CursorSuccess::new(keyvalue, cursor_result_continuation)
-                                        })
-                                        .map_err(|fdb_error| {
-                                            let cursor_error = {
-                                                // The complier complains if we try to use
-                                                // `CursorResultContinuation::new`
-                                                // here. Therefore use `Arc::new`.
-                                                let cursor_result_continuation =
-                                                    Arc::new(self.continuation.clone());
-
-                                                CursorError::FdbError(
-                                                    fdb_error,
-                                                    cursor_result_continuation,
-                                                )
-                                            };
-
-                                            // Move cursor into error state and return
-                                            // error.
-                                            self.error = Some(cursor_error.clone());
-                                            cursor_error
-                                        })
-                                })
-                        }
-                    }
-                    Err(limit_manager_stopped_reason) => {
+    async fn next(&mut self) -> CursorResult<KeyValue> {
+        if let Some(e) = self.error.as_ref() {
+            // First check if `KeyValueCursor` is already in an error
+            // state. If so, return the previous error.
+            Err(e.clone())
+        } else {
+            match self.limit_manager.try_keyvalue_scan() {
+                Ok(()) => {
+                    // No out-of-band limit has been hit, so we can
+                    // attempt to get the next value from the stream.
+                    //
+                    // Check if `values_limit` has been hit or if
+                    // `KeyValueCursor` was created using end
+                    // marker contiunation? In that case, we can
+                    // return an error.
+                    if self.values_seen == self.values_limit {
                         let cursor_error = {
                             // The complier complains if we try to use
                             // `CursorResultContinuation::new`
                             // here. Therefore use `Arc::new`.
                             let cursor_result_continuation = Arc::new(self.continuation.clone());
-                            CursorError::NoNextReason(match limit_manager_stopped_reason {
-                                LimitManagerStoppedReason::KeyValueLimitReached => {
-                                    NoNextReason::KeyValueLimitReached(cursor_result_continuation)
-                                }
-                                LimitManagerStoppedReason::ByteLimitReached => {
-                                    NoNextReason::ByteLimitReached(cursor_result_continuation)
-                                }
-                                LimitManagerStoppedReason::TimeLimitReached => {
-                                    NoNextReason::TimeLimitReached(cursor_result_continuation)
-                                }
-                            })
+                            CursorError::NoNextReason(NoNextReason::ReturnLimitReached(
+                                cursor_result_continuation,
+                            ))
                         };
 
                         // Move cursor into error state and return
                         // error.
                         self.error = Some(cursor_error.clone());
                         Err(cursor_error)
+                    } else if let KeyValueContinuationInternal::EndMarker = self.continuation {
+                        // KeyValueCursor was built using a
+                        // end marker continuation. If so, set
+                        // the error state and just return
+                        // `SourceExhausted`, without having
+                        // to await on the keyvalue stream.
+                        let cursor_error = {
+                            // The complier complains if we try to
+                            // use `CursorResultContinuation::new`
+                            // here. Therefore use `Arc::new`.
+                            let cursor_result_continuation =
+                                Arc::new(KeyValueContinuationInternal::EndMarker);
+                            CursorError::NoNextReason(NoNextReason::SourceExhausted(
+                                cursor_result_continuation,
+                            ))
+                        };
+
+                        // Move cursor into error state and return
+                        // error.
+                        self.error = Some(cursor_error.clone());
+                        Err(cursor_error)
+                    } else {
+                        self.fdb_stream_keyvalue
+                            .next()
+                            .await
+                            .ok_or_else(|| {
+                                // Range exhausted
+                                let cursor_error = {
+                                    // The complier complains if we try to use
+                                    // `CursorResultContinuation::new`
+                                    // here. Therefore use `Arc::new`.
+                                    let cursor_result_continuation =
+                                        Arc::new(KeyValueContinuationInternal::EndMarker);
+                                    CursorError::NoNextReason(NoNextReason::SourceExhausted(
+                                        cursor_result_continuation,
+                                    ))
+                                };
+
+                                // Move cursor into error state and return
+                                // error.
+                                self.error = Some(cursor_error.clone());
+                                cursor_error
+                            })
+                            .and_then(|kv_res| {
+                                kv_res
+                                    .map(|kv| {
+                                        let (key, value) = kv.into_parts();
+
+                                        let key_bytes = Bytes::from(key);
+                                        let value_bytes = Bytes::from(value);
+
+                                        // Update the scanned
+                                        // bytes if we are
+                                        // tracking it and values
+                                        // seen.
+                                        self.limit_manager.register_scanned_bytes(
+                                            key_bytes.len() + value_bytes.len(),
+                                        );
+                                        self.values_seen += 1;
+
+                                        // Extract key without subspace
+                                        let key =
+                                            Key::from(key_bytes.slice(self.subspace_length..));
+
+                                        // Update continuation
+                                        self.continuation =
+                                            KeyValueContinuationInternal::Continuation(key.clone());
+
+                                        let keyvalue = KeyValue::new(key, value_bytes);
+
+                                        // The complier complains if we try to use
+                                        // `CursorResultContinuation::new`
+                                        // here. Therefore use `Arc::new`.
+                                        let cursor_result_continuation =
+                                            Arc::new(self.continuation.clone());
+
+                                        CursorSuccess::new(keyvalue, cursor_result_continuation)
+                                    })
+                                    .map_err(|fdb_error| {
+                                        let cursor_error = {
+                                            // The complier complains if we try to use
+                                            // `CursorResultContinuation::new`
+                                            // here. Therefore use `Arc::new`.
+                                            let cursor_result_continuation =
+                                                Arc::new(self.continuation.clone());
+
+                                            CursorError::FdbError(
+                                                fdb_error,
+                                                cursor_result_continuation,
+                                            )
+                                        };
+
+                                        // Move cursor into error state and return
+                                        // error.
+                                        self.error = Some(cursor_error.clone());
+                                        cursor_error
+                                    })
+                            })
                     }
+                }
+                Err(limit_manager_stopped_reason) => {
+                    // Out-of-band limit has been hit. Figure out
+                    // which out-of-band limit was hit.
+                    let cursor_error = {
+                        // The complier complains if we try to use
+                        // `CursorResultContinuation::new`
+                        // here. Therefore use `Arc::new`.
+                        let cursor_result_continuation = Arc::new(self.continuation.clone());
+                        CursorError::NoNextReason(match limit_manager_stopped_reason {
+                            LimitManagerStoppedReason::KeyValueLimitReached => {
+                                NoNextReason::KeyValueLimitReached(cursor_result_continuation)
+                            }
+                            LimitManagerStoppedReason::ByteLimitReached => {
+                                NoNextReason::ByteLimitReached(cursor_result_continuation)
+                            }
+                            LimitManagerStoppedReason::TimeLimitReached => {
+                                NoNextReason::TimeLimitReached(cursor_result_continuation)
+                            }
+                        })
+                    };
+
+                    // Move cursor into error state and return
+                    // error.
+                    self.error = Some(cursor_error.clone());
+                    Err(cursor_error)
                 }
             }
         }

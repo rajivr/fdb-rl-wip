@@ -1,16 +1,21 @@
-use futures::Future;
+use std::future::Future;
+use std::marker::PhantomData;
 
-use crate::cursor::{CursorError, CursorResult};
+use crate::cursor::{CursorError, CursorResult, CursorSuccess};
 
 /// Prevent users from implementing private trait.
 mod private {
-    use crate::cursor::{CursorSkip, KeyValueCursor};
+    use crate::cursor::{Cursor, KeyValueCursor};
+
+    use super::{CursorFilter, CursorMap};
 
     pub trait Sealed {}
 
-    impl Sealed for KeyValueCursor {}
+    impl<T, C, F> Sealed for CursorMap<T, C, F> where C: Cursor<T> {}
 
-    impl<C> Sealed for CursorSkip<C> {}
+    impl<T, C, F> Sealed for CursorFilter<T, C, F> where C: Cursor<T> {}
+
+    impl Sealed for KeyValueCursor {}
 }
 
 /// An asynchronous iterator that supports [`Continuation`].
@@ -37,96 +42,131 @@ mod private {
 /// [`Continuation`]: crate::cursor::Continuation
 /// [`FdbError`]: fdb::error::FdbError
 /// [`NoNextReason`]: crate::cursor::NoNextReason
+//
+// Unlike Java RecordLayer, we do not have monadic abstractions (i.e.,
+// methods such as `flat_map`, `flatten` etc.,). This is because in
+// the `next` method, `CursorResult` returns a continuation. When
+// cursors are composed, we have to reason about how the continuations
+// will get composed, and if the composition of the continuations is
+// correct. A related issue is that when we need throughput, we need
+// to use pipelining, which can interact with continuations and
+// parallel cursors in subtle ways. Once we have a good handle on
+// these issues, we can explore how to add methods for cursor
+// composition.
 pub trait Cursor<T>: private::Sealed {
-    /// Next asynchronously return value from this cursor.
-    type Next<'a>: Future<Output = CursorResult<T>> + 'a
-    where
-        Self: 'a,
-        T: 'a;
-
     /// Asynchronously return the next result from this cursor.
-    // For clarity
-    #[allow(clippy::needless_lifetimes)]
-    fn next<'a>(&'a mut self) -> Self::Next<'a>;
+    async fn next(&mut self) -> CursorResult<T>;
 
-    /// Get a new cursor that skips the given number of cursor values.
-    fn skip(self, skip: usize) -> CursorSkip<Self>
+    /// TODO documentation + tests
+    async fn map<U, F, Fut>(self, f: F) -> impl Cursor<U>
+    where
+        Self: Sized,
+        F: FnMut(T) -> Fut,
+        Fut: Future<Output = U>,
+    {
+        CursorMap {
+            cursor: self,
+            f,
+            phantom: PhantomData,
+        }
+    }
+
+    /// TODO documentation + tests
+    async fn filter<F, Fut>(self, f: F) -> impl Cursor<T>
+    where
+        Self: Sized,
+        F: FnMut(&T) -> Fut,
+        Fut: Future<Output = bool>,
+    {
+        CursorFilter {
+            cursor: self,
+            f,
+            phantom: PhantomData,
+        }
+    }
+
+    /// TODO documentation + tests
+    async fn collect(mut self) -> (Vec<T>, CursorError)
     where
         Self: Sized,
     {
-        CursorSkip::new(self, skip, None)
-    }
-}
+        let mut v = Vec::new();
 
-/// Cursor for the [`skip`] method.
-///
-/// [`skip`]: Cursor::skip
-#[derive(Debug)]
-pub struct CursorSkip<C> {
-    cursor: C,
-    remaining: usize,
-    error: Option<CursorError>,
-}
+        let iter = &mut self;
 
-impl<C> CursorSkip<C> {
-    fn new(cursor: C, remaining: usize, error: Option<CursorError>) -> CursorSkip<C> {
-        CursorSkip {
-            cursor,
-            remaining,
-            error,
+        loop {
+            match iter.next().await {
+                Ok(t) => v.push(t.into_value()),
+                Err(err) => return (v, err),
+            }
         }
     }
 }
 
-impl<T, C> Cursor<T> for CursorSkip<C>
+/// TODO documentation
+struct CursorMap<T, C, F>
 where
     C: Cursor<T>,
 {
-    type Next<'a> = impl Future<Output = CursorResult<T>> + 'a
-    where Self: 'a, T: 'a;
+    cursor: C,
+    f: F,
+    phantom: PhantomData<T>,
+}
 
-    fn next(&mut self) -> Self::Next<'_> {
-        async move {
-            // If the underlying cursor has previously returned an
-            // error, return the last seen error.
-            if let Some(x) = &self.error {
-                return Err(x.clone());
-            }
+impl<U, T, C, F, Fut> Cursor<U> for CursorMap<T, C, F>
+where
+    C: Cursor<T>,
+    F: FnMut(T) -> Fut,
+    Fut: Future<Output = U>,
+{
+    async fn next(&mut self) -> CursorResult<U> {
+        let item = self.cursor.next().await;
 
-            if self.remaining == 0 {
-                let res = self.cursor.next().await;
-                if let Err(e) = res {
-                    self.error = Some(e.clone());
-                    return Err(e);
+        match item {
+            Ok(cursor_success) => Ok({
+                let (value, continuation) = cursor_success.into_parts();
+                CursorSuccess::new(((self.f)(value)).await, continuation)
+            }),
+            Err(e) => Err(e),
+        }
+    }
+}
+
+/// TODO documentation
+struct CursorFilter<T, C, F>
+where
+    C: Cursor<T>,
+{
+    cursor: C,
+    f: F,
+    phantom: PhantomData<T>,
+}
+
+impl<T, C, F, Fut> Cursor<T> for CursorFilter<T, C, F>
+where
+    C: Cursor<T>,
+    F: FnMut(&T) -> Fut,
+    Fut: Future<Output = bool>,
+{
+    async fn next(&mut self) -> CursorResult<T> {
+        loop {
+            let item = self.cursor.next().await;
+
+            match item {
+                Ok(cursor_success) => {
+                    let (value, continuation) = cursor_success.into_parts();
+
+                    if ((self.f)(&value)).await {
+                        return Ok(CursorSuccess::new(value, continuation));
+                    }
                 }
+                Err(e) => return Err(e),
             }
-
-            // remaining != 0 and we have not seen any error. In that
-            // case, run the loop till we encounter an error or
-            // remaining becomes `0`.
-
-            let iter = self.remaining;
-            for n in 0..iter {
-                let res = self.cursor.next().await;
-                if let Err(e) = res {
-                    self.error = Some(e.clone());
-                    return Err(e);
-                }
-                self.remaining -= 1;
-            }
-
-            let res = self.cursor.next().await;
-            if let Err(e) = res {
-                self.error = Some(e.clone());
-                return Err(e);
-            }
-
-            res
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    // TODO write unit tests for CursorSkip, etc.,
+    // No tests here as we are just defining traits.
 }
