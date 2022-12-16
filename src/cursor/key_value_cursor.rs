@@ -34,7 +34,8 @@ static KEYVALUE_CONTINUATION_SCHEMA_REGISTRY: LazyLock<HashMap<usize, Schema>> =
         let mut schema_registry = HashMap::new();
 
         // Safety: Safe to unwrap here because we have unit tests that
-        //          checks that the avsc files are well formed.
+        //          checks that the avsc files are well formed. See
+        //          `keyvalue_continuation_schema_registry::schema_v0_keyvalue_continuation`.
         let schema_v0_keyvalue_continuation = Schema::parse_str(include_str!(concat!(
             "../../avro/Continuation/KeyValueContinuation/",
             "v0/avsc/KeyValueContinuation.avsc"
@@ -75,10 +76,11 @@ static KEYVALUE_CONTINUATION_SCHEMA_REGISTRY: LazyLock<HashMap<usize, Schema>> =
 ///    additional contraints of `KeyValueContinuationV0` type is
 ///    satisfied.
 ///
+/// ### Note
 ///
-/// **Note:** There is no method with the signature
-/// `<KeyValueContinuationV0 as TryFrom<Bytes>::try_from(bytes: Bytes)
-/// -> FdbResult<KeyValueContinuationV0>`. We *do not* convert from a
+/// There is no method with the signature `<KeyValueContinuationV0 as
+/// TryFrom<Bytes>::try_from(bytes: Bytes) ->
+/// FdbResult<KeyValueContinuationV0>`. We **do not** convert from a
 /// value of `Bytes` directly to a value of `KeyValueContinuationV0`.
 ///
 /// Instead, we have the method `<KeyValueContinuationInternal as
@@ -240,7 +242,6 @@ impl Continuation for KeyValueContinuationInternal {
 impl TryFrom<Bytes> for KeyValueContinuationInternal {
     type Error = FdbError;
 
-    // TODO: write tests
     fn try_from(continuation: Bytes) -> FdbResult<KeyValueContinuationInternal> {
         let (version, continuation): (usize, Bytes) = Tuple::try_from(continuation)
             .and_then(|tup| {
@@ -304,7 +305,8 @@ impl TryFrom<KeyValueContinuationV0> for KeyValueContinuationInternal {
     }
 }
 
-/// A builder for [`KeyValueCursor`].
+/// A builder for [`KeyValueCursor`]. A value of [`KeyValueCursor`]
+/// can be built as shown below.
 ///
 /// ```ignore
 /// let kv_cursor = {
@@ -327,10 +329,23 @@ impl TryFrom<KeyValueContinuationV0> for KeyValueContinuationInternal {
 ///     kv_cursor_builder.build(&tr)
 /// }?;
 /// ```
+///
+/// Methods [`KeyValueCursorBuilder::subspace`] and
+/// [`KeyValueCursorBuilder::continuation`] can be used when needed.
 //
-// TODO: Need to setup `cfg` for `PartialEq` for tests.
+// It is *not* possible for `KeyValueCursorBuilder` to safely derive
+// `ParitialEq`. This is because, `ScanProperties` type contains a
+// `ScanLimiter`. A `ScanLimiter` type can optionally contain a
+// `KeyValueScanLimiter`. A `KeyValueScanLimiter` type contains a
+// `Arc<AtomicUsize>`. `AtomicUsize` cannot safely implement
+// `PartialEq`. Therefore the Rust compiler does not allow us derive
+// `ParitialEq` for `KeyValueCursorBuilder`.
+//
+// However, for unit testing purpose *only* we cheat a little bit and
+// use `unsafe` code to implement `PartialEq` for
+// `KeyValueCursorBuilder`.
 #[cfg(not(test))]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct KeyValueCursorBuilder {
     subspace: Option<Subspace>,
     scan_properties: Option<ScanProperties>,
@@ -340,7 +355,7 @@ pub struct KeyValueCursorBuilder {
 
 /// We need to derive `PartialEq` for testing.
 #[cfg(test)]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct KeyValueCursorBuilder {
     subspace: Option<Subspace>,
     scan_properties: Option<ScanProperties>,
@@ -1100,60 +1115,25 @@ mod tests {
                 kv_cursor_builder.continuation
             );
         }
+
+        #[test]
+        fn default_default() {
+            let kv_cursor_builder = KeyValueCursorBuilder::default();
+
+            assert_eq!(None, kv_cursor_builder.subspace,);
+
+            assert_eq!(None, kv_cursor_builder.scan_properties);
+
+            assert_eq!(None, kv_cursor_builder.key_range,);
+
+            assert_eq!(None, kv_cursor_builder.continuation,);
+        }
     }
 
-    // TODO write unit tests
-
-    // #[test]
-    // fn test_avro_read_write() {
-    //     let writers_schema_ref = KEYVALUE_CONTINUATION_SCHEMA_REGISTRY.get(&0).unwrap();
-
-    //     let keyvalue_continuation_v0 = KeyValueContinuationV0 {
-    //         continuation: Some(Bytes::from_static(b"hello_world").to_vec()),
-    //     };
-
-    //     let keyvalue_continuation_record = apache_avro::to_value(keyvalue_continuation_v0).unwrap();
-
-    //     println!("{:?}", keyvalue_continuation_record);
-
-    //     let keyvalue_continuation_record_bytes = Bytes::from(
-    //         apache_avro::to_avro_datum(writers_schema_ref, keyvalue_continuation_record).unwrap(),
-    //     );
-
-    //     println!("{:?}", keyvalue_continuation_record_bytes);
-
-    //     let keyvalue_continuation_record_value = apache_avro::from_avro_datum(
-    //         writers_schema_ref,
-    //         &mut keyvalue_continuation_record_bytes.reader(),
-    //         None,
-    //     )
-    //     .unwrap();
-
-    //     println!("{:?}", keyvalue_continuation_record_value);
-
-    //     println!(
-    //         "{:?}",
-    //         apache_avro::from_value::<KeyValueContinuationV0>(&keyvalue_continuation_record_value)
-    //     );
-    // }
-
-    // #[test]
-    // fn test_avro_read_write() {
-    //     let writers_schema_ref = KEYVALUE_CONTINUATION_SCHEMA_REGISTRY
-    //         .get(&0).unwrap();
-
-    // 	let mut keyvalue_continuation_record = Record::new(writers_schema_ref).unwrap();
-
-    // 	let continuation_field = Value::Union(1, Box::new(Value::Bytes(Bytes::from_static(b"hello_world").to_vec())));
-
-    //     keyvalue_continuation_record.put("continuation", continuation_field);
-
-    // 	let keyvalue_continuation_record_bytes = Bytes::from(apache_avro::to_avro_datum(writers_schema_ref, keyvalue_continuation_record).unwrap());
-
-    // 	println!("{:?}", keyvalue_continuation_record_bytes);
-
-    // 	let keyvalue_continuation_record_value = apache_avro::from_avro_datum(writers_schema_ref, &mut keyvalue_continuation_record_bytes.reader(), None).unwrap();
-
-    // 	println!("{:?}", keyvalue_continuation_record_value);
-    // }
+    mod keyvalue_cursor {
+        // There are not unit tests for `KeyValueCursor` as the
+        // primary use of this type is to implement the `Cursor`
+        // trait. There are integration tests that checks the
+        // behaviour of the methods in the `Cursor` trait.
+    }
 }

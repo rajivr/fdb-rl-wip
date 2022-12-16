@@ -31,8 +31,8 @@ impl TupleRange {
 
     /// Create a [`TupleRange`] of all the tuples.
     pub fn all() -> TupleRange {
-        let low_endpoint = LowEndpoint::Start;
-        let high_endpoint = HighEndpoint::End;
+        let low_endpoint = TupleLowEndpoint::Start;
+        let high_endpoint = TupleHighEndpoint::End;
 
         TupleRange::new(low_endpoint, high_endpoint)
     }
@@ -44,8 +44,8 @@ impl TupleRange {
     /// as both the low-endpoint and high-endpoint and setting the
     /// type to range inclusive.
     pub fn all_of(prefix: Tuple) -> TupleRange {
-        let low_endpoint = LowEndpoint::RangeInclusive(prefix.clone());
-        let high_endpoint = HighEndpoint::RangeInclusive(prefix);
+        let low_endpoint = TupleLowEndpoint::RangeInclusive(prefix.clone());
+        let high_endpoint = TupleHighEndpoint::RangeInclusive(prefix);
 
         TupleRange::new(low_endpoint, high_endpoint)
     }
@@ -59,13 +59,13 @@ impl TupleRange {
     /// the end.
     pub fn between(low: Option<Tuple>, high: Option<Tuple>) -> TupleRange {
         let low_endpoint = match low {
-            None => LowEndpoint::Start,
-            Some(low_tuple) => LowEndpoint::RangeInclusive(low_tuple),
+            None => TupleLowEndpoint::Start,
+            Some(low_tuple) => TupleLowEndpoint::RangeInclusive(low_tuple),
         };
 
         let high_endpoint = match high {
-            Some(high_tuple) => HighEndpoint::RangeExclusive(high_tuple),
-            None => HighEndpoint::End,
+            Some(high_tuple) => TupleHighEndpoint::RangeExclusive(high_tuple),
+            None => TupleHighEndpoint::End,
         };
 
         TupleRange::new(low_endpoint, high_endpoint)
@@ -86,8 +86,8 @@ impl TupleRange {
         } = self;
 
         let new_low_endpoint = match &low_endpoint {
-            LowEndpoint::Start => LowEndpoint::RangeInclusive(beginning.clone()),
-            LowEndpoint::RangeInclusive(_) | LowEndpoint::RangeExclusive(_) => {
+            TupleLowEndpoint::Start => TupleLowEndpoint::RangeInclusive(beginning.clone()),
+            TupleLowEndpoint::RangeInclusive(_) | TupleLowEndpoint::RangeExclusive(_) => {
                 low_endpoint.map(|mut low_tuple| {
                     let mut b = beginning.clone();
                     b.append(&mut low_tuple);
@@ -97,13 +97,13 @@ impl TupleRange {
         };
 
         let new_high_endpoint = match &high_endpoint {
-            HighEndpoint::RangeInclusive(_) | HighEndpoint::RangeExclusive(_) => {
+            TupleHighEndpoint::RangeInclusive(_) | TupleHighEndpoint::RangeExclusive(_) => {
                 high_endpoint.map(|mut high_tuple| {
                     beginning.append(&mut high_tuple);
                     beginning
                 })
             }
-            HighEndpoint::End => HighEndpoint::RangeInclusive(beginning),
+            TupleHighEndpoint::End => TupleHighEndpoint::RangeInclusive(beginning),
         };
 
         TupleRange::new(new_low_endpoint, new_high_endpoint)

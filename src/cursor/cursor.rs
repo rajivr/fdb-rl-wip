@@ -57,35 +57,7 @@ pub trait Cursor<T>: private::Sealed {
     /// Asynchronously return the next result from this cursor.
     async fn next(&mut self) -> CursorResult<T>;
 
-    /// TODO documentation + tests
-    async fn map<U, F, Fut>(self, f: F) -> impl Cursor<U>
-    where
-        Self: Sized,
-        F: FnMut(T) -> Fut,
-        Fut: Future<Output = U>,
-    {
-        CursorMap {
-            cursor: self,
-            f,
-            phantom: PhantomData,
-        }
-    }
-
-    /// TODO documentation + tests
-    async fn filter<F, Fut>(self, f: F) -> impl Cursor<T>
-    where
-        Self: Sized,
-        F: FnMut(&T) -> Fut,
-        Fut: Future<Output = bool>,
-    {
-        CursorFilter {
-            cursor: self,
-            f,
-            phantom: PhantomData,
-        }
-    }
-
-    /// TODO documentation + tests
+    /// Drain the cursor pushing all emitted values into a collection.
     async fn collect(mut self) -> (Vec<T>, CursorError)
     where
         Self: Sized,
@@ -101,38 +73,93 @@ pub trait Cursor<T>: private::Sealed {
             }
         }
     }
-}
 
-/// TODO documentation
-struct CursorMap<T, C, F>
-where
-    C: Cursor<T>,
-{
-    cursor: C,
-    f: F,
-    phantom: PhantomData<T>,
-}
+    /// Filters the values produced by this cursor according to the
+    /// provided predicate.
+    ///
+    /// # Note
+    ///
+    /// Unlike a general iterator, the computation that you can do
+    /// inside the async closure is limited. Specifically the closure
+    /// `FnMut(&T) -> impl Future<Output = bool>` does not provide a
+    /// mechanism to return an error that might possibly occur within
+    /// the closure.
+    ///
+    /// If you need this feature, you will need to build the loop
+    /// yourself and handle the issue of the how and which
+    /// continuation to return that would be useful to the caller.
+    ///
+    /// Also, since [`Cursor`] is a sealed class, this method is
+    /// primarily meant for types defined in this crate.
+    //
+    // *Note:* The reason for not providing the capability for
+    //         returning an error from within the closure is because
+    //         it is not clear if the API user would want the
+    //         continuation at the point of the error or the
+    //         continuation *before* the error occurred.
+    //
+    //         Providing the latter, would require maintaining
+    //         additional state when creating a value of
+    //         `CursorFilter` type. We will also need a generic way of
+    //         extracting a continuation from a `Cursor`.
+    //
+    //         This means we will need to introduce another API such
+    //         as `fn get_continuation(&mut self) ->
+    //         CursorResultContinuation` on the `Cursor` trait. Till
+    //         the semantics of the `Cursor` is properly understood we
+    //         want to keep the `Cursor` API as minimal as possible.
+    //
+    //         We can always roll the feature we need in the `next`
+    //         method implementation and in the builder type for the
+    //         `Cursor`. It won't be generic, but will get the job
+    //         done.
+    async fn filter<F, Fut>(self, f: F) -> impl Cursor<T>
+    where
+        Self: Sized,
+        F: FnMut(&T) -> Fut,
+        Fut: Future<Output = bool>,
+    {
+        CursorFilter {
+            cursor: self,
+            f,
+            phantom: PhantomData,
+        }
+    }
 
-impl<U, T, C, F, Fut> Cursor<U> for CursorMap<T, C, F>
-where
-    C: Cursor<T>,
-    F: FnMut(T) -> Fut,
-    Fut: Future<Output = U>,
-{
-    async fn next(&mut self) -> CursorResult<U> {
-        let item = self.cursor.next().await;
-
-        match item {
-            Ok(cursor_success) => Ok({
-                let (value, continuation) = cursor_success.into_parts();
-                CursorSuccess::new(((self.f)(value)).await, continuation)
-            }),
-            Err(e) => Err(e),
+    /// Map this cursor's items to a different type, returning a new
+    /// cursor of the resulting type.
+    ///
+    /// # Note
+    ///
+    /// Unlike a general iterator, the computation that you can do
+    /// inside the async closure is limited. Specifically the closure
+    /// `FnMut(T) -> impl Future<Output = U>` does not provide a
+    /// mechanism to return an error that might possibly occur within
+    /// the closure.
+    ///
+    /// If you need this feature, you will need to build the loop
+    /// yourself and handle the issue of the how and which
+    /// continuation to return that would be useful to the caller.
+    ///
+    /// Also, since [`Cursor`] is a sealed class, this method is
+    /// primarily meant for types defined in this crate.
+    //
+    // *Note:* See the comment mentioned in `filter`.
+    async fn map<U, F, Fut>(self, f: F) -> impl Cursor<U>
+    where
+        Self: Sized,
+        F: FnMut(T) -> Fut,
+        Fut: Future<Output = U>,
+    {
+        CursorMap {
+            cursor: self,
+            f,
+            phantom: PhantomData,
         }
     }
 }
 
-/// TODO documentation
+/// Cursor returned by [`Cursor::filter`] method.
 struct CursorFilter<T, C, F>
 where
     C: Cursor<T>,
@@ -162,6 +189,35 @@ where
                 }
                 Err(e) => return Err(e),
             }
+        }
+    }
+}
+
+/// Cursor returned by [`Cursor::map`] method.
+struct CursorMap<T, C, F>
+where
+    C: Cursor<T>,
+{
+    cursor: C,
+    f: F,
+    phantom: PhantomData<T>,
+}
+
+impl<U, T, C, F, Fut> Cursor<U> for CursorMap<T, C, F>
+where
+    C: Cursor<T>,
+    F: FnMut(T) -> Fut,
+    Fut: Future<Output = U>,
+{
+    async fn next(&mut self) -> CursorResult<U> {
+        let item = self.cursor.next().await;
+
+        match item {
+            Ok(cursor_success) => Ok({
+                let (value, continuation) = cursor_success.into_parts();
+                CursorSuccess::new(((self.f)(value)).await, continuation)
+            }),
+            Err(e) => Err(e),
         }
     }
 }

@@ -81,8 +81,11 @@ impl Default for ScanPropertiesBuilder {
 //       In addition there is no unit test for this type as
 //       `scan_properties_builder_build` takes care of exercising the
 //       API.
+//
+//       Also, see comment mentioned for type `KeyValueCursorBuilder`
+//       regarding `PartialEq` and unit testing.
 #[cfg(not(test))]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ScanProperties {
     range_options: RangeOptions,
     scan_limiter: ScanLimiter,
@@ -90,7 +93,7 @@ pub struct ScanProperties {
 
 /// We need to derive `PartialEq` for testing.
 #[cfg(test)]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ScanProperties {
     range_options: RangeOptions,
     scan_limiter: ScanLimiter,

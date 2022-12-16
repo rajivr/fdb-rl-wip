@@ -35,6 +35,9 @@ enum TimeLimiterMode {
 // limit (all the index entries / records are small) or time limit
 // (you can get a lot read in a few seconds)."
 //
+// Also, see comment mentioned for type `KeyValueCursorBuilder`
+// regarding `PartialEq` and unit testing.
+//
 // [1] https://forums.foundationdb.org/t/record-layer-design-questions/3468/4
 #[derive(Debug, Clone)]
 pub struct KeyValueScanLimiter {
@@ -141,9 +144,12 @@ impl KeyValueScanLimiter {
     }
 }
 
-/// It is **totally** unsafe to do this in normal code, as the
-/// `AtomicUsize` can be mutated by different threads. We are doing it
-/// only for tests.
+// It is **totally** unsafe to do this in normal code, as the
+// `AtomicUsize` can be mutated by different threads. We are doing it
+// only for tests.
+//
+// See comment mentioned for type `KeyValueCursorBuilder` regarding
+// `PartialEq` and unit testing.
 #[cfg(test)]
 impl PartialEq for KeyValueScanLimiter {
     fn eq(&self, other: &KeyValueScanLimiter) -> bool {
@@ -337,6 +343,9 @@ impl TimeScanLimiter {
 ///
 /// Key-value limit, byte limit, time limit, are considered
 /// out-of-band states.
+//
+// See comment mentioned for type `KeyValueCursorBuilder` regarding
+// `PartialEq` and unit testing.
 #[cfg(not(test))]
 #[derive(Debug, Clone)]
 pub struct ScanLimiter {

@@ -37,3 +37,7 @@ path = "examples/test/cursor/key_value_cursor/KeyValueCursorBuilder/build_range.
 [[example]]
 name = "test-cursor-KeyValueCursor-Cursor-KeyValue-next"
 path = "examples/test/cursor/KeyValueCursor/Cursor-KeyValue/next.rs"
+
+[[example]]
+name = "test-cursor-KeyValueCursor-Cursor-KeyValue-collect_filter_map"
+path = "examples/test/cursor/KeyValueCursor/Cursor-KeyValue/collect_filter_map.rs"
