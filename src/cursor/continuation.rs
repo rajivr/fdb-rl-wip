@@ -53,3 +53,9 @@ impl Debug for (dyn Continuation + Send + Sync + 'static) {
         write!(f, "{:?}", self.to_bytes())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    // The methods on the continuation trait is tested in the
+    // integration tests for `Cursor` trait for `KeyValueCursor` type.
+}

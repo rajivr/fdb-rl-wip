@@ -23,10 +23,17 @@
 //! A `RecordType` maps to a Avro Record and has a primary key tuple
 //! and one or more secondary indexes.
 
+mod record_context;
+mod record_version;
+
 pub mod cursor;
 pub mod error;
 pub mod range;
 pub mod scan;
+pub mod split_helper;
 
 #[doc(hidden)]
 pub mod test;
+
+pub use crate::record_context::RecordContext;
+pub use crate::record_version::RecordVersion;

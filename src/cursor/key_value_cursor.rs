@@ -8,13 +8,13 @@ use fdb::range::{Range, KEYVALUE_LIMIT_UNLIMITED};
 use fdb::subspace::Subspace;
 use fdb::transaction::ReadTransaction;
 use fdb::tuple::Tuple;
-use fdb::{Key, KeySelector, KeyValue};
+use fdb::{Key, KeySelector, KeyValue, Value};
 
 use serde::{Deserialize, Serialize};
 
 use tokio_stream::StreamExt;
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::convert::{TryFrom, TryInto};
 use std::sync::{Arc, LazyLock};
 
@@ -29,9 +29,9 @@ use crate::scan::ScanProperties;
 
 /// Simple schema registry that maps KeyValue Continuation writer
 /// schema version to the corresponding Avro [`Schema`].
-static KEYVALUE_CONTINUATION_SCHEMA_REGISTRY: LazyLock<HashMap<usize, Schema>> =
+static KEYVALUE_CONTINUATION_SCHEMA_REGISTRY: LazyLock<BTreeMap<usize, Schema>> =
     LazyLock::new(|| {
-        let mut schema_registry = HashMap::new();
+        let mut schema_registry = BTreeMap::new();
 
         // Safety: Safe to unwrap here because we have unit tests that
         //          checks that the avsc files are well formed. See
@@ -331,7 +331,8 @@ impl TryFrom<KeyValueContinuationV0> for KeyValueContinuationInternal {
 /// ```
 ///
 /// Methods [`KeyValueCursorBuilder::subspace`] and
-/// [`KeyValueCursorBuilder::continuation`] can be used when needed.
+/// [`KeyValueCursorBuilder::continuation`] can be used when needed,
+/// and are not to build a value of type [`KeyValueCursor`].
 //
 // It is *not* possible for `KeyValueCursorBuilder` to safely derive
 // `ParitialEq`. This is because, `ScanProperties` type contains a
@@ -625,6 +626,23 @@ impl KeyValueCursor {
             continuation,
             values_seen: 0,
             error: None,
+        }
+    }
+
+    /// TODO (documentation + tests)
+    pub async fn into_btreemap(mut self) -> (BTreeMap<Key, Value>, CursorError) {
+        let mut b: BTreeMap<Key, Value> = BTreeMap::new();
+
+        let iter = &mut self;
+
+        loop {
+            match iter.next().await {
+                Ok(res) => {
+                    let (key, value) = res.into_value().into_parts();
+                    b.insert(key, value);
+                }
+                Err(err) => return (b, err),
+            }
         }
     }
 }
