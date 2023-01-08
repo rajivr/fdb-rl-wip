@@ -12,7 +12,7 @@ use crate::range::KeyRange;
 
 /// Expose [`KeyValueCursorBuilder::build_range`] method.
 pub fn key_value_cursor_builder_build_range(
-    maybe_subspace_ref: &Option<Subspace>,
+    maybe_subspace: &Option<Subspace>,
     key_range: KeyRange,
     continuation: Option<Bytes>,
     reverse: bool,
@@ -22,7 +22,7 @@ pub fn key_value_cursor_builder_build_range(
         None => None,
     };
     KeyValueCursorBuilder::build_range(
-        maybe_subspace_ref,
+        maybe_subspace,
         key_range,
         maybe_continuation_internal,
         reverse,

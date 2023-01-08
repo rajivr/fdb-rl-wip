@@ -68,7 +68,7 @@ enum BytesHighEndpointWithContinuation {
 ///
 /// [`KeyValueCursorBuilder::build_range`]: crate::cursor::KeyValueCursorBuilder::build_range
 pub(crate) fn build_range_continuation(
-    maybe_subspace_ref: &Option<Subspace>,
+    maybe_subspace: &Option<Subspace>,
     key_range: KeyRange,
     maybe_continuation_key: Option<Bytes>,
     reverse: bool,
@@ -84,7 +84,7 @@ pub(crate) fn build_range_continuation(
             // reverse scan.
             let continuation_key_bytes = {
                 let mut raw_bytes = BytesMut::new();
-                if let Some(s) = maybe_subspace_ref {
+                if let Some(s) = maybe_subspace {
                     raw_bytes.put(s.pack());
                 }
                 raw_bytes.put(Bytes::from(continuation_key));
@@ -104,14 +104,14 @@ pub(crate) fn build_range_continuation(
                     // will we need to handled is
                     // `KeyLowEndpoint::Start`.
                     let mut raw_bytes = BytesMut::new();
-                    if let Some(s) = maybe_subspace_ref {
+                    if let Some(s) = maybe_subspace {
                         raw_bytes.put(s.pack());
                     }
                     raw_bytes.put(Bytes::from(key));
                     Bytes::from(raw_bytes)
                 }) {
                     LowEndpoint::Start => {
-                        if let Some(s) = maybe_subspace_ref {
+                        if let Some(s) = maybe_subspace {
                             BytesLowEndpointWithContinuation::Start(Some(s.pack()))
                         } else {
                             BytesLowEndpointWithContinuation::Start(None)
@@ -142,7 +142,7 @@ pub(crate) fn build_range_continuation(
                     // that we will need to handled is
                     // `KeyHighEndpoint::End`.
                     let mut raw_bytes = BytesMut::new();
-                    if let Some(s) = maybe_subspace_ref {
+                    if let Some(s) = maybe_subspace {
                         raw_bytes.put(s.pack());
                     }
                     raw_bytes.put(Bytes::from(key));
@@ -155,7 +155,7 @@ pub(crate) fn build_range_continuation(
                         BytesHighEndpointWithContinuation::RangeExclusive(b)
                     }
                     HighEndpoint::End => {
-                        if let Some(s) = maybe_subspace_ref {
+                        if let Some(s) = maybe_subspace {
                             BytesHighEndpointWithContinuation::End(Some(s.pack()))
                         } else {
                             BytesHighEndpointWithContinuation::End(None)
@@ -179,14 +179,14 @@ pub(crate) fn build_range_continuation(
                 // will we need to handled is
                 // `KeyLowEndpoint::Start`.
                 let mut raw_bytes = BytesMut::new();
-                if let Some(s) = maybe_subspace_ref {
+                if let Some(s) = maybe_subspace {
                     raw_bytes.put(s.pack());
                 }
                 raw_bytes.put(Bytes::from(key));
                 Bytes::from(raw_bytes)
             }) {
                 LowEndpoint::Start => {
-                    if let Some(s) = maybe_subspace_ref {
+                    if let Some(s) = maybe_subspace {
                         BytesLowEndpointWithContinuation::Start(Some(s.pack()))
                     } else {
                         BytesLowEndpointWithContinuation::Start(None)
@@ -207,7 +207,7 @@ pub(crate) fn build_range_continuation(
                 // that we will need to handled is
                 // `KeyHighEndpoint::End`.
                 let mut raw_bytes = BytesMut::new();
-                if let Some(s) = maybe_subspace_ref {
+                if let Some(s) = maybe_subspace {
                     raw_bytes.put(s.pack());
                 }
                 raw_bytes.put(Bytes::from(key));
@@ -220,7 +220,7 @@ pub(crate) fn build_range_continuation(
                     BytesHighEndpointWithContinuation::RangeExclusive(b)
                 }
                 HighEndpoint::End => {
-                    if let Some(s) = maybe_subspace_ref {
+                    if let Some(s) = maybe_subspace {
                         BytesHighEndpointWithContinuation::End(Some(s.pack()))
                     } else {
                         BytesHighEndpointWithContinuation::End(None)

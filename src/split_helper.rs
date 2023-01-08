@@ -32,9 +32,6 @@
 //! |-------------------------+------------------------------|
 //! ```
 //!
-//! TODO: Should this module and its functions be private similar to
-//! Java RecordLayer?  If so how can we test it?
-//!
 //! [limitation]: https://apple.github.io/foundationdb/known-limitations.html#large-keys-and-values
 
 use bytes::{Buf, BufMut, Bytes, BytesMut};
@@ -77,7 +74,7 @@ const SPLIT_RECORD_SIZE: usize = 100_000;
 /// `primary_key`.
 unsafe fn delete_unchecked<Tr>(
     tr: &Tr,
-    maybe_subspace_ref: &Option<Subspace>,
+    maybe_subspace: &Option<Subspace>,
     primary_key: &Tuple,
 ) -> FdbResult<()>
 where
@@ -88,7 +85,7 @@ where
     // `Range::try_from(_: KeyRange)`, we get value of `FdbResult`
     // type.
     tr.clear_range(Range::try_from(
-        TupleRange::all_of(primary_key).into_key_range(maybe_subspace_ref),
+        TupleRange::all_of(primary_key).into_key_range(maybe_subspace),
     )?);
 
     Ok(())
@@ -98,7 +95,7 @@ where
 pub async fn delete<Tr>(
     tr: &Tr,
     maybe_scan_limiter: &Option<ScanLimiter>,
-    maybe_subspace_ref: &Option<Subspace>,
+    maybe_subspace: &Option<Subspace>,
     primary_key: &Tuple,
 ) -> FdbResult<()>
 where
@@ -108,7 +105,7 @@ where
     // load the record. When we get either no record or a valid
     // record, then we proceed to delete. Otherwise, we return an
     // error.
-    load(tr, maybe_scan_limiter, maybe_subspace_ref, primary_key)
+    load(tr, maybe_scan_limiter, maybe_subspace, primary_key)
         .await
         .map_err(|e| {
             // `load` function specific errors are:
@@ -133,7 +130,7 @@ where
             //         `primary_key` has either a valid record *or* is
             //         empty. We can safely issue a
             //         `delete_unchecked`.
-            unsafe { delete_unchecked(tr, maybe_subspace_ref, primary_key) }
+            unsafe { delete_unchecked(tr, maybe_subspace, primary_key) }
         })
 }
 
@@ -154,7 +151,7 @@ where
 pub async fn save<Tr>(
     tr: &Tr,
     maybe_scan_limiter: &Option<ScanLimiter>,
-    maybe_subspace_ref: &Option<Subspace>,
+    maybe_subspace: &Option<Subspace>,
     primary_key: &Tuple,
     serialized: Bytes,
     record_version: RecordVersion,
@@ -165,12 +162,9 @@ where
     // *Note:* If this function returns an error, then you *must*
     //         assume that the primary key is in an inconsistent
     //         state.
-
-    // TODO: rename `primary_key` to `primary_key_ref` or rename
-    // `maybe_subspace_ref` to `maybe_subspace`.
     fn save_inner<Tr>(
         tr: &Tr,
-        maybe_subspace_ref: &Option<Subspace>,
+        maybe_subspace: &Option<Subspace>,
         primary_key: &Tuple,
         mut serialized: Bytes,
         record_version: RecordVersion,
@@ -212,7 +206,7 @@ where
                 t
             };
 
-            maybe_subspace_ref
+            maybe_subspace
                 .as_ref()
                 .map(|s| s.subspace(&key_tup).pack())
                 .unwrap_or_else(|| key_tup.pack())
@@ -278,7 +272,7 @@ where
             };
 
             let key = Key::from(
-                maybe_subspace_ref
+                maybe_subspace
                     .as_ref()
                     .map(|s| s.subspace(&key_tup).pack())
                     .unwrap_or_else(|| key_tup.pack()),
@@ -296,21 +290,15 @@ where
         Ok(())
     }
 
-    delete(tr, maybe_scan_limiter, maybe_subspace_ref, primary_key).await?;
+    delete(tr, maybe_scan_limiter, maybe_subspace, primary_key).await?;
 
-    let res = save_inner(
-        tr,
-        maybe_subspace_ref,
-        primary_key,
-        serialized,
-        record_version,
-    );
+    let res = save_inner(tr, maybe_subspace, primary_key, serialized, record_version);
 
     res.map_err(|e| {
         // Safety: We are checking validity of the `primary_key` in
         //         the call to `delete` above.
         unsafe {
-            let _ = delete_unchecked(tr, maybe_subspace_ref, primary_key);
+            let _ = delete_unchecked(tr, maybe_subspace, primary_key);
         }
         e
     })
@@ -325,8 +313,8 @@ where
 /// value. Otherwise, an `Err` value is returned.
 pub async fn load<Tr>(
     tr: &Tr,
-    maybe_scan_limiter_ref: &Option<ScanLimiter>,
-    maybe_subspace_ref: &Option<Subspace>,
+    maybe_scan_limiter: &Option<ScanLimiter>,
+    maybe_subspace: &Option<Subspace>,
     primary_key: &Tuple,
 ) -> FdbResult<Option<(RecordVersion, Bytes)>>
 where
@@ -342,14 +330,14 @@ where
                 });
             }
 
-            if let Some(scan_limiter_ref) = maybe_scan_limiter_ref.as_ref() {
+            if let Some(scan_limiter_ref) = maybe_scan_limiter.as_ref() {
                 scan_properites_builder.set_scan_limiter(scan_limiter_ref.clone());
             }
 
             scan_properites_builder.build()
         };
 
-        let subspace = if let Some(subspace_ref) = maybe_subspace_ref.as_ref() {
+        let subspace = if let Some(subspace_ref) = maybe_subspace.as_ref() {
             subspace_ref.clone().subspace(primary_key)
         } else {
             Subspace::new(Bytes::new()).subspace(primary_key)

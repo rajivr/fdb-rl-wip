@@ -526,7 +526,7 @@ impl KeyValueCursorBuilder {
     /// extensive integration tests to verify its
     /// correctness. Exercise care when refactoring this code.
     pub(crate) fn build_range(
-        maybe_subspace_ref: &Option<Subspace>,
+        maybe_subspace: &Option<Subspace>,
         key_range: KeyRange,
         maybe_continuation_internal: Option<KeyValueContinuationInternal>,
         reverse: bool,
@@ -541,7 +541,7 @@ impl KeyValueCursorBuilder {
                     // basically build the range assuming no
                     // continuation was passed.
                     bytes_endpoint::build_range_continuation(
-                        maybe_subspace_ref,
+                        maybe_subspace,
                         key_range,
                         None,
                         reverse,
@@ -549,7 +549,7 @@ impl KeyValueCursorBuilder {
                 }
                 KeyValueContinuationInternal::Continuation(key) => {
                     bytes_endpoint::build_range_continuation(
-                        maybe_subspace_ref,
+                        maybe_subspace,
                         key_range,
                         Some(key.into()),
                         reverse,
@@ -565,7 +565,7 @@ impl KeyValueCursorBuilder {
                     // depend on if we are are doing a forward scan or
                     // a reverse scan.
                     let (begin_key, end_key) = bytes_endpoint::build_range_continuation(
-                        maybe_subspace_ref,
+                        maybe_subspace,
                         key_range,
                         None,
                         reverse,
@@ -579,12 +579,9 @@ impl KeyValueCursorBuilder {
                     }
                 }
             },
-            None => bytes_endpoint::build_range_continuation(
-                maybe_subspace_ref,
-                key_range,
-                None,
-                reverse,
-            ),
+            None => {
+                bytes_endpoint::build_range_continuation(maybe_subspace, key_range, None, reverse)
+            }
         }
     }
 }
