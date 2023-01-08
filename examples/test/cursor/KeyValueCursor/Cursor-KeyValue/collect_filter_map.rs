@@ -312,7 +312,7 @@ fn cursor_collect_empty() -> Result<(), Failed> {
                             .key_range(
                                 // ("sub", "space", 5,) would be
                                 // empty.
-                                TupleRange::all_of({
+                                TupleRange::all_of(&{
                                     let tup: (i8,) = (5,);
 
                                     let mut t = Tuple::new();
@@ -471,7 +471,7 @@ fn cursor_filter_empty() -> Result<(), Failed> {
                             .key_range(
                                 // ("sub", "space", 5,) would be
                                 // empty.
-                                TupleRange::all_of({
+                                TupleRange::all_of(&{
                                     let tup: (i8,) = (5,);
 
                                     let mut t = Tuple::new();
@@ -646,7 +646,7 @@ fn cursor_map_empty() -> Result<(), Failed> {
                             .key_range(
                                 // ("sub", "space", 5,) would be
                                 // empty.
-                                TupleRange::all_of({
+                                TupleRange::all_of(&{
                                     let tup: (i8,) = (5,);
 
                                     let mut t = Tuple::new();

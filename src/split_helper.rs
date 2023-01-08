@@ -53,8 +53,9 @@ use std::ops::ControlFlow;
 
 use crate::cursor::{CursorError, KeyValueCursorBuilder, NoNextReason};
 use crate::error::{
-    SPLIT_HELPER_LOAD_INVALID_RECORD_VERSION, SPLIT_HELPER_LOAD_INVALID_SERIALIZED_BYTES,
-    SPLIT_HELPER_LOAD_SCAN_LIMIT_REACHED, SPLIT_HELPER_SAVE_INVALID_SERIALIZED_BYTES_SIZE,
+    SPLIT_HELPER_INVALID_PRIMARY_KEY, SPLIT_HELPER_LOAD_INVALID_RECORD_VERSION,
+    SPLIT_HELPER_LOAD_INVALID_SERIALIZED_BYTES, SPLIT_HELPER_SAVE_INVALID_SERIALIZED_BYTES_SIZE,
+    SPLIT_HELPER_SCAN_LIMIT_REACHED,
 };
 use crate::range::TupleRange;
 use crate::scan::{ScanLimiter, ScanPropertiesBuilder};
@@ -62,12 +63,22 @@ use crate::RecordVersion;
 
 const SPLIT_RECORD_SIZE: usize = 100_000;
 
-/// Delete the serialized representation of a record.
-// TODO: Tests
-pub fn delete<Tr>(
+/// Delete the serialized representation of a record **without** any
+/// safety checks.
+///
+/// ### Note
+///
+/// You will *never* want to use this function. Any mistake with the
+/// `primary_key` can seriously damage the database, as it will issue
+/// a [`Transaction::clear_range`] **without** any checks.
+///
+/// The *only* place where this is useful is in the [`delete`] and
+/// [`save`] methods, where we have already checked the validity of
+/// `primary_key`.
+unsafe fn delete_unchecked<Tr>(
     tr: &Tr,
     maybe_subspace_ref: &Option<Subspace>,
-    primary_key: Tuple,
+    primary_key: &Tuple,
 ) -> FdbResult<()>
 where
     Tr: Transaction,
@@ -81,6 +92,49 @@ where
     )?);
 
     Ok(())
+}
+
+/// Delete the serialized representation of a record.
+pub async fn delete<Tr>(
+    tr: &Tr,
+    maybe_scan_limiter: &Option<ScanLimiter>,
+    maybe_subspace_ref: &Option<Subspace>,
+    primary_key: &Tuple,
+) -> FdbResult<()>
+where
+    Tr: Transaction,
+{
+    // Ensure that `primary_key` valid. We check this by attempting to
+    // load the record. When we get either no record or a valid
+    // record, then we proceed to delete. Otherwise, we return an
+    // error.
+    load(tr, maybe_scan_limiter, maybe_subspace_ref, primary_key)
+        .await
+        .map_err(|e| {
+            // `load` function specific errors are:
+            //    - `SPLIT_HELPER_LOAD_INVALID_RECORD_VERSION`
+            //    - `SPLIT_HELPER_LOAD_INVALID_SERIALIZED_BYTES`
+            //
+            //  If we see that then convert it to
+            //  `SPLIT_HELPER_INVALID_PRIMARY_KEY`, which is a more
+            //  general error.
+            let error_code = e.code();
+
+            if error_code == SPLIT_HELPER_LOAD_INVALID_RECORD_VERSION
+                || error_code == SPLIT_HELPER_LOAD_INVALID_SERIALIZED_BYTES
+            {
+                FdbError::new(SPLIT_HELPER_INVALID_PRIMARY_KEY)
+            } else {
+                e
+            }
+        })
+        .and_then(|_| {
+            // Safety: If we are here, then it means that
+            //         `primary_key` has either a valid record *or* is
+            //         empty. We can safely issue a
+            //         `delete_unchecked`.
+            unsafe { delete_unchecked(tr, maybe_subspace_ref, primary_key) }
+        })
 }
 
 /// Save serialized representation using multiple keys if necessary.
@@ -97,10 +151,11 @@ where
 ///
 /// If you want to have the data in the event of an error, you must
 /// [`load`] it, before calling [`save`].
-pub fn save<Tr>(
+pub async fn save<Tr>(
     tr: &Tr,
+    maybe_scan_limiter: &Option<ScanLimiter>,
     maybe_subspace_ref: &Option<Subspace>,
-    primary_key: Tuple,
+    primary_key: &Tuple,
     serialized: Bytes,
     record_version: RecordVersion,
 ) -> FdbResult<()>
@@ -110,10 +165,13 @@ where
     // *Note:* If this function returns an error, then you *must*
     //         assume that the primary key is in an inconsistent
     //         state.
+
+    // TODO: rename `primary_key` to `primary_key_ref` or rename
+    // `maybe_subspace_ref` to `maybe_subspace`.
     fn save_inner<Tr>(
         tr: &Tr,
         maybe_subspace_ref: &Option<Subspace>,
-        primary_key: Tuple,
+        primary_key: &Tuple,
         mut serialized: Bytes,
         record_version: RecordVersion,
     ) -> FdbResult<()>
@@ -238,27 +296,22 @@ where
         Ok(())
     }
 
-    // First delete existing record, if one exists. We do not go to
-    // the storage server to check if the record really
-    // exists. Instead we just issue a delete, assuming it does. This
-    // only creates the required mutations in the client.
-    //
-    // This function does not really fail. Because we are converting
-    // `TupleRange -> KeyRange -> Range` and due to
-    // `Range::try_from(_: KeyRange)`, we get value of `FdbResult`
-    // type.
-    delete(tr, maybe_subspace_ref, primary_key.clone())?;
+    delete(tr, maybe_scan_limiter, maybe_subspace_ref, primary_key).await?;
 
     let res = save_inner(
         tr,
         maybe_subspace_ref,
-        primary_key.clone(),
+        primary_key,
         serialized,
         record_version,
     );
 
     res.map_err(|e| {
-        let _ = delete(tr, maybe_subspace_ref, primary_key.clone());
+        // Safety: We are checking validity of the `primary_key` in
+        //         the call to `delete` above.
+        unsafe {
+            let _ = delete_unchecked(tr, maybe_subspace_ref, primary_key);
+        }
         e
     })
 }
@@ -270,26 +323,11 @@ where
 /// is a serialized byte array associated with the `primary_key`, then
 /// we would return `Ok(Some((record_version, seralized_bytes)))`
 /// value. Otherwise, an `Err` value is returned.
-//
-// TODO: Check if an immediately saved record (with incomplete
-//       recordversion), can be loaded? Probably not.
-//
-// TODO: remove the following comment after writing tests.
-//
-// We need to ensure that we *only* get SourceExhausted error. If
-// it is some other error, we will need to deal with it.
-//
-// The resulting `kv_btree` should either be empty (which would
-// indicate that there is no record corresponding to the primary
-// key) *or* it *should* contain atleast two keys `[-1, 0]`.
-//
-// Validate that all the keys are correct. Extract out the
-// `RecordVersion` and serialized `Bytes`.
 pub async fn load<Tr>(
     tr: &Tr,
     maybe_scan_limiter_ref: &Option<ScanLimiter>,
     maybe_subspace_ref: &Option<Subspace>,
-    primary_key: Tuple,
+    primary_key: &Tuple,
 ) -> FdbResult<Option<(RecordVersion, Bytes)>>
 where
     Tr: ReadTransaction,
@@ -312,9 +350,9 @@ where
         };
 
         let subspace = if let Some(subspace_ref) = maybe_subspace_ref.as_ref() {
-            subspace_ref.clone().subspace(&primary_key)
+            subspace_ref.clone().subspace(primary_key)
         } else {
-            Subspace::new(Bytes::new()).subspace(&primary_key)
+            Subspace::new(Bytes::new()).subspace(primary_key)
         };
 
         let mut kv_cursor_builder = KeyValueCursorBuilder::new();
@@ -382,8 +420,6 @@ where
                         None => RecordVersion::from(versionstamp),
                     };
 
-                    // TODO: When this is empty, does the logic just
-                    //       return empty Bytes value or an error?
                     let serialized_bytes =
                         match (0..kv_btree.len()).try_fold(BytesMut::new(), |mut acc, x| {
                             let key = Key::from(
@@ -416,11 +452,11 @@ where
                     // There is no `(Subspace, Primary Key Tuple, -1)`
                     // key *and* the range is not empty. Therefore it
                     // is an error.
-                    Err(FdbError::new(SPLIT_HELPER_LOAD_INVALID_RECORD_VERSION))
+                    Err(FdbError::new(SPLIT_HELPER_INVALID_PRIMARY_KEY))
                 }
             }
         }
-        CursorError::NoNextReason(_) => Err(FdbError::new(SPLIT_HELPER_LOAD_SCAN_LIMIT_REACHED)),
+        CursorError::NoNextReason(_) => Err(FdbError::new(SPLIT_HELPER_SCAN_LIMIT_REACHED)),
         CursorError::FdbError(err, _) => Err(err),
     }
 }

@@ -27,7 +27,7 @@ use fdb::tuple::Versionstamp;
 /// version and local version can be managed using [`RecordContext`].
 ///
 /// [`RecordContext`]: crate::RecordContext
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct RecordVersion {
     incarnation_version: Option<u64>,
     /// Corresponds to `tr_version` field in the [`Versionstamp`]

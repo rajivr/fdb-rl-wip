@@ -43,9 +43,9 @@ impl TupleRange {
     /// This is a shortcut for creating a [`TupleRange`] with `prefix`
     /// as both the low-endpoint and high-endpoint and setting the
     /// type to range inclusive.
-    pub fn all_of(prefix: Tuple) -> TupleRange {
+    pub fn all_of(prefix: &Tuple) -> TupleRange {
         let low_endpoint = TupleLowEndpoint::RangeInclusive(prefix.clone());
-        let high_endpoint = TupleHighEndpoint::RangeInclusive(prefix);
+        let high_endpoint = TupleHighEndpoint::RangeInclusive(prefix.clone());
 
         TupleRange::new(low_endpoint, high_endpoint)
     }
@@ -57,14 +57,14 @@ impl TupleRange {
     ///
     /// `high` is the *exclusive* end of the range. `None` indicates
     /// the end.
-    pub fn between(low: Option<Tuple>, high: Option<Tuple>) -> TupleRange {
-        let low_endpoint = match low {
+    pub fn between(low: &Option<Tuple>, high: &Option<Tuple>) -> TupleRange {
+        let low_endpoint = match low.as_ref() {
             None => TupleLowEndpoint::Start,
-            Some(low_tuple) => TupleLowEndpoint::RangeInclusive(low_tuple),
+            Some(low_tuple) => TupleLowEndpoint::RangeInclusive(low_tuple.clone()),
         };
 
-        let high_endpoint = match high {
-            Some(high_tuple) => TupleHighEndpoint::RangeExclusive(high_tuple),
+        let high_endpoint = match high.as_ref() {
+            Some(high_tuple) => TupleHighEndpoint::RangeExclusive(high_tuple.clone()),
             None => TupleHighEndpoint::End,
         };
 
@@ -79,7 +79,7 @@ impl TupleRange {
     /// method with `(0, null)` as the argument, this will create a
     /// range from `(0, null, "a", 3,)` exclusive to `(0, null, "b",
     /// 4,)` inclusive.
-    pub fn prepend(self, mut beginning: Tuple) -> TupleRange {
+    pub fn prepend(self, beginning: &Tuple) -> TupleRange {
         let TupleRange {
             low_endpoint,
             high_endpoint,
@@ -99,11 +99,12 @@ impl TupleRange {
         let new_high_endpoint = match &high_endpoint {
             TupleHighEndpoint::RangeInclusive(_) | TupleHighEndpoint::RangeExclusive(_) => {
                 high_endpoint.map(|mut high_tuple| {
-                    beginning.append(&mut high_tuple);
-                    beginning
+                    let mut b = beginning.clone();
+                    b.append(&mut high_tuple);
+                    b
                 })
             }
-            TupleHighEndpoint::End => TupleHighEndpoint::RangeInclusive(beginning),
+            TupleHighEndpoint::End => TupleHighEndpoint::RangeInclusive(beginning.clone()),
         };
 
         TupleRange::new(new_low_endpoint, new_high_endpoint)
@@ -113,14 +114,14 @@ impl TupleRange {
     ///
     /// Takes an optional [`Subspace`] that the key range should be
     /// prefixed by.
-    pub fn into_key_range(self, maybe_subspace_ref: &Option<Subspace>) -> KeyRange {
+    pub fn into_key_range(self, maybe_subspace: &Option<Subspace>) -> KeyRange {
         let TupleRange {
             low_endpoint,
             high_endpoint,
         } = self;
 
         let (key_low_endpoint, key_high_endpoint) = if let Some(subspace_ref) =
-            maybe_subspace_ref.as_ref()
+            maybe_subspace.as_ref()
         {
             let key_low_endpoint = match &low_endpoint {
                 LowEndpoint::Start => LowEndpoint::RangeInclusive(Key::from(subspace_ref.pack())),
@@ -199,7 +200,7 @@ mod tests {
             TupleLowEndpoint::RangeExclusive(tup_low_endpoint.clone()),
             TupleHighEndpoint::RangeInclusive(tup_high_endpoint.clone()),
         )
-        .prepend(prepend_tup.clone());
+        .prepend(&prepend_tup);
 
         let tup_low_endpoint_prepended = {
             let mut tup = prepend_tup.clone();
@@ -261,7 +262,7 @@ mod tests {
                 Range::new(Bytes::new(), Bytes::from_static(b"\xFF")),
             ),
             (
-                TupleRange::all_of(prefix_tuple.clone()),
+                TupleRange::all_of(&prefix_tuple),
                 Range::starts_with(prefix_bytes.clone()),
             ),
             (
@@ -297,11 +298,11 @@ mod tests {
                 ),
             ),
             (
-                TupleRange::between(None, Some(b.clone())),
+                TupleRange::between(&None, &Some(b.clone())),
                 Range::new(Bytes::new(), b.clone().pack()),
             ),
             (
-                TupleRange::between(Some(a.clone()), None),
+                TupleRange::between(&Some(a.clone()), &None),
                 Range::new(a.clone().pack(), Bytes::from_static(b"\xFF")),
             ),
             // Unlike Java RecordLayer, `TupleRange` cannot be built
@@ -329,7 +330,7 @@ mod tests {
                 Range::try_from(
                     tuple_range
                         .clone()
-                        .prepend(prefix_tuple.clone())
+                        .prepend(&prefix_tuple)
                         .into_key_range(&None),
                 )
                 .unwrap()

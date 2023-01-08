@@ -1055,7 +1055,7 @@ fn cursor_error_no_next_reason_source_exhausted() -> Result<(), Failed> {
                                 .key_range(
                                     // ("sub", "space", 5,) would be
                                     // empty.
-                                    TupleRange::all_of({
+                                    TupleRange::all_of(&{
                                         let tup: (i8,) = (5,);
 
                                         let mut t = Tuple::new();
@@ -1101,7 +1101,7 @@ fn cursor_error_no_next_reason_source_exhausted() -> Result<(), Failed> {
                                 }))
                                 .key_range(
                                     // ("sub", "space", 4,)
-                                    TupleRange::all_of({
+                                    TupleRange::all_of(&{
                                         let tup: (i8,) = (4,);
 
                                         let mut t = Tuple::new();
@@ -1176,7 +1176,7 @@ fn cursor_error_no_next_reason_source_exhausted() -> Result<(), Failed> {
                                 }))
                                 .key_range(
                                     // ("sub", "space", 4,)
-                                    TupleRange::all_of({
+                                    TupleRange::all_of(&{
                                         let tup: (i8,) = (4,);
 
                                         let mut t = Tuple::new();
@@ -1216,7 +1216,7 @@ fn cursor_error_no_next_reason_source_exhausted() -> Result<(), Failed> {
                                 }))
                                 .key_range(
                                     // ("sub", "space", 3,)
-                                    TupleRange::all_of({
+                                    TupleRange::all_of(&{
                                         let tup: (i8,) = (3,);
 
                                         let mut t = Tuple::new();
@@ -1300,7 +1300,7 @@ fn cursor_error_no_next_reason_source_exhausted() -> Result<(), Failed> {
                                 }))
                                 .key_range(
                                     // ("sub", "space", 3,)
-                                    TupleRange::all_of({
+                                    TupleRange::all_of(&{
                                         let tup: (i8,) = (3,);
 
                                         let mut t = Tuple::new();
@@ -1637,7 +1637,7 @@ fn cursor_begins_with() -> Result<(), Failed> {
                             }))
                             .key_range(
                                 // ("sub", "space", 3,)
-                                TupleRange::all_of({
+                                TupleRange::all_of(&{
                                     let tup: (i8,) = (3,);
 
                                     let mut t = Tuple::new();
@@ -1706,7 +1706,7 @@ fn cursor_begins_with() -> Result<(), Failed> {
                             }))
                             .key_range(
                                 // ("sub", "space", 3,)
-                                TupleRange::all_of({
+                                TupleRange::all_of(&{
                                     let tup: (i8,) = (3,);
 
                                     let mut t = Tuple::new();
@@ -1758,7 +1758,7 @@ fn cursor_begins_with() -> Result<(), Failed> {
                             }))
                             .key_range(
                                 // ("sub", "space", 3,)
-                                TupleRange::all_of({
+                                TupleRange::all_of(&{
                                     let tup: (i8,) = (3,);
 
                                     let mut t = Tuple::new();
@@ -2439,7 +2439,7 @@ fn cursor_no_next_reasons() -> Result<(), Failed> {
                             }))
                             .key_range(
                                 // ("sub", "space", 3,)
-                                TupleRange::all_of({
+                                TupleRange::all_of(&{
                                     let tup: (i8,) = (3,);
 
                                     let mut t = Tuple::new();
@@ -2513,7 +2513,7 @@ fn cursor_no_next_reasons() -> Result<(), Failed> {
                             }))
                             .key_range(
                                 // ("sub", "space", 3,)
-                                TupleRange::all_of({
+                                TupleRange::all_of(&{
                                     let tup: (i8,) = (3,);
 
                                     let mut t = Tuple::new();
@@ -2824,7 +2824,7 @@ fn cursor_empty_scan() -> Result<(), Failed> {
                             }))
                             .key_range(
                                 // ("sub", "space", 9,)
-                                TupleRange::all_of({
+                                TupleRange::all_of(&{
                                     let tup: (i8,) = (9,);
 
                                     let mut t = Tuple::new();
@@ -3098,7 +3098,7 @@ fn cursor_no_subspace_begins_with() -> Result<(), Failed> {
                         kv_cursor_builder
                             .key_range(
                                 // ("sub", "space", 3,)
-                                TupleRange::all_of({
+                                TupleRange::all_of(&{
                                     let tup: (&str, &str, i8) = ("sub", "space", 3);
 
                                     let mut t = Tuple::new();
@@ -3173,7 +3173,7 @@ fn cursor_no_subspace_begins_with() -> Result<(), Failed> {
                         kv_cursor_builder
                             .key_range(
                                 // ("sub", "space", 3,)
-                                TupleRange::all_of({
+                                TupleRange::all_of(&{
                                     let tup: (&str, &str, i8) = ("sub", "space", 3);
 
                                     let mut t = Tuple::new();
@@ -3219,7 +3219,7 @@ fn cursor_no_subspace_begins_with() -> Result<(), Failed> {
                         kv_cursor_builder
                             .key_range(
                                 // ("sub", "space", 3,)
-                                TupleRange::all_of({
+                                TupleRange::all_of(&{
                                     let tup: (&str, &str, i8) = ("sub", "space", 3);
 
                                     let mut t = Tuple::new();
