@@ -101,8 +101,8 @@ pub async fn delete<Tr>(
 where
     Tr: Transaction,
 {
-    // Ensure that `primary_key` valid. We check this by attempting to
-    // load the record. When we get either no record or a valid
+    // Ensure that `primary_key` is valid. We check this by attempting
+    // to load the record. When we get either no record or a valid
     // record, then we proceed to delete. Otherwise, we return an
     // error.
     load(tr, maybe_scan_limiter, maybe_subspace, primary_key)
