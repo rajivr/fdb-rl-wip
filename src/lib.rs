@@ -17,12 +17,30 @@
 
 //! FoundationDB Record Layer
 //!
-//! At this time, the thinking with Record Layer would be that it will
-//! consist of a schema containing multiple `RecordType`s.
+//! **This crate is work-in-progress.**
 //!
-//! A `RecordType` maps to a Avro Record and has a primary key tuple
-//! and one or more secondary indexes.
-
+//! At this time, the thinking with Record Layer is that it will
+//! consist of a schema (`RecordSchema`) containing multiple
+//! `RecordEntity`s.
+//!
+//! Each `RecordEntity` will map to seralized byte array such as an
+//! Avro Record and will have a primary key tuple and optionally one
+//! or more secondary indexes.
+//!
+//! This crate will provide:
+//! - APIs for Schema and Index management.
+//!
+//! - Ensure transactionally consistent secondary indexes during
+//!   inserts, updates and deletes.
+//!
+//! - A very simple API for querying based on primary key and
+//!   secondary indexes.
+//!
+//! In addition, a simple transactionally consistent queuing system
+//! similar to QuiCK will also be implemented.
+//!
+//! *There are no plans to implement a query execution engine or other
+//! higher level database features.*
 mod record_context;
 mod record_version;
 
