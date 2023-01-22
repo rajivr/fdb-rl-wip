@@ -19,7 +19,7 @@ default = ["fdb/fdb-7_1"]
 [dependencies]
 apache-avro = "0.14"
 bytes = "1"
-fdb = { path = "../fdb/fdb" }
+fdb = { git = "https://github.com/rajivr/fdb-wip", branch = "main" }
 futures = "0.3"
 num-bigint = "0.4"
 serde = { default-features = false, version = "1", features = ["derive"] }
