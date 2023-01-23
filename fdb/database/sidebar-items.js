@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":[["DatabaseOption","A set of options that can be set on a `FdbDatabase`."]],"struct":[["FdbDatabase","A mutable, lexicographically ordered mapping from binary keys to binary values."]]};

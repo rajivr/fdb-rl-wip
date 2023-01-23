@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"crc32fast":[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/hash/trait.Hasher.html\" title=\"trait core::hash::Hasher\">Hasher</a> for <a class=\"struct\" href=\"crc32fast/struct.Hasher.html\" title=\"struct crc32fast::Hasher\">Hasher</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

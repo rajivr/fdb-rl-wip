@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["Decoder","GZIP decoder which supports non-blocking I/O."]]};

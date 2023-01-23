@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":[["delete","Delete the serialized representation of a record."],["load","Load serialized byte array that may be split among several keys."],["save","Save serialized representation using multiple keys if necessary."]]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["Decoder","ZLIB decoder which supports non-blocking I/O."]]};
