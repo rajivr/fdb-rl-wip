@@ -521,10 +521,12 @@ impl KeyValueCursorBuilder {
     /// Build a range with an optional continuation.
     ///
     /// *Note:* This method along with
-    /// [`KeyValueCursorBuilder::build_range_continuation`] and
-    /// [`KeyValueCursorBuilder::build_range_bytes`] has
-    /// extensive integration tests to verify its
-    /// correctness. Exercise care when refactoring this code.
+    /// [`bytes_endpoint::build_range_continuation`] and
+    /// [`bytes_endpoint::build_range_bytes`] has extensive
+    /// integration tests to verify its correctness. Exercise care
+    /// when refactoring this code.
+    ///
+    /// [`bytes_endpoint::build_range_bytes`]: crate::range::bytes_endpoint::build_range_bytes
     pub(crate) fn build_range(
         maybe_subspace: &Option<Subspace>,
         key_range: KeyRange,

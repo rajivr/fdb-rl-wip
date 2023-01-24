@@ -17,7 +17,7 @@ use crate::range::{HighEndpoint, KeyRange, LowEndpoint};
 /// `BytesLowEndpointWithContinuation::Continuation` and
 /// `BytesHighEndpointWithContinuation::Continuation` at the same
 /// time.
-enum BytesLowEndpointWithContinuation {
+pub(crate) enum BytesLowEndpointWithContinuation {
     /// Start of the range. `Start(None)` indicates the very beginning
     /// of the FDB range. `Start(Some(subspace))`, indicates the start
     /// of a subspace.
@@ -40,7 +40,7 @@ enum BytesLowEndpointWithContinuation {
 /// `BytesLowEndpointWithContinuation::Continuation` and
 /// `BytesHighEndpointWithContinuation::Continuation` at the same
 /// time.
-enum BytesHighEndpointWithContinuation {
+pub(crate) enum BytesHighEndpointWithContinuation {
     /// Includes endpoint value.
     RangeInclusive(Bytes),
     /// Excludes endpoint value.
@@ -62,11 +62,12 @@ enum BytesHighEndpointWithContinuation {
 ///
 /// *Note:* This method along with
 /// [`KeyValueCursorBuilder::build_range`] and
-/// [`KeyValueCursorBuilder::build_range_bytes`] has extensive
-/// integration tests to verify its correctness. Exercise care
-/// when refactoring this code.
+/// [`bytes_endpoint::build_range_bytes`] has extensive integration
+/// tests to verify its correctness. Exercise care when refactoring
+/// this code.
 ///
 /// [`KeyValueCursorBuilder::build_range`]: crate::cursor::KeyValueCursorBuilder::build_range
+/// [`bytes_endpoint::build_range_bytes`]: build_range_bytes
 pub(crate) fn build_range_continuation(
     maybe_subspace: &Option<Subspace>,
     key_range: KeyRange,
@@ -245,15 +246,20 @@ pub(crate) fn build_range_continuation(
 ///
 /// *Note:* This method along with
 /// [`KeyValueCursorBuilder::build_range`],
-/// [`KeyValueCursorBuilder::build_range_continuation`] has
-/// extensive integration test to verify its correctness. Exercise
-/// care when refactoring this code.
+/// [`bytes_endpoint::build_range_continuation`] has extensive
+/// integration test to verify its correctness. Exercise care when
+/// refactoring this code.
 ///
 /// Also the use of [`key_util::strinc`], [`key_util::key_after`] and
-/// how inclusiveness and exclusiveness is handled depends on
-/// using [`KeySelector::first_greater_or_equal`], which is done in
+/// how inclusiveness and exclusiveness is handled depends on using
+/// [`KeySelector::first_greater_or_equal`], which is done in
 /// [`KeyValueCursorBuilder::build`].
-fn build_range_bytes(
+///
+/// [`KeyValueCursorBuilder::build_range`]: crate::cursor::KeyValueCursorBuilder::build_range
+/// [`bytes_endpoint::build_range_continuation`]: build_range_continuation
+/// [`KeySelector::first_greater_or_equal`]: fdb::KeySelector::first_greater_or_equal
+/// [`KeyValueCursorBuilder::build`]: crate::cursor::KeyValueCursorBuilder::build
+pub(crate) fn build_range_bytes(
     low_endpoint: BytesLowEndpointWithContinuation,
     high_endpoint: BytesHighEndpointWithContinuation,
 ) -> FdbResult<Range> {
