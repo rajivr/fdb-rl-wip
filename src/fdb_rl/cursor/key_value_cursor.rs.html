@@ -1152,6 +1152,8 @@
 <a href="#1152" id="1152">1152</a>
 <a href="#1153" id="1153">1153</a>
 <a href="#1154" id="1154">1154</a>
+<a href="#1155" id="1155">1155</a>
+<a href="#1156" id="1156">1156</a>
 </pre><pre class="rust"><code><span class="kw">use </span>apache_avro::{<span class="self">self</span>, Schema};
 
 <span class="kw">use </span>bytes::{Buf, Bytes};
@@ -1675,10 +1677,12 @@
     <span class="doccomment">/// Build a range with an optional continuation.
     ///
     /// *Note:* This method along with
-    /// [`KeyValueCursorBuilder::build_range_continuation`] and
-    /// [`KeyValueCursorBuilder::build_range_bytes`] has
-    /// extensive integration tests to verify its
-    /// correctness. Exercise care when refactoring this code.
+    /// [`bytes_endpoint::build_range_continuation`] and
+    /// [`bytes_endpoint::build_range_bytes`] has extensive
+    /// integration tests to verify its correctness. Exercise care
+    /// when refactoring this code.
+    ///
+    /// [`bytes_endpoint::build_range_bytes`]: crate::range::bytes_endpoint::build_range_bytes
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>build_range(
         maybe_subspace: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;Subspace&gt;,
         key_range: KeyRange,
