@@ -609,7 +609,7 @@ pub struct KeyValueCursor {
 }
 
 impl KeyValueCursor {
-    /// Create a new [`KeyValueCursor`]
+    /// Create a new [`KeyValueCursor`].
     fn new(
         subspace_length: usize,
         fdb_stream_keyvalue: FdbStreamKeyValue,
@@ -628,7 +628,7 @@ impl KeyValueCursor {
         }
     }
 
-    /// TODO (documentation + tests)
+    /// Drain the cursor and build a [`BTreeMap`] of [`Key`] and [`Value`].
     pub async fn into_btreemap(mut self) -> (BTreeMap<Key, Value>, CursorError) {
         let mut b: BTreeMap<Key, Value> = BTreeMap::new();
 
