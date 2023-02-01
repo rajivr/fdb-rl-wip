@@ -1765,7 +1765,7 @@
 }
 
 <span class="kw">impl </span>KeyValueCursor {
-    <span class="doccomment">/// Create a new [`KeyValueCursor`]
+    <span class="doccomment">/// Create a new [`KeyValueCursor`].
     </span><span class="kw">fn </span>new(
         subspace_length: usize,
         fdb_stream_keyvalue: FdbStreamKeyValue,
@@ -1784,7 +1784,7 @@
         }
     }
 
-    <span class="doccomment">/// TODO (documentation + tests)
+    <span class="doccomment">/// Drain the cursor and build a [`BTreeMap`] of [`Key`] and [`Value`].
     </span><span class="kw">pub async fn </span>into_btreemap(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; (BTreeMap&lt;Key, Value&gt;, CursorError) {
         <span class="kw">let </span><span class="kw-2">mut </span>b: BTreeMap&lt;Key, Value&gt; = BTreeMap::new();
 
