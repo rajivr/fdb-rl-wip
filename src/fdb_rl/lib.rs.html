@@ -55,6 +55,9 @@
 <a href="#55" id="55">55</a>
 <a href="#56" id="56">56</a>
 <a href="#57" id="57">57</a>
+<a href="#58" id="58">58</a>
+<a href="#59" id="59">59</a>
+<a href="#60" id="60">60</a>
 </pre><pre class="rust"><code><span class="attr">#![allow(incomplete_features)]
 #![warn(
     missing_debug_implementations,
@@ -98,7 +101,8 @@
 //!
 //! *There are no plans to implement a query execution engine or other
 //! higher level database features.*
-</span><span class="kw">mod </span>record_context;
+</span><span class="kw">mod </span>raw_record;
+<span class="kw">mod </span>record_context;
 <span class="kw">mod </span>record_version;
 
 <span class="kw">pub mod </span>cursor;
@@ -109,6 +113,8 @@
 
 <span class="attr">#[doc(hidden)]
 </span><span class="kw">pub mod </span>test;
+
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use </span><span class="kw">crate</span>::raw_record::RawRecord;
 
 <span class="kw">pub use </span><span class="kw">crate</span>::record_context::RecordContext;
 <span class="kw">pub use </span><span class="kw">crate</span>::record_version::RecordVersion;

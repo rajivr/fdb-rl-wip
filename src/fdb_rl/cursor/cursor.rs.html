@@ -226,6 +226,9 @@
 <a href="#226" id="226">226</a>
 <a href="#227" id="227">227</a>
 <a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::future::Future;
 <span class="kw">use </span>std::marker::PhantomData;
 
@@ -234,6 +237,7 @@
 <span class="doccomment">/// Prevent users from implementing private trait.
 </span><span class="kw">mod </span>private {
     <span class="kw">use </span><span class="kw">crate</span>::cursor::{Cursor, KeyValueCursor};
+    <span class="kw">use </span><span class="kw">crate</span>::raw_record::RawRecordCursor;
 
     <span class="kw">use super</span>::{CursorFilter, CursorMap};
 
@@ -244,6 +248,8 @@
     <span class="kw">impl</span>&lt;T, C, F&gt; Sealed <span class="kw">for </span>CursorFilter&lt;T, C, F&gt; <span class="kw">where </span>C: Cursor&lt;T&gt; {}
 
     <span class="kw">impl </span>Sealed <span class="kw">for </span>KeyValueCursor {}
+
+    <span class="kw">impl </span>Sealed <span class="kw">for </span>RawRecordCursor {}
 }
 
 <span class="doccomment">/// An asynchronous iterator that supports [`Continuation`].
