@@ -41,6 +41,7 @@
 //!
 //! *There are no plans to implement a query execution engine or other
 //! higher level database features.*
+mod raw_record;
 mod record_context;
 mod record_version;
 
@@ -52,6 +53,8 @@ pub mod split_helper;
 
 #[doc(hidden)]
 pub mod test;
+
+pub(crate) use crate::raw_record::RawRecord;
 
 pub use crate::record_context::RecordContext;
 pub use crate::record_version::RecordVersion;

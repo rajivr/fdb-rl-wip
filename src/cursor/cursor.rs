@@ -6,6 +6,7 @@ use crate::cursor::{CursorError, CursorResult, CursorSuccess};
 /// Prevent users from implementing private trait.
 mod private {
     use crate::cursor::{Cursor, KeyValueCursor};
+    use crate::raw_record::RawRecordCursor;
 
     use super::{CursorFilter, CursorMap};
 
@@ -16,6 +17,8 @@ mod private {
     impl<T, C, F> Sealed for CursorFilter<T, C, F> where C: Cursor<T> {}
 
     impl Sealed for KeyValueCursor {}
+
+    impl Sealed for RawRecordCursor {}
 }
 
 /// An asynchronous iterator that supports [`Continuation`].
