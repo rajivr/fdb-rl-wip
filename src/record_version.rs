@@ -76,9 +76,7 @@ impl RecordVersion {
 }
 
 impl From<(u64, Versionstamp)> for RecordVersion {
-    fn from(value: (u64, Versionstamp)) -> RecordVersion {
-        let (i, vs) = value;
-
+    fn from((i, vs): (u64, Versionstamp)) -> RecordVersion {
         let incarnation_version = Some(i);
 
         let (global_version, local_version, complete) = vs.into_parts();
