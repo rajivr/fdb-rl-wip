@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/libflate-1.2.0/src/non_blocking/deflate/decode.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>decode.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-52c5db6f6f352e54.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../../static.files/light-4743e13df3dfe8c4.css"><link rel="stylesheet" disabled href="../../../../static.files/dark-0e1b889528bd466b.css"><link rel="stylesheet" disabled href="../../../../static.files/ayu-65289d5d067c7c66.css"><script id="default-settings" ></script><script src="../../../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="../../../../static.files/source-script-ea63cb6500f71309.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../static.files/main-3367e395607fafc1.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../libflate/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/libflate-1.3.0/src/non_blocking/deflate/decode.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>decode.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-52c5db6f6f352e54.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../../static.files/light-4743e13df3dfe8c4.css"><link rel="stylesheet" disabled href="../../../../static.files/dark-0e1b889528bd466b.css"><link rel="stylesheet" disabled href="../../../../static.files/ayu-65289d5d067c7c66.css"><script id="default-settings" ></script><script src="../../../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="../../../../static.files/source-script-ea63cb6500f71309.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../static.files/main-3367e395607fafc1.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../libflate/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -298,12 +298,33 @@
 <a href="#298" id="298">298</a>
 <a href="#299" id="299">299</a>
 <a href="#300" id="300">300</a>
+<a href="#301" id="301">301</a>
+<a href="#302" id="302">302</a>
+<a href="#303" id="303">303</a>
+<a href="#304" id="304">304</a>
+<a href="#305" id="305">305</a>
+<a href="#306" id="306">306</a>
+<a href="#307" id="307">307</a>
+<a href="#308" id="308">308</a>
+<a href="#309" id="309">309</a>
+<a href="#310" id="310">310</a>
+<a href="#311" id="311">311</a>
+<a href="#312" id="312">312</a>
+<a href="#313" id="313">313</a>
+<a href="#314" id="314">314</a>
+<a href="#315" id="315">315</a>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::deflate::symbol::{<span class="self">self</span>, HuffmanCodec};
 <span class="kw">use </span><span class="kw">crate</span>::lz77;
 <span class="kw">use </span><span class="kw">crate</span>::non_blocking::transaction::TransactionalBitReader;
-<span class="kw">use </span>std::cmp;
-<span class="kw">use </span>std::io;
-<span class="kw">use </span>std::io::Read;
+<span class="attr">#[cfg(feature = <span class="string">&quot;no_std&quot;</span>)]
+</span><span class="kw">use </span>core::cmp;
+<span class="attr">#[cfg(feature = <span class="string">&quot;no_std&quot;</span>)]
+</span><span class="kw">use </span>core2::io::{<span class="self">self</span>, Read};
+<span class="attr">#[cfg(not(feature = <span class="string">&quot;no_std&quot;</span>))]
+</span><span class="kw">use </span>std::{
+    cmp,
+    io::{<span class="self">self</span>, Read},
+};
 
 <span class="doccomment">/// DEFLATE decoder which supports non-blocking I/O.
 </span><span class="attr">#[derive(Debug)]
@@ -320,6 +341,9 @@
     ///
     /// # Examples
     /// ```
+    /// #[cfg(feature = &quot;no_std&quot;)]
+    /// use core2::io::{Cursor, Read};
+    /// #[cfg(not(feature = &quot;no_std&quot;))]
     /// use std::io::{Cursor, Read};
     /// use libflate::non_blocking::deflate::Decoder;
     ///
@@ -353,6 +377,9 @@
     ///
     /// # Examples
     /// ```
+    /// #[cfg(feature = &quot;no_std&quot;)]
+    /// use core2::io::Cursor;
+    /// #[cfg(not(feature = &quot;no_std&quot;))]
     /// use std::io::Cursor;
     /// use libflate::non_blocking::deflate::Decoder;
     ///
@@ -543,12 +570,15 @@
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use </span><span class="kw">crate</span>::deflate::{EncodeOptions, Encoder};
     <span class="kw">use </span><span class="kw">crate</span>::util::{nb_read_to_end, WouldBlockReader};
-    <span class="kw">use </span>std::io::{<span class="self">self</span>, Read};
+    <span class="attr">#[cfg(feature = <span class="string">&quot;no_std&quot;</span>)]
+    </span><span class="kw">use </span>core2::io::{Read, Write};
+    <span class="attr">#[cfg(not(feature = <span class="string">&quot;no_std&quot;</span>))]
+    </span><span class="kw">use </span>std::io::{Read, Write};
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>it_works() {
         <span class="kw">let </span><span class="kw-2">mut </span>encoder = Encoder::new(Vec::new());
-        io::copy(<span class="kw-2">&amp;mut &amp;</span><span class="string">b&quot;Hello World!&quot;</span>[..], <span class="kw-2">&amp;mut </span>encoder).unwrap();
+        encoder.write_all(<span class="string">b&quot;Hello World!&quot;</span>.as_ref()).unwrap();
         <span class="kw">let </span>encoded_data = encoder.finish().into_result().unwrap();
 
         <span class="kw">let </span><span class="kw-2">mut </span>decoder = Decoder::new(<span class="kw-2">&amp;</span>encoded_data[..]);
@@ -561,7 +591,7 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>non_blocking_io_works() {
         <span class="kw">let </span><span class="kw-2">mut </span>encoder = Encoder::new(Vec::new());
-        io::copy(<span class="kw-2">&amp;mut &amp;</span><span class="string">b&quot;Hello World!&quot;</span>[..], <span class="kw-2">&amp;mut </span>encoder).unwrap();
+        encoder.write_all(<span class="string">b&quot;Hello World!&quot;</span>.as_ref()).unwrap();
         <span class="kw">let </span>encoded_data = encoder.finish().into_result().unwrap();
 
         <span class="kw">let </span>decoder = Decoder::new(WouldBlockReader::new(<span class="kw-2">&amp;</span>encoded_data[..]));
@@ -578,7 +608,7 @@
             .collect();
 
         <span class="kw">let </span><span class="kw-2">mut </span>encoder = <span class="kw">crate</span>::deflate::Encoder::new(Vec::new());
-        io::copy(<span class="kw-2">&amp;mut </span>text.as_bytes(), <span class="kw-2">&amp;mut </span>encoder).unwrap();
+        encoder.write_all(text.as_bytes()).unwrap();
         <span class="kw">let </span>encoded_data = encoder.finish().into_result().unwrap();
 
         <span class="kw">let </span>decoder = Decoder::new(WouldBlockReader::new(<span class="kw-2">&amp;</span>encoded_data[..]));
@@ -589,7 +619,7 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>non_compressed_non_blocking_io_works() {
         <span class="kw">let </span><span class="kw-2">mut </span>encoder = Encoder::with_options(Vec::new(), EncodeOptions::new().no_compression());
-        io::copy(<span class="kw-2">&amp;mut &amp;</span><span class="string">b&quot;Hello World!&quot;</span>[..], <span class="kw-2">&amp;mut </span>encoder).unwrap();
+        encoder.write_all(<span class="string">b&quot;Hello World!&quot;</span>.as_ref()).unwrap();
         <span class="kw">let </span>encoded_data = encoder.finish().into_result().unwrap();
 
         <span class="kw">let </span>decoder = Decoder::new(WouldBlockReader::new(<span class="kw-2">&amp;</span>encoded_data[..]));

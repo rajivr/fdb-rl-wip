@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/libflate-1.2.0/src/zlib.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>zlib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-52c5db6f6f352e54.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../static.files/light-4743e13df3dfe8c4.css"><link rel="stylesheet" disabled href="../../static.files/dark-0e1b889528bd466b.css"><link rel="stylesheet" disabled href="../../static.files/ayu-65289d5d067c7c66.css"><script id="default-settings" ></script><script src="../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="../../static.files/source-script-ea63cb6500f71309.js"></script><script defer src="../../source-files.js"></script><script defer src="../../static.files/main-3367e395607fafc1.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../libflate/index.html"><img class="rust-logo" src="../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/libflate-1.3.0/src/zlib.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>zlib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-52c5db6f6f352e54.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../static.files/light-4743e13df3dfe8c4.css"><link rel="stylesheet" disabled href="../../static.files/dark-0e1b889528bd466b.css"><link rel="stylesheet" disabled href="../../static.files/ayu-65289d5d067c7c66.css"><script id="default-settings" ></script><script src="../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="../../static.files/source-script-ea63cb6500f71309.js"></script><script defer src="../../source-files.js"></script><script defer src="../../static.files/main-3367e395607fafc1.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../libflate/index.html"><img class="rust-logo" src="../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -891,18 +891,59 @@
 <a href="#891" id="891">891</a>
 <a href="#892" id="892">892</a>
 <a href="#893" id="893">893</a>
+<a href="#894" id="894">894</a>
+<a href="#895" id="895">895</a>
+<a href="#896" id="896">896</a>
+<a href="#897" id="897">897</a>
+<a href="#898" id="898">898</a>
+<a href="#899" id="899">899</a>
+<a href="#900" id="900">900</a>
+<a href="#901" id="901">901</a>
+<a href="#902" id="902">902</a>
+<a href="#903" id="903">903</a>
+<a href="#904" id="904">904</a>
+<a href="#905" id="905">905</a>
+<a href="#906" id="906">906</a>
+<a href="#907" id="907">907</a>
+<a href="#908" id="908">908</a>
+<a href="#909" id="909">909</a>
+<a href="#910" id="910">910</a>
+<a href="#911" id="911">911</a>
+<a href="#912" id="912">912</a>
+<a href="#913" id="913">913</a>
+<a href="#914" id="914">914</a>
+<a href="#915" id="915">915</a>
+<a href="#916" id="916">916</a>
+<a href="#917" id="917">917</a>
+<a href="#918" id="918">918</a>
+<a href="#919" id="919">919</a>
+<a href="#920" id="920">920</a>
+<a href="#921" id="921">921</a>
+<a href="#922" id="922">922</a>
+<a href="#923" id="923">923</a>
+<a href="#924" id="924">924</a>
+<a href="#925" id="925">925</a>
+<a href="#926" id="926">926</a>
+<a href="#927" id="927">927</a>
+<a href="#928" id="928">928</a>
+<a href="#929" id="929">929</a>
+<a href="#930" id="930">930</a>
+<a href="#931" id="931">931</a>
 </pre><pre class="rust"><code><span class="doccomment">//! The encoder and decoder of the ZLIB format.
 //!
 //! The ZLIB format is defined in [RFC-1950](https://tools.ietf.org/html/rfc1950).
 //!
 //! # Examples
 //! ```
-//! use std::io::{self, Read};
+//! #[cfg(not(feature = &quot;no_std&quot;))]
+//! use std::io::{Read, Write};
+//! #[cfg(feature = &quot;no_std&quot;)]
+//! use core2::io::{Read, Write};
 //! use libflate::zlib::{Encoder, Decoder};
 //!
 //! // Encoding
 //! let mut encoder = Encoder::new(Vec::new()).unwrap();
-//! io::copy(&amp;mut &amp;b&quot;Hello World!&quot;[..], &amp;mut encoder).unwrap();
+//! encoder.write_all(&amp;b&quot;Hello World!&quot;[..]).unwrap();
 //! let encoded_data = encoder.finish().into_result().unwrap();
 //!
 //! // Decoding
@@ -916,7 +957,10 @@
 <span class="kw">use </span><span class="kw">crate</span>::deflate;
 <span class="kw">use </span><span class="kw">crate</span>::finish::{Complete, Finish};
 <span class="kw">use </span><span class="kw">crate</span>::lz77;
-<span class="kw">use </span>std::io;
+<span class="attr">#[cfg(feature = <span class="string">&quot;no_std&quot;</span>)]
+</span><span class="kw">use </span>core2::io;
+<span class="attr">#[cfg(not(feature = <span class="string">&quot;no_std&quot;</span>))]
+</span><span class="kw">use </span>std::io;
 
 <span class="kw">const </span>COMPRESSION_METHOD_DEFLATE: u8 = <span class="number">8</span>;
 
@@ -1074,21 +1118,17 @@
 /// - [Zlib Flush Modes](https://www.bolet.org/~pornin/deflate-flush.html)
 ///
 /// [zlib]: https://www.zlib.net/
-</span><span class="attr">#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+</span><span class="attr">#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 </span><span class="kw">pub enum </span>FlushMode {
     <span class="doccomment">/// `Z_NO_FLUSH` (default).
     ///
     /// Note that when this parameter is specified,
     /// no `zlib` specific processing will not be executed but ordinal DEFLATE layer flushing will be performed.
+    </span><span class="attr">#[default]
     </span><span class="prelude-val">None </span>= <span class="number">0</span>,
 
     <span class="doccomment">/// `Z_SYNC_FLUSH`.
     </span>Sync = <span class="number">2</span>,
-}
-<span class="kw">impl </span>Default <span class="kw">for </span>FlushMode {
-    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
-        FlushMode::None
-    }
 }
 
 <span class="doccomment">/// ZLIB header.
@@ -1149,11 +1189,10 @@
         <span class="kw">if </span>dict_flag {
             <span class="kw">let </span><span class="kw-2">mut </span>buf = [<span class="number">0</span>; <span class="number">4</span>];
             reader.read_exact(<span class="kw-2">&amp;mut </span>buf)<span class="question-mark">?</span>;
-            <span class="kw">let </span>dictionary_id = u32::from_be_bytes(buf);
             <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">invalid_data_error!</span>(
                 <span class="string">&quot;Preset dictionaries are not supported: \
                  dictionary_id=0x{:X}&quot;</span>,
-                dictionary_id
+                u32::from_be_bytes(buf)
             ));
         }
         <span class="kw">let </span>compression_level = CompressionLevel::from_u2(flg &gt;&gt; <span class="number">6</span>);
@@ -1195,7 +1234,10 @@
     ///
     /// # Examples
     /// ```
+    /// #[cfg(not(feature = &quot;no_std&quot;))]
     /// use std::io::Read;
+    /// #[cfg(feature = &quot;no_std&quot;)]
+    /// use core2::io::Read;
     /// use libflate::zlib::Decoder;
     ///
     /// let encoded_data = [120, 156, 243, 72, 205, 201, 201, 87, 8, 207, 47,
@@ -1248,7 +1290,10 @@
     ///
     /// # Examples
     /// ```
+    /// #[cfg(not(feature = &quot;no_std&quot;))]
     /// use std::io::Cursor;
+    /// #[cfg(feature = &quot;no_std&quot;)]
+    /// use core2::io::Cursor;
     /// use libflate::zlib::Decoder;
     ///
     /// let encoded_data = [120, 156, 243, 72, 205, 201, 201, 87, 8, 207, 47,
@@ -1426,7 +1471,10 @@
     ///
     /// # Examples
     /// ```
+    /// #[cfg(not(feature = &quot;no_std&quot;))]
     /// use std::io::Write;
+    /// #[cfg(feature = &quot;no_std&quot;)]
+    /// use core2::io::Write;
     /// use libflate::zlib::Encoder;
     ///
     /// let mut encoder = Encoder::new(Vec::new()).unwrap();
@@ -1451,7 +1499,10 @@
     ///
     /// # Examples
     /// ```
+    /// #[cfg(not(feature = &quot;no_std&quot;))]
     /// use std::io::Write;
+    /// #[cfg(feature = &quot;no_std&quot;)]
+    /// use core2::io::Write;
     /// use libflate::zlib::{Encoder, EncodeOptions};
     ///
     /// let options = EncodeOptions::new().no_compression();
@@ -1489,7 +1540,10 @@
     ///
     /// # Examples
     /// ```
+    /// #[cfg(not(feature = &quot;no_std&quot;))]
     /// use std::io::Write;
+    /// #[cfg(feature = &quot;no_std&quot;)]
+    /// use core2::io::Write;
     /// use libflate::zlib::Encoder;
     ///
     /// let mut encoder = Encoder::new(Vec::new()).unwrap();
@@ -1506,14 +1560,17 @@
     /// it may be convenient to use `AutoFinishUnchecked` instead of the explicit invocation of this method.
     ///
     /// ```
-    /// use std::io;
+    /// #[cfg(feature = &quot;no_std&quot;)]
+    /// use core2::io::Write;
+    /// #[cfg(not(feature = &quot;no_std&quot;))]
+    /// use std::io::Write;
     /// use libflate::finish::AutoFinishUnchecked;
     /// use libflate::zlib::Encoder;
     ///
     /// let plain = b&quot;Hello World!&quot;;
     /// let mut buf = Vec::new();
     /// let mut encoder = AutoFinishUnchecked::new(Encoder::new(&amp;mut buf).unwrap());
-    /// io::copy(&amp;mut &amp;plain[..], &amp;mut encoder).unwrap();
+    /// encoder.write_all(plain.as_ref()).unwrap();
     /// ```
     </span><span class="kw">pub fn </span>finish(<span class="self">self</span>) -&gt; Finish&lt;W, io::Error&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>inner = <span class="macro">finish_try!</span>(<span class="self">self</span>.writer.finish());
@@ -1572,17 +1629,20 @@
 </span><span class="kw">mod </span>tests {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use </span><span class="kw">crate</span>::finish::AutoFinish;
-    <span class="kw">use </span>std::io::{<span class="self">self</span>, Read <span class="kw">as _</span>, Write <span class="kw">as _</span>};
+    <span class="attr">#[cfg(feature = <span class="string">&quot;no_std&quot;</span>)]
+    </span><span class="kw">use </span>core2::io::{Read <span class="kw">as _</span>, Write <span class="kw">as _</span>};
+    <span class="attr">#[cfg(not(feature = <span class="string">&quot;no_std&quot;</span>))]
+    </span><span class="kw">use </span>std::io::{Read <span class="kw">as _</span>, Write <span class="kw">as _</span>};
 
     <span class="kw">fn </span>decode_all(buf: <span class="kw-2">&amp;</span>[u8]) -&gt; io::Result&lt;Vec&lt;u8&gt;&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>decoder = Decoder::new(buf).unwrap();
         <span class="kw">let </span><span class="kw-2">mut </span>buf = Vec::with_capacity(buf.len());
-        io::copy(<span class="kw-2">&amp;mut </span>decoder, <span class="kw-2">&amp;mut </span>buf)<span class="question-mark">?</span>;
+        decoder.read_to_end(<span class="kw-2">&amp;mut </span>buf)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(buf)
     }
     <span class="kw">fn </span>default_encode(buf: <span class="kw-2">&amp;</span>[u8]) -&gt; io::Result&lt;Vec&lt;u8&gt;&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>encoder = Encoder::new(Vec::new()).unwrap();
-        io::copy(<span class="kw-2">&amp;mut &amp;</span>buf[..], <span class="kw-2">&amp;mut </span>encoder).unwrap();
+        encoder.write_all(buf).unwrap();
         encoder.finish().into_result()
     }
     <span class="macro">macro_rules! </span>assert_encode_decode {
@@ -1608,7 +1668,7 @@
         );
 
         <span class="kw">let </span><span class="kw-2">mut </span>buf = Vec::new();
-        io::copy(<span class="kw-2">&amp;mut </span>decoder, <span class="kw-2">&amp;mut </span>buf).unwrap();
+        decoder.read_to_end(<span class="kw-2">&amp;mut </span>buf).unwrap();
 
         <span class="kw">let </span>expected = <span class="string">b&quot;Hello World!&quot;</span>;
         <span class="macro">assert_eq!</span>(buf, expected);
@@ -1618,7 +1678,7 @@
     </span><span class="kw">fn </span>default_encode_works() {
         <span class="kw">let </span>plain = <span class="string">b&quot;Hello World! Hello ZLIB!!&quot;</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>encoder = Encoder::new(Vec::new()).unwrap();
-        io::copy(<span class="kw-2">&amp;mut &amp;</span>plain[..], <span class="kw-2">&amp;mut </span>encoder).unwrap();
+        encoder.write_all(plain.as_ref()).unwrap();
         <span class="kw">let </span>encoded = encoder.finish().into_result().unwrap();
         <span class="macro">assert_eq!</span>(decode_all(<span class="kw-2">&amp;</span>encoded).unwrap(), plain);
     }
@@ -1629,7 +1689,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>encoder =
             Encoder::with_options(Vec::new(), EncodeOptions::default().fixed_huffman_codes())
                 .unwrap();
-        io::copy(<span class="kw-2">&amp;mut &amp;</span>plain[..], <span class="kw-2">&amp;mut </span>encoder).unwrap();
+        encoder.write_all(plain.as_ref()).unwrap();
         <span class="kw">let </span>encoded = encoder.finish().into_result().unwrap();
         <span class="macro">assert_eq!</span>(decode_all(<span class="kw-2">&amp;</span>encoded).unwrap(), plain);
     }
@@ -1643,7 +1703,7 @@
         <span class="kw">let </span>plain = <span class="string">b&quot;Hello World!&quot;</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>encoder =
             Encoder::with_options(Vec::new(), EncodeOptions::new().no_compression()).unwrap();
-        io::copy(<span class="kw-2">&amp;mut &amp;</span>plain[..], <span class="kw-2">&amp;mut </span>encoder).unwrap();
+        encoder.write_all(plain.as_ref()).unwrap();
         <span class="kw">let </span>encoded = encoder.finish().into_result().unwrap();
         <span class="kw">let </span>expected = RAW_ENCODE_WORKS_EXPECTED;
         <span class="macro">assert_eq!</span>(encoded, expected);
@@ -1656,7 +1716,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>buf = Vec::new();
         {
             <span class="kw">let </span><span class="kw-2">mut </span>encoder = AutoFinish::new(Encoder::new(<span class="kw-2">&amp;mut </span>buf).unwrap());
-            io::copy(<span class="kw-2">&amp;mut &amp;</span>plain[..], <span class="kw-2">&amp;mut </span>encoder).unwrap();
+            encoder.write_all(plain.as_ref()).unwrap();
         }
         <span class="macro">assert_eq!</span>(decode_all(<span class="kw-2">&amp;</span>buf).unwrap(), plain);
     }
@@ -1689,22 +1749,37 @@
         </span><span class="kw">let </span>encoded =
             <span class="macro">include_bytes!</span>(<span class="string">&quot;../data/issues_16/crash-1bb6d408475a5bd57247ee40f290830adfe2086e&quot;</span>);
         <span class="macro">assert_eq!</span>(
-            decode_all(<span class="kw-2">&amp;</span>encoded[..]).err().map(|e| e.to_string()),
-            <span class="prelude-val">Some</span>(<span class="string">&quot;The value of HDIST is too big: max=30, actual=32&quot;</span>.to_owned())
+            <span class="kw-2">&amp;</span>decode_all(<span class="kw-2">&amp;</span>encoded[..])
+                .err()
+                .map(|e| e.to_string())
+                .unwrap()[..<span class="number">31</span>],
+            <span class="string">&quot;The value of HDIST is too big: max=30, actual=32&quot;</span>[..<span class="number">31</span>]
+                .to_owned()
+                .as_str()
         );
 
         <span class="kw">let </span>encoded =
             <span class="macro">include_bytes!</span>(<span class="string">&quot;../data/issues_16/crash-369e8509a0e76356f4549c292ceedee429cfe125&quot;</span>);
         <span class="macro">assert_eq!</span>(
-            decode_all(<span class="kw-2">&amp;</span>encoded[..]).err().map(|e| e.to_string()),
-            <span class="prelude-val">Some</span>(<span class="string">&quot;The value of HDIST is too big: max=30, actual=32&quot;</span>.to_owned())
+            <span class="kw-2">&amp;</span>decode_all(<span class="kw-2">&amp;</span>encoded[..])
+                .err()
+                .map(|e| e.to_string())
+                .unwrap()[..<span class="number">31</span>],
+            <span class="string">&quot;The value of HDIST is too big: max=30, actual=32&quot;</span>[..<span class="number">31</span>]
+                .to_owned()
+                .as_str()
         );
 
         <span class="kw">let </span>encoded =
             <span class="macro">include_bytes!</span>(<span class="string">&quot;../data/issues_16/crash-e75959d935650306881140df7f6d1d73e33425cb&quot;</span>);
         <span class="macro">assert_eq!</span>(
-            decode_all(<span class="kw-2">&amp;</span>encoded[..]).err().map(|e| e.to_string()),
-            <span class="prelude-val">Some</span>(<span class="string">&quot;The value of HDIST is too big: max=30, actual=32&quot;</span>.to_owned())
+            <span class="kw-2">&amp;</span>decode_all(<span class="kw-2">&amp;</span>encoded[..])
+                .err()
+                .map(|e| e.to_string())
+                .unwrap()[..<span class="number">31</span>],
+            <span class="string">&quot;The value of HDIST is too big: max=30, actual=32&quot;</span>[..<span class="number">31</span>]
+                .to_owned()
+                .as_str()
         );
     }
 
@@ -1774,13 +1849,14 @@
     }
 
     <span class="attr">#[test]
+    #[cfg(not(feature = <span class="string">&quot;no_std&quot;</span>))]
     </span><span class="doccomment">/// See: https://github.com/sile/libflate/issues/61
     </span><span class="kw">fn </span>issue_61() {
         <span class="kw">let </span>data = default_encode(<span class="string">b&quot;Hello World&quot;</span>).unwrap();
         <span class="kw">let </span><span class="kw-2">mut </span>decoder = Decoder::new(<span class="kw-2">&amp;</span>data[..]).unwrap();
         <span class="kw">let </span><span class="kw-2">mut </span>buf = Vec::new();
         decoder.read(<span class="kw-2">&amp;mut </span>buf).unwrap();
-        io::copy(<span class="kw-2">&amp;mut </span>decoder, <span class="kw-2">&amp;mut </span>buf).unwrap();
+        decoder.read_to_end(<span class="kw-2">&amp;mut </span>buf).unwrap();
         <span class="macro">assert_eq!</span>(buf, <span class="string">b&quot;Hello World&quot;</span>);
     }
 }

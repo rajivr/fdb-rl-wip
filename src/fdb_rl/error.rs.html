@@ -66,6 +66,13 @@
 <a href="#66" id="66">66</a>
 <a href="#67" id="67">67</a>
 <a href="#68" id="68">68</a>
+<a href="#69" id="69">69</a>
+<a href="#70" id="70">70</a>
+<a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a>
+<a href="#73" id="73">73</a>
+<a href="#74" id="74">74</a>
+<a href="#75" id="75">75</a>
 </pre><pre class="rust"><code><span class="doccomment">//! Provides error constants for use with [`FdbError`] and
 //! [`FdbResult`].
 //!
@@ -75,6 +82,7 @@
 </span><span class="comment">// 200 - `cursor` module
 // 210 - `split_helper` module
 // 220 - `RecordContext` type
+// 230 - `raw_record` module
 
 </span><span class="doccomment">/// Provided continuation was invalid.
 </span><span class="kw">pub const </span>CURSOR_INVALID_CONTINUATION: i32 = <span class="number">200</span>;
@@ -134,5 +142,11 @@
 ///
 /// [`RecordContext`]: crate::RecordContext
 </span><span class="kw">pub const </span>RECORD_CONTEXT_INCARNATION_VERSION_ALREADY_SET: i32 = <span class="number">222</span>;
+
+<span class="doccomment">/// The [`TupleSchema`] used to create a primary key is invalid.
+</span><span class="kw">pub const </span>RAW_RECORD_INVALID_PRIMARY_KEY_SCHEMA: i32 = <span class="number">230</span>;
+
+<span class="doccomment">/// The [`Tuple`] used for primary key does not match its schema.
+</span><span class="kw">pub const </span>RAW_RECORD_PRIMARY_KEY_TUPLE_SCHEMA_MISMATCH: i32 = <span class="number">231</span>;
 </code></pre></div>
 </section></main><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="fdb_rl" data-themes="" data-resource-suffix="" data-rustdoc-version="1.68.0-nightly (5ce39f42b 2023-01-20)" data-search-js="search-98d53477a794af0b.js" data-settings-js="settings-c3c521c753752a1a.js" data-settings-css="settings-ab1d4ae2ec52020e.css" ></div></body></html>

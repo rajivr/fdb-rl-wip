@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/libflate-1.2.0/src/gzip.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>gzip.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-52c5db6f6f352e54.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../static.files/light-4743e13df3dfe8c4.css"><link rel="stylesheet" disabled href="../../static.files/dark-0e1b889528bd466b.css"><link rel="stylesheet" disabled href="../../static.files/ayu-65289d5d067c7c66.css"><script id="default-settings" ></script><script src="../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="../../static.files/source-script-ea63cb6500f71309.js"></script><script defer src="../../source-files.js"></script><script defer src="../../static.files/main-3367e395607fafc1.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../libflate/index.html"><img class="rust-logo" src="../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/libflate-1.3.0/src/gzip.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>gzip.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-52c5db6f6f352e54.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../static.files/light-4743e13df3dfe8c4.css"><link rel="stylesheet" disabled href="../../static.files/dark-0e1b889528bd466b.css"><link rel="stylesheet" disabled href="../../static.files/ayu-65289d5d067c7c66.css"><script id="default-settings" ></script><script src="../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="../../static.files/source-script-ea63cb6500f71309.js"></script><script defer src="../../source-files.js"></script><script defer src="../../static.files/main-3367e395607fafc1.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../libflate/index.html"><img class="rust-logo" src="../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1276,18 +1276,73 @@
 <a href="#1276" id="1276">1276</a>
 <a href="#1277" id="1277">1277</a>
 <a href="#1278" id="1278">1278</a>
+<a href="#1279" id="1279">1279</a>
+<a href="#1280" id="1280">1280</a>
+<a href="#1281" id="1281">1281</a>
+<a href="#1282" id="1282">1282</a>
+<a href="#1283" id="1283">1283</a>
+<a href="#1284" id="1284">1284</a>
+<a href="#1285" id="1285">1285</a>
+<a href="#1286" id="1286">1286</a>
+<a href="#1287" id="1287">1287</a>
+<a href="#1288" id="1288">1288</a>
+<a href="#1289" id="1289">1289</a>
+<a href="#1290" id="1290">1290</a>
+<a href="#1291" id="1291">1291</a>
+<a href="#1292" id="1292">1292</a>
+<a href="#1293" id="1293">1293</a>
+<a href="#1294" id="1294">1294</a>
+<a href="#1295" id="1295">1295</a>
+<a href="#1296" id="1296">1296</a>
+<a href="#1297" id="1297">1297</a>
+<a href="#1298" id="1298">1298</a>
+<a href="#1299" id="1299">1299</a>
+<a href="#1300" id="1300">1300</a>
+<a href="#1301" id="1301">1301</a>
+<a href="#1302" id="1302">1302</a>
+<a href="#1303" id="1303">1303</a>
+<a href="#1304" id="1304">1304</a>
+<a href="#1305" id="1305">1305</a>
+<a href="#1306" id="1306">1306</a>
+<a href="#1307" id="1307">1307</a>
+<a href="#1308" id="1308">1308</a>
+<a href="#1309" id="1309">1309</a>
+<a href="#1310" id="1310">1310</a>
+<a href="#1311" id="1311">1311</a>
+<a href="#1312" id="1312">1312</a>
+<a href="#1313" id="1313">1313</a>
+<a href="#1314" id="1314">1314</a>
+<a href="#1315" id="1315">1315</a>
+<a href="#1316" id="1316">1316</a>
+<a href="#1317" id="1317">1317</a>
+<a href="#1318" id="1318">1318</a>
+<a href="#1319" id="1319">1319</a>
+<a href="#1320" id="1320">1320</a>
+<a href="#1321" id="1321">1321</a>
+<a href="#1322" id="1322">1322</a>
+<a href="#1323" id="1323">1323</a>
+<a href="#1324" id="1324">1324</a>
+<a href="#1325" id="1325">1325</a>
+<a href="#1326" id="1326">1326</a>
+<a href="#1327" id="1327">1327</a>
+<a href="#1328" id="1328">1328</a>
+<a href="#1329" id="1329">1329</a>
+<a href="#1330" id="1330">1330</a>
 </pre><pre class="rust"><code><span class="doccomment">//! The encoder and decoder of the GZIP format.
 //!
 //! The GZIP format is defined in [RFC-1952](https://tools.ietf.org/html/rfc1952).
 //!
 //! # Examples
 //! ```
-//! use std::io::{self, Read};
+//! #[cfg(feature = &quot;no_std&quot;)]
+//! use core2::io::{Read, Write};
+//! #[cfg(not(feature = &quot;no_std&quot;))]
+//! use std::io::{Read, Write};
 //! use libflate::gzip::{Encoder, Decoder};
 //!
 //! // Encoding
 //! let mut encoder = Encoder::new(Vec::new()).unwrap();
-//! io::copy(&amp;mut &amp;b&quot;Hello World!&quot;[..], &amp;mut encoder).unwrap();
+//! encoder.write_all(b&quot;Hello World!&quot;.as_ref()).unwrap();
 //! let encoded_data = encoder.finish().into_result().unwrap();
 //!
 //! // Decoding
@@ -1301,7 +1356,12 @@
 <span class="kw">use </span><span class="kw">crate</span>::deflate;
 <span class="kw">use </span><span class="kw">crate</span>::finish::{Complete, Finish};
 <span class="kw">use </span><span class="kw">crate</span>::lz77;
-<span class="kw">use </span>std::{ffi::CString, io, time};
+<span class="attr">#[cfg(feature = <span class="string">&quot;no_std&quot;</span>)]
+</span><span class="kw">use </span>alloc::{ffi::CString, vec::Vec};
+<span class="attr">#[cfg(feature = <span class="string">&quot;no_std&quot;</span>)]
+</span><span class="kw">use </span>core2::io;
+<span class="attr">#[cfg(not(feature = <span class="string">&quot;no_std&quot;</span>))]
+</span><span class="kw">use </span>std::{ffi::CString, io, time};
 
 <span class="kw">const </span>GZIP_ID: [u8; <span class="number">2</span>] = [<span class="number">31</span>, <span class="number">139</span>];
 <span class="kw">const </span>COMPRESSION_METHOD_DEFLATE: u8 = <span class="number">8</span>;
@@ -1419,12 +1479,12 @@
     /// ```
     </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
         <span class="comment">// wasm-unknown-unknown does not implement the time module
-        </span><span class="attr">#[cfg(not(target_arch = <span class="string">&quot;wasm32&quot;</span>))]
+        </span><span class="attr">#[cfg(all(not(target_arch = <span class="string">&quot;wasm32&quot;</span>), not(feature = <span class="string">&quot;no_std&quot;</span>)))]
         </span><span class="kw">let </span>modification_time = time::UNIX_EPOCH
             .elapsed()
             .map(|d| d.as_secs() <span class="kw">as </span>u32)
             .unwrap_or(<span class="number">0</span>);
-        <span class="attr">#[cfg(target_arch = <span class="string">&quot;wasm32&quot;</span>)]
+        <span class="attr">#[cfg(any(target_arch = <span class="string">&quot;wasm32&quot;</span>, feature = <span class="string">&quot;no_std&quot;</span>))]
         </span><span class="kw">let </span>modification_time = <span class="number">0</span>;
 
         <span class="kw">let </span>header = Header {
@@ -1515,6 +1575,11 @@
     ///
     /// # Examples
     /// ```
+    /// #[cfg(feature = &quot;no_std&quot;)]
+    /// extern crate alloc;
+    /// #[cfg(feature = &quot;no_std&quot;)]
+    /// use alloc::ffi::CString;
+    /// #[cfg(not(feature = &quot;no_std&quot;))]
     /// use std::ffi::CString;
     /// use libflate::gzip::HeaderBuilder;
     ///
@@ -1530,6 +1595,11 @@
     ///
     /// # Examples
     /// ```
+    /// #[cfg(feature = &quot;no_std&quot;)]
+    /// extern crate alloc;
+    /// #[cfg(feature = &quot;no_std&quot;)]
+    /// use alloc::ffi::CString;
+    /// #[cfg(not(feature = &quot;no_std&quot;))]
     /// use std::ffi::CString;
     /// use libflate::gzip::HeaderBuilder;
     ///
@@ -2032,11 +2102,14 @@
     ///
     /// # Examples
     /// ```
+    /// #[cfg(feature = &quot;no_std&quot;)]
+    /// use core2::io::Write;
+    /// #[cfg(not(feature = &quot;no_std&quot;))]
     /// use std::io::Write;
     /// use libflate::gzip::Encoder;
     ///
     /// let mut encoder = Encoder::new(Vec::new()).unwrap();
-    /// encoder.write_all(b&quot;Hello World!&quot;).unwrap();
+    /// encoder.write_all(&amp;b&quot;Hello World!&quot;[..]).unwrap();
     /// encoder.finish().into_result().unwrap();
     /// ```
     </span><span class="kw">pub fn </span>new(inner: W) -&gt; io::Result&lt;<span class="self">Self</span>&gt; {
@@ -2054,13 +2127,16 @@
     ///
     /// # Examples
     /// ```
+    /// #[cfg(feature = &quot;no_std&quot;)]
+    /// use core2::io::Write;
+    /// #[cfg(not(feature = &quot;no_std&quot;))]
     /// use std::io::Write;
     /// use libflate::gzip::{Encoder, EncodeOptions, HeaderBuilder};
     ///
     /// let header = HeaderBuilder::new().modification_time(123).finish();
     /// let options = EncodeOptions::new().no_compression().header(header);
     /// let mut encoder = Encoder::with_options(Vec::new(), options).unwrap();
-    /// encoder.write_all(b&quot;Hello World!&quot;).unwrap();
+    /// encoder.write_all(&amp;b&quot;Hello World!&quot;[..]).unwrap();
     ///
     /// assert_eq!(encoder.finish().into_result().unwrap(),
     ///            &amp;[31, 139, 8, 0, 123, 0, 0, 0, 0, 3, 1, 12, 0, 243, 255, 72, 101, 108, 108,
@@ -2093,11 +2169,14 @@
     ///
     /// # Examples
     /// ```
+    /// #[cfg(feature = &quot;no_std&quot;)]
+    /// use core2::io::Write;
+    /// #[cfg(not(feature = &quot;no_std&quot;))]
     /// use std::io::Write;
     /// use libflate::gzip::Encoder;
     ///
     /// let mut encoder = Encoder::new(Vec::new()).unwrap();
-    /// encoder.write_all(b&quot;Hello World!&quot;).unwrap();
+    /// encoder.write_all(&amp;b&quot;Hello World!&quot;[..]).unwrap();
     ///
     /// assert!(encoder.finish().as_result().is_ok())
     /// ```
@@ -2108,6 +2187,9 @@
     /// it may be convenient to use `AutoFinishUnchecked` instead of the explicit invocation of this method.
     ///
     /// ```
+    /// #[cfg(feature = &quot;no_std&quot;)]
+    /// use core2::io::Write;
+    /// #[cfg(not(feature = &quot;no_std&quot;))]
     /// use std::io;
     /// use libflate::finish::AutoFinishUnchecked;
     /// use libflate::gzip::Encoder;
@@ -2115,6 +2197,9 @@
     /// let plain = b&quot;Hello World!&quot;;
     /// let mut buf = Vec::new();
     /// let mut encoder = AutoFinishUnchecked::new(Encoder::new(&amp;mut buf).unwrap());
+    /// #[cfg(feature = &quot;no_std&quot;)]
+    /// encoder.write_all(plain.as_ref()).unwrap();
+    /// #[cfg(not(feature = &quot;no_std&quot;))]
     /// io::copy(&amp;mut &amp;plain[..], &amp;mut encoder).unwrap();
     /// ```
     </span><span class="kw">pub fn </span>finish(<span class="self">self</span>) -&gt; Finish&lt;W, io::Error&gt; {
@@ -2187,6 +2272,9 @@
     ///
     /// # Examples
     /// ```
+    /// #[cfg(feature = &quot;no_std&quot;)]
+    /// use core2::io::Read;
+    /// #[cfg(not(feature = &quot;no_std&quot;))]
     /// use std::io::Read;
     /// use libflate::gzip::Decoder;
     ///
@@ -2236,6 +2324,9 @@
     ///
     /// # Examples
     /// ```
+    /// #[cfg(feature = &quot;no_std&quot;)]
+    /// use core2::io::Cursor;
+    /// #[cfg(not(feature = &quot;no_std&quot;))]
     /// use std::io::Cursor;
     /// use libflate::gzip::Decoder;
     ///
@@ -2318,6 +2409,9 @@
     ///
     /// # Examples
     /// ```
+    /// #[cfg(feature = &quot;no_std&quot;)]
+    /// use core2::io::Read;
+    /// #[cfg(not(feature = &quot;no_std&quot;))]
     /// use std::io::Read;
     /// use libflate::gzip::MultiDecoder;
     ///
@@ -2376,6 +2470,9 @@
     ///
     /// # Examples
     /// ```
+    /// #[cfg(feature = &quot;no_std&quot;)]
+    /// use core2::io::Cursor;
+    /// #[cfg(not(feature = &quot;no_std&quot;))]
     /// use std::io::Cursor;
     /// use libflate::gzip::MultiDecoder;
     ///
@@ -2425,25 +2522,28 @@
 </span><span class="kw">mod </span>tests {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use </span><span class="kw">crate</span>::finish::AutoFinish;
-    <span class="kw">use </span>std::io::{<span class="self">self</span>, Read, Write};
+    <span class="attr">#[cfg(feature = <span class="string">&quot;no_std&quot;</span>)]
+    </span><span class="kw">use </span>core2::io::{Read, Write};
+    <span class="attr">#[cfg(not(feature = <span class="string">&quot;no_std&quot;</span>))]
+    </span><span class="kw">use </span>std::io::{<span class="self">self</span>, Read, Write};
 
     <span class="kw">fn </span>decode(buf: <span class="kw-2">&amp;</span>[u8]) -&gt; io::Result&lt;Vec&lt;u8&gt;&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>decoder = Decoder::new(buf).unwrap();
         <span class="kw">let </span><span class="kw-2">mut </span>buf = Vec::with_capacity(buf.len());
-        io::copy(<span class="kw-2">&amp;mut </span>decoder, <span class="kw-2">&amp;mut </span>buf)<span class="question-mark">?</span>;
+        decoder.read_to_end(<span class="kw-2">&amp;mut </span>buf)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(buf)
     }
 
     <span class="kw">fn </span>decode_multi(buf: <span class="kw-2">&amp;</span>[u8]) -&gt; io::Result&lt;Vec&lt;u8&gt;&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>decoder = MultiDecoder::new(buf).unwrap();
         <span class="kw">let </span><span class="kw-2">mut </span>buf = Vec::with_capacity(buf.len());
-        io::copy(<span class="kw-2">&amp;mut </span>decoder, <span class="kw-2">&amp;mut </span>buf)<span class="question-mark">?</span>;
+        decoder.read_to_end(<span class="kw-2">&amp;mut </span>buf).unwrap();
         <span class="prelude-val">Ok</span>(buf)
     }
 
     <span class="kw">fn </span>encode(text: <span class="kw-2">&amp;</span>[u8]) -&gt; io::Result&lt;Vec&lt;u8&gt;&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>encoder = Encoder::new(Vec::new()).unwrap();
-        io::copy(<span class="kw-2">&amp;mut &amp;</span>text[..], <span class="kw-2">&amp;mut </span>encoder).unwrap();
+        encoder.write_all(text).unwrap();
         encoder.finish().into_result()
     }
 
@@ -2451,7 +2551,7 @@
     </span><span class="kw">fn </span>encode_works() {
         <span class="kw">let </span>plain = <span class="string">b&quot;Hello World! Hello GZIP!!&quot;</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>encoder = Encoder::new(Vec::new()).unwrap();
-        io::copy(<span class="kw-2">&amp;mut &amp;</span>plain[..], <span class="kw-2">&amp;mut </span>encoder).unwrap();
+        encoder.write_all(plain.as_ref()).unwrap();
         <span class="kw">let </span>encoded = encoder.finish().into_result().unwrap();
         <span class="macro">assert_eq!</span>(decode(<span class="kw-2">&amp;</span>encoded).unwrap(), plain);
     }
@@ -2462,14 +2562,17 @@
         <span class="kw">let </span><span class="kw-2">mut </span>buf = Vec::new();
         {
             <span class="kw">let </span><span class="kw-2">mut </span>encoder = AutoFinish::new(Encoder::new(<span class="kw-2">&amp;mut </span>buf).unwrap());
-            io::copy(<span class="kw-2">&amp;mut &amp;</span>plain[..], <span class="kw-2">&amp;mut </span>encoder).unwrap();
+            encoder.write_all(plain.as_ref()).unwrap();
         }
         <span class="macro">assert_eq!</span>(decode(<span class="kw-2">&amp;</span>buf).unwrap(), plain);
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>multi_decode_works() {
-        <span class="kw">use </span>std::iter;
+        <span class="attr">#[cfg(feature = <span class="string">&quot;no_std&quot;</span>)]
+        </span><span class="kw">use </span>core::iter;
+        <span class="attr">#[cfg(not(feature = <span class="string">&quot;no_std&quot;</span>))]
+        </span><span class="kw">use </span>std::iter;
         <span class="kw">let </span>text = <span class="string">b&quot;Hello World!&quot;</span>;
         <span class="kw">let </span>encoded: Vec&lt;u8&gt; = iter::repeat(encode(text).unwrap())
             .take(<span class="number">2</span>)
@@ -2507,7 +2610,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>decoder = Decoder::new(<span class="kw-2">&amp;</span>data[..]).unwrap();
         <span class="kw">let </span><span class="kw-2">mut </span>buf = Vec::new();
         decoder.read(<span class="kw-2">&amp;mut </span>buf).unwrap();
-        io::copy(<span class="kw-2">&amp;mut </span>decoder, <span class="kw-2">&amp;mut </span>buf).unwrap();
+        decoder.read_to_end(<span class="kw-2">&amp;mut </span>buf).unwrap();
         <span class="macro">assert_eq!</span>(buf, <span class="string">b&quot;Hello World&quot;</span>);
     }
 
@@ -2527,6 +2630,7 @@
     }
 
     <span class="attr">#[test]
+    #[cfg(not(feature = <span class="string">&quot;no_std&quot;</span>))]
     </span><span class="kw">fn </span>encode_with_extra_field() {
         <span class="kw">let </span><span class="kw-2">mut </span>buf = Vec::new();
         <span class="kw">let </span>extra_field = ExtraField {

@@ -60,7 +60,7 @@ var sourcesIndex = JSON.parse('{\
 "serde_derive":["",[["internals",[],["ast.rs","attr.rs","case.rs","check.rs","ctxt.rs","mod.rs","receiver.rs","respan.rs","symbol.rs"]]],["bound.rs","de.rs","dummy.rs","fragment.rs","lib.rs","pretend.rs","ser.rs","this.rs","try.rs"]],\
 "serde_json":["",[["features_check",[],["mod.rs"]],["io",[],["mod.rs"]],["value",[],["de.rs","from.rs","index.rs","mod.rs","partial_eq.rs","ser.rs"]]],["de.rs","error.rs","iter.rs","lib.rs","macros.rs","map.rs","number.rs","read.rs","ser.rs"]],\
 "signal_hook_registry":["",[],["half_lock.rs","lib.rs"]],\
-"slab":["",[],["lib.rs"]],\
+"slab":["",[],["builder.rs","lib.rs"]],\
 "smallvec":["",[],["lib.rs"]],\
 "socket2":["",[["sys",[],["unix.rs"]]],["lib.rs","sockaddr.rs","socket.rs","sockref.rs"]],\
 "strum":["",[],["additional_attributes.rs","lib.rs"]],\
