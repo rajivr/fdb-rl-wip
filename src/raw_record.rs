@@ -2,11 +2,14 @@
 use bytes::Bytes;
 
 use fdb::error::{FdbError, FdbResult};
+use fdb::range::StreamingMode;
+use fdb::subspace::Subspace;
+use fdb::transaction::ReadTransaction;
 use fdb::tuple::{Tuple, TupleSchema, TupleSchemaElement};
 
 use std::convert::TryFrom;
 
-use crate::cursor::{Cursor, CursorResult};
+use crate::cursor::{Cursor, CursorResult, KeyValueContinuationInternal, KeyValueCursor};
 use crate::error::{
     RAW_RECORD_INVALID_PRIMARY_KEY_SCHEMA, RAW_RECORD_PRIMARY_KEY_TUPLE_SCHEMA_MISMATCH,
 };
@@ -144,46 +147,129 @@ impl From<(RawRecordPrimaryKey, RecordVersion, Bytes)> for RawRecord {
     }
 }
 
+/// A builder for [`RawRecordCursor`]. A value of [`RawRecordCursor`]
+/// can be built as shown below.
+///
+/// ```ignore
 /// TODO
-pub(crate) struct RawRecordCursor {}
+/// ```
+
+// TODO: You need to take care of issues around limit.
+pub(crate) struct RawRecordCursorBuilder {
+    primary_key_schema: Option<RawRecordPrimaryKeySchema>,
+    subspace: Option<Subspace>,
+    streaming_mode: Option<StreamingMode>,
+    limit: Option<usize>,
+    reverse: Option<bool>,
+    // TODO: We are piggy backing on [`KeyValueContinuationInternal`]
+    //       rather than defining an avro `RawCursorContinuation`.
+    continuation: Option<Bytes>,
+}
+
+impl RawRecordCursorBuilder {
+    /// Return a new builder.
+    pub(crate) fn new() -> RawRecordCursorBuilder {
+        RawRecordCursorBuilder {
+            primary_key_schema: None,
+            subspace: None,
+            streaming_mode: None,
+            continuation: None,
+            limit: None,
+            reverse: None,
+        }
+    }
+
+    /// Sets the [`RawRecordPrimaryKeySchema`].
+    ///
+    /// **Note:** If you intend to set a continuation, then you *must*
+    /// use the same [`RawRecordPrimaryKeySchema`] used to build the
+    /// [`RawRecordCursor`] that returned the continuation.
+    pub(crate) fn primary_key_schema(
+        &mut self,
+        primary_key_schema: RawRecordPrimaryKeySchema,
+    ) -> &mut RawRecordCursorBuilder {
+        self.primary_key_schema = Some(primary_key_schema);
+        self
+    }
+
+    /// Sets the [`Subspace`]
+    ///
+    /// **Note:** If you intend to set a continuation, then you *must*
+    /// use the same [`Subspace`] used to build the
+    /// [`RawRecordCursor`] that returned the continuation.
+    pub(crate) fn subspace(&mut self, subspace: Subspace) -> &mut RawRecordCursorBuilder {
+        self.subspace = Some(subspace);
+        self
+    }
+
+    /// Sets the [`StreamingMode`]
+    ///
+    /// **Note:** If you intend to set a continuation, then you *must*
+    /// use the same [`StreamingMode`] used to build the
+    /// [`RawRecordCursor`] that returned the continuation.
+    pub(crate) fn streaming_mode(
+        &mut self,
+        streaming_mode: StreamingMode,
+    ) -> &mut RawRecordCursorBuilder {
+        self.streaming_mode = Some(streaming_mode);
+        self
+    }
+
+    /// Sets the limit for the number of [`RawRecord`]s to return.
+    ///
+    /// # Note
+    ///
+    /// You **cannot** set the the limit to `0`. If you intend to set
+    /// a continuation, then you *must* adjust the limit parameter
+    /// based on already returned number of [`RawRecord`]s.
+    pub(crate) fn limit(&mut self, limit: usize) -> &mut RawRecordCursorBuilder {
+        self.limit = Some(limit);
+        self
+    }
+
+    /// Sets read order (lexicographic or non-lexicographic) of the
+    /// primary key.
+    ///
+    /// **Note:** If you intend to set a continuation, then you *must*
+    /// use the same value of `reverse` used to build the
+    /// [`RawRecordCursor`] that returned the continuation.
+    pub(crate) fn reverse(&mut self, reverse: bool) -> &mut RawRecordCursorBuilder {
+        self.reverse = Some(reverse);
+        self
+    }
+
+    /// Sets the [continuation] bytes that was previously returned.
+    ///
+    /// [continuation]: crate::cursor::Continuation::to_bytes
+    pub(crate) fn continuation(&mut self, continuation: Bytes) -> &mut RawRecordCursorBuilder {
+        self.continuation = Some(continuation);
+        self
+    }
+
+    /// Creates the configured [`RawRecordCursor`].
+    pub(crate) fn build<Tr>(self, read_transaction: &Tr) -> FdbResult<RawRecordCursor>
+    where
+        Tr: ReadTransaction,
+    {
+        todo!();
+    }
+}
+
+/// A cursor that returns [`RawRecord`]s from the FDB database.
+//
+// TODO: `NoNextReason::ReturnLimitReached` would be specific number
+// of `RawRecord`.
+pub(crate) struct RawRecordCursor {
+    primary_key_schema: RawRecordPrimaryKeySchema,
+    values_limit: usize,
+    reverse: bool,
+    key_value_cursor: KeyValueCursor,
+    continuation: KeyValueContinuationInternal,
+    values_seen: usize,
+}
 
 impl Cursor<RawRecord> for RawRecordCursor {
     /// TODO
-
-    // (remove later): `NoNextReason::ReturnLimitReached` would be
-    // specific number of `RawRecord`.
-    //
-    // Mandatorially specify:
-    // - Primary key tuple length
-    //
-    // And optionally
-    // - `Subspace`
-    // - `StreamingMode` (default would be `StreamingMode::Iterator`)
-    // - `limit` (this would be number of `RawRecord`s)
-    // - `reverse`
-    // - `from_primary_key`
-    //
-    // TODO:
-    // -----
-    //
-    // `TupleSchema` and `TupleSchemaValue`
-    //
-    //  - `TupleSchemaValue::Null`
-    //  - `TupleSchemaValue::Bytes`
-    //  - `TupleSchemaValue::Tuple`
-    //  - `TupleSchemaValue::Integer`
-    //  - `TupleSchemaValue::Float`
-    //  - `TupleSchemaValue::Double`
-    //  - `TupleSchemaValue::Bool`
-    //  - `TupleSchemaValue::UUid`
-    //  - `TupleSchemaValue::Versionstamp`
-    //  - `TupleSchemaValue::MaybeBytes`
-    //  - `TupleSchemaValue::MaybeTuple`
-    //  - `TupleSchemaValue::MaybeInteger`
-    //
-    // TODO: continue from here.
-    // tuple_schema.validate(&tuple)
-    // TUPLE_SCHEMA_MISMATCH
 
     async fn next(&mut self) -> CursorResult<RawRecord> {
         todo!();

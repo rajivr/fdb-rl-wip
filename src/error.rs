@@ -73,3 +73,6 @@ pub const RAW_RECORD_INVALID_PRIMARY_KEY_SCHEMA: i32 = 230;
 
 /// The [`Tuple`] used for primary key does not match its schema.
 pub const RAW_RECORD_PRIMARY_KEY_TUPLE_SCHEMA_MISMATCH: i32 = 231;
+
+/// TODO
+pub const RAW_RECORD_CURSOR_BUILDER_ERROR: i32 = 232;
