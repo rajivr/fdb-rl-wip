@@ -116,7 +116,7 @@ pub trait Cursor<T>: private::Sealed {
     //         method implementation and in the builder type for the
     //         `Cursor`. It won't be generic, but will get the job
     //         done.
-    async fn filter<F, Fut>(self, f: F) -> impl Cursor<T>
+    async fn filter<F, Fut>(self, f: F) -> CursorFilter<T, Self, F>
     where
         Self: Sized,
         F: FnMut(&T) -> Fut,
@@ -148,7 +148,7 @@ pub trait Cursor<T>: private::Sealed {
     /// primarily meant for types defined in this crate.
     //
     // *Note:* See the comment mentioned in `filter`.
-    async fn map<U, F, Fut>(self, f: F) -> impl Cursor<U>
+    async fn map<U, F, Fut>(self, f: F) -> CursorMap<T, Self, F>
     where
         Self: Sized,
         F: FnMut(T) -> Fut,
@@ -163,7 +163,8 @@ pub trait Cursor<T>: private::Sealed {
 }
 
 /// Cursor returned by [`Cursor::filter`] method.
-struct CursorFilter<T, C, F>
+#[derive(Debug)]
+pub struct CursorFilter<T, C, F>
 where
     C: Cursor<T>,
 {
@@ -197,7 +198,8 @@ where
 }
 
 /// Cursor returned by [`Cursor::map`] method.
-struct CursorMap<T, C, F>
+#[derive(Debug)]
+pub struct CursorMap<T, C, F>
 where
     C: Cursor<T>,
 {

@@ -153,9 +153,9 @@ impl KeyValueScanLimiter {
 #[cfg(test)]
 impl PartialEq for KeyValueScanLimiter {
     fn eq(&self, other: &KeyValueScanLimiter) -> bool {
-        let self_keyvalues_scanned = unsafe { *(&*self.keyvalues_scanned).as_mut_ptr() };
+        let self_keyvalues_scanned = unsafe { *(&*self.keyvalues_scanned).as_ptr() };
 
-        let other_keyvalues_scanned = unsafe { *(&*other.keyvalues_scanned).as_mut_ptr() };
+        let other_keyvalues_scanned = unsafe { *(&*other.keyvalues_scanned).as_ptr() };
 
         (self_keyvalues_scanned == other_keyvalues_scanned)
             && (self.limiter_mode == other.limiter_mode)
@@ -279,9 +279,9 @@ impl ByteScanLimiter {
 #[cfg(test)]
 impl PartialEq for ByteScanLimiter {
     fn eq(&self, other: &ByteScanLimiter) -> bool {
-        let self_bytes_scanned = unsafe { *(&*self.bytes_scanned).as_mut_ptr() };
+        let self_bytes_scanned = unsafe { *(&*self.bytes_scanned).as_ptr() };
 
-        let other_bytes_scanned = unsafe { *(&*other.bytes_scanned).as_mut_ptr() };
+        let other_bytes_scanned = unsafe { *(&*other.bytes_scanned).as_ptr() };
 
         (self_bytes_scanned == other_bytes_scanned)
             && (self.limiter_mode == other.limiter_mode)

@@ -9,7 +9,6 @@
 #![feature(async_fn_in_trait)]
 #![feature(return_position_impl_trait_in_trait)]
 #![feature(once_cell)]
-#![feature(atomic_mut_ptr)]
 // TODO: Remove this later.
 #![allow(rustdoc::broken_intra_doc_links)]
 #![allow(unused_variables)]
