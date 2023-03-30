@@ -870,9 +870,9 @@
 </span><span class="attr">#[cfg(test)]
 </span><span class="kw">impl </span>PartialEq <span class="kw">for </span>KeyValueScanLimiter {
     <span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>KeyValueScanLimiter) -&gt; bool {
-        <span class="kw">let </span>self_keyvalues_scanned = <span class="kw">unsafe </span>{ <span class="kw-2">*</span>(<span class="kw-2">&amp;*</span><span class="self">self</span>.keyvalues_scanned).as_mut_ptr() };
+        <span class="kw">let </span>self_keyvalues_scanned = <span class="kw">unsafe </span>{ <span class="kw-2">*</span>(<span class="kw-2">&amp;*</span><span class="self">self</span>.keyvalues_scanned).as_ptr() };
 
-        <span class="kw">let </span>other_keyvalues_scanned = <span class="kw">unsafe </span>{ <span class="kw-2">*</span>(<span class="kw-2">&amp;*</span>other.keyvalues_scanned).as_mut_ptr() };
+        <span class="kw">let </span>other_keyvalues_scanned = <span class="kw">unsafe </span>{ <span class="kw-2">*</span>(<span class="kw-2">&amp;*</span>other.keyvalues_scanned).as_ptr() };
 
         (self_keyvalues_scanned == other_keyvalues_scanned)
             &amp;&amp; (<span class="self">self</span>.limiter_mode == other.limiter_mode)
@@ -996,9 +996,9 @@
 </span><span class="attr">#[cfg(test)]
 </span><span class="kw">impl </span>PartialEq <span class="kw">for </span>ByteScanLimiter {
     <span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span>ByteScanLimiter) -&gt; bool {
-        <span class="kw">let </span>self_bytes_scanned = <span class="kw">unsafe </span>{ <span class="kw-2">*</span>(<span class="kw-2">&amp;*</span><span class="self">self</span>.bytes_scanned).as_mut_ptr() };
+        <span class="kw">let </span>self_bytes_scanned = <span class="kw">unsafe </span>{ <span class="kw-2">*</span>(<span class="kw-2">&amp;*</span><span class="self">self</span>.bytes_scanned).as_ptr() };
 
-        <span class="kw">let </span>other_bytes_scanned = <span class="kw">unsafe </span>{ <span class="kw-2">*</span>(<span class="kw-2">&amp;*</span>other.bytes_scanned).as_mut_ptr() };
+        <span class="kw">let </span>other_bytes_scanned = <span class="kw">unsafe </span>{ <span class="kw-2">*</span>(<span class="kw-2">&amp;*</span>other.bytes_scanned).as_ptr() };
 
         (self_bytes_scanned == other_bytes_scanned)
             &amp;&amp; (<span class="self">self</span>.limiter_mode == other.limiter_mode)

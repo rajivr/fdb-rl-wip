@@ -229,6 +229,8 @@
 <a href="#229" id="229">229</a>
 <a href="#230" id="230">230</a>
 <a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
+<a href="#233" id="233">233</a>
 </pre><pre class="rust"><code><span class="kw">use </span>std::future::Future;
 <span class="kw">use </span>std::marker::PhantomData;
 
@@ -347,7 +349,7 @@
     //         method implementation and in the builder type for the
     //         `Cursor`. It won&#39;t be generic, but will get the job
     //         done.
-    </span><span class="kw">async fn </span>filter&lt;F, Fut&gt;(<span class="self">self</span>, f: F) -&gt; <span class="kw">impl </span>Cursor&lt;T&gt;
+    </span><span class="kw">async fn </span>filter&lt;F, Fut&gt;(<span class="self">self</span>, f: F) -&gt; CursorFilter&lt;T, <span class="self">Self</span>, F&gt;
     <span class="kw">where
         </span><span class="self">Self</span>: Sized,
         F: FnMut(<span class="kw-2">&amp;</span>T) -&gt; Fut,
@@ -379,7 +381,7 @@
     /// primarily meant for types defined in this crate.
     </span><span class="comment">//
     // *Note:* See the comment mentioned in `filter`.
-    </span><span class="kw">async fn </span>map&lt;U, F, Fut&gt;(<span class="self">self</span>, f: F) -&gt; <span class="kw">impl </span>Cursor&lt;U&gt;
+    </span><span class="kw">async fn </span>map&lt;U, F, Fut&gt;(<span class="self">self</span>, f: F) -&gt; CursorMap&lt;T, <span class="self">Self</span>, F&gt;
     <span class="kw">where
         </span><span class="self">Self</span>: Sized,
         F: FnMut(T) -&gt; Fut,
@@ -394,7 +396,8 @@
 }
 
 <span class="doccomment">/// Cursor returned by [`Cursor::filter`] method.
-</span><span class="kw">struct </span>CursorFilter&lt;T, C, F&gt;
+</span><span class="attr">#[derive(Debug)]
+</span><span class="kw">pub struct </span>CursorFilter&lt;T, C, F&gt;
 <span class="kw">where
     </span>C: Cursor&lt;T&gt;,
 {
@@ -428,7 +431,8 @@
 }
 
 <span class="doccomment">/// Cursor returned by [`Cursor::map`] method.
-</span><span class="kw">struct </span>CursorMap&lt;T, C, F&gt;
+</span><span class="attr">#[derive(Debug)]
+</span><span class="kw">pub struct </span>CursorMap&lt;T, C, F&gt;
 <span class="kw">where
     </span>C: Cursor&lt;T&gt;,
 {
