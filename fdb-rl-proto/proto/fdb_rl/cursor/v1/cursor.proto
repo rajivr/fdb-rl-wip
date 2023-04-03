@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package fdb_rl.cursor.v1;
+
+message KeyValueContinuation {
+  message BeginMarker {}
+
+  message Continuation {
+    bytes continuation = 1;
+  }
+
+  message EndMarker {}
+
+  oneof key_value_continuation_enum {
+    BeginMarker begin_marker = 1;
+    Continuation continuation = 2;
+    EndMarker end_marker = 3;
+  }
+}
