@@ -89,8 +89,8 @@ pub trait Cursor<T>: private::Sealed {
     /// the closure.
     ///
     /// If you need this feature, you will need to build the loop
-    /// yourself and handle the issue of the how and which
-    /// continuation to return that would be useful to the caller.
+    /// yourself and handle the issue of how and which continuation to
+    /// return that would be useful to the caller.
     ///
     /// Also, since [`Cursor`] is a sealed class, this method is
     /// primarily meant for types defined in this crate.
@@ -141,8 +141,8 @@ pub trait Cursor<T>: private::Sealed {
     /// the closure.
     ///
     /// If you need this feature, you will need to build the loop
-    /// yourself and handle the issue of the how and which
-    /// continuation to return that would be useful to the caller.
+    /// yourself and handle the issue of how and which continuation to
+    /// return that would be useful to the caller.
     ///
     /// Also, since [`Cursor`] is a sealed class, this method is
     /// primarily meant for types defined in this crate.

@@ -1,0 +1,60 @@
+[package]
+name = "fdb-rl"
+version = "0.1.0"
+edition = "2018"
+rust-version = "1.49"
+authors = ["fdb-rs Developers"]
+
+description = """
+FoundationDB Record Layer for Tokio
+"""
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/fdb-rs/fdb-rl"
+keywords = ["foundationdb", "tokio"]
+categories = ["database"]
+
+[features]
+default = ["fdb/fdb-7_1"]
+
+[dependencies]
+apache-avro = "0.14"
+bytes = "1"
+fdb = { git = "https://github.com/rajivr/fdb-wip", branch = "main" }
+futures = "0.3"
+num-bigint = "0.4"
+serde = { default-features = false, version = "1", features = ["derive"] }
+serde_bytes = "0.11"
+tokio-stream = "0.1"
+
+[dev-dependencies]
+libtest-mimic = "0.5"
+tokio = { version = "1", features = ["full"] }
+tokio-stream = "0.1"
+
+[[example]]
+name = "test-cursor-key_value_cursor-KeyValueCursorBuilder-build_range"
+path = "examples/test/cursor/key_value_cursor/KeyValueCursorBuilder/build_range.rs"
+
+[[example]]
+name = "test-cursor-KeyValueCursor-into_btreemap"
+path = "examples/test/cursor/KeyValueCursor/main.rs"
+
+[[example]]
+name = "test-cursor-KeyValueCursor-Cursor-KeyValue-next"
+path = "examples/test/cursor/KeyValueCursor/Cursor-KeyValue/next.rs"
+
+[[example]]
+name = "test-cursor-KeyValueCursor-Cursor-KeyValue-collect_filter_map"
+path = "examples/test/cursor/KeyValueCursor/Cursor-KeyValue/collect_filter_map.rs"
+
+[[example]]
+name = "test-split_helper-delete"
+path = "examples/test/split_helper/delete.rs"
+
+[[example]]
+name = "test-split_helper-load"
+path = "examples/test/split_helper/load.rs"
+
+[[example]]
+name = "test-split_helper-save"
+path = "examples/test/split_helper/save.rs"

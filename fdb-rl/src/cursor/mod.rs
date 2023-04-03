@@ -14,7 +14,7 @@ pub(crate) use key_value_cursor::{KeyValueContinuationInternal, KeyValueContinua
 pub(crate) use limit_manager::{LimitManager, LimitManagerStoppedReason};
 
 pub use continuation::Continuation;
-pub use cursor::{Cursor, CursorMap, CursorFilter};
+pub use cursor::{Cursor, CursorFilter, CursorMap};
 pub use cursor_result::{
     CursorError, CursorResult, CursorResultContinuation, CursorSuccess, NoNextReason,
 };
