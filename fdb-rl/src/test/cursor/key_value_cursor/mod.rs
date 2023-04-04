@@ -7,7 +7,8 @@ use fdb::Key;
 
 use std::convert::{TryFrom, TryInto};
 
-use crate::cursor::{KeyValueContinuationInternal, KeyValueContinuationV0, KeyValueCursorBuilder};
+use crate::cursor::pb;
+use crate::cursor::{KeyValueContinuationInternal, KeyValueCursorBuilder};
 use crate::range::KeyRange;
 
 /// Expose [`KeyValueCursorBuilder::build_range`] method.
@@ -29,17 +30,28 @@ pub fn key_value_cursor_builder_build_range(
     )
 }
 
-/// Expose [`KeyValueContinuationV0::continuation`].
-pub fn key_value_continuation_v0_continuation_bytes(key: Key) -> FdbResult<Bytes> {
-    KeyValueContinuationV0::continuation(key).try_into()
+/// Expose [`KeyValueContinuationEnumV1::Continuation`].
+pub fn key_value_continuation_v1_continuation_bytes(key: Key) -> FdbResult<Bytes> {
+    KeyValueContinuationInternal::V1(pb::KeyValueContinuationEnumV1::Continuation(
+        pb::ContinuationV1 {
+            continuation: Bytes::from(key),
+        },
+    ))
+    .try_into()
 }
 
-/// Expose [`KeyValueContinuationV0::begin_marker`].
-pub fn key_value_continuation_v0_begin_marker_bytes() -> FdbResult<Bytes> {
-    KeyValueContinuationV0::begin_marker().try_into()
+/// Expose [`KeyValueContinuationEnumV1::BeginMarker`].
+pub fn key_value_continuation_v1_begin_marker_bytes() -> FdbResult<Bytes> {
+    KeyValueContinuationInternal::V1(pb::KeyValueContinuationEnumV1::BeginMarker(
+        pb::BeginMarkerV1 {},
+    ))
+    .try_into()
 }
 
-/// Expose [`KeyValueContinuationV0::end_marker`].
-pub fn key_value_continuation_v0_end_marker_bytes() -> FdbResult<Bytes> {
-    KeyValueContinuationV0::end_marker().try_into()
+/// Expose [`KeyValueContinuationEnumV1::EndMarker`].
+pub fn key_value_continuation_v1_end_marker_bytes() -> FdbResult<Bytes> {
+    KeyValueContinuationInternal::V1(pb::KeyValueContinuationEnumV1::EndMarker(
+        pb::EndMarkerV1 {},
+    ))
+    .try_into()
 }

@@ -8,6 +8,6 @@ echo "+---------------------+"
 echo "| Build documentation |"
 echo "+---------------------+"
 
-cd ../../ || { echo "cd failure"; exit 1; }
+cd ../../fdb-rl || { echo "cd failure"; exit 1; }
 
 cargo doc

@@ -10,7 +10,14 @@ mod cursor_result;
 mod key_value_cursor;
 mod limit_manager;
 
-pub(crate) use key_value_cursor::{KeyValueContinuationInternal, KeyValueContinuationV0};
+pub(crate) mod pb {
+    pub(crate) use super::key_value_cursor::pb::{
+        BeginMarkerV1, ContinuationV1, EndMarkerV1, KeyValueContinuationEnumV1,
+    };
+}
+
+pub(crate) use key_value_cursor::KeyValueContinuationInternal;
+
 pub(crate) use limit_manager::{LimitManager, LimitManagerStoppedReason};
 
 pub use continuation::Continuation;

@@ -1,6 +1,4 @@
-use apache_avro::{self, Schema};
-
-use bytes::{Buf, Bytes};
+use bytes::{Bytes, BytesMut};
 
 use fdb::error::{FdbError, FdbResult};
 use fdb::future::FdbStreamKeyValue;
@@ -10,232 +8,82 @@ use fdb::transaction::ReadTransaction;
 use fdb::tuple::Tuple;
 use fdb::{Key, KeySelector, KeyValue, Value};
 
-use serde::{Deserialize, Serialize};
+use prost::Message;
 
 use tokio_stream::StreamExt;
 
 use std::collections::BTreeMap;
 use std::convert::{TryFrom, TryInto};
-use std::sync::{Arc, LazyLock};
+use std::sync::Arc;
 
 use crate::cursor::{
     Continuation, Cursor, CursorError, CursorResult, CursorSuccess, LimitManager,
     LimitManagerStoppedReason, NoNextReason,
 };
 
-use crate::error::{CURSOR_INVALID_CONTINUATION, CURSOR_KEYVALUE_CURSOR_BUILDER_ERROR};
+use crate::error::{
+    CURSOR_INVALID_CONTINUATION, CURSOR_INVALID_KEYVALUE_CONTINUATION_INTERNAL,
+    CURSOR_KEYVALUE_CURSOR_BUILDER_ERROR,
+};
 use crate::range::{bytes_endpoint, KeyRange};
 use crate::scan::ScanProperties;
 
-/// Simple schema registry that maps KeyValue Continuation writer
-/// schema version to the corresponding Avro [`Schema`].
-static KEYVALUE_CONTINUATION_SCHEMA_REGISTRY: LazyLock<BTreeMap<usize, Schema>> =
-    LazyLock::new(|| {
-        let mut schema_registry = BTreeMap::new();
-
-        // Safety: Safe to unwrap here because we have unit tests that
-        //          checks that the avsc files are well formed. See
-        //          `keyvalue_continuation_schema_registry::schema_v0_keyvalue_continuation`.
-        let schema_v0_keyvalue_continuation = Schema::parse_str(include_str!(concat!(
-            "../../avro/Continuation/KeyValueContinuation/",
-            "v0/avsc/KeyValueContinuation.avsc"
-        )))
-        .unwrap();
-
-        schema_registry.insert(0, schema_v0_keyvalue_continuation);
-
-        schema_registry
-    });
-
-/// Rust type that corresponds to `v0` of Avro `KeyValueContinuation`.
-///
-/// It serialized and deserialized to a
-/// [`KeyValueContinuationInternal`].
-///
-/// The opaque continuation that is returned to the client is a FDB
-/// tuple `(0, Avro serialized bytes of KeyValueContinuationV0,)`. `0`
-/// is the writer schema version.
-///
-/// Invariant checking happens in the following methods.
-///
-/// 1. `<Bytes as
-/// TryFrom<KeyValueContinuationV0>>::try_from(keyvalue_continuation_v0:
-/// KeyValueContinuationV0) -> FdbResult<Bytes>)`
-///
-///    In this method we ensure that we do not generate an invalid
-///    bytes by mistake.
-///
-/// 1. `<KeyValueContinuationInternal as
-/// TryFrom<KeyValueContinuationV0>>::try_from(keyvalue_continuation_v0:
-/// KeyValueContinuationV0) -> FdbResult<KeyValueContinuationInternal>`
-///
-///    `KeyValueContinuationV0` type has invariants which cannot be
-///    captured by Avro. So, in the event we receive a value that Avro
-///    considered to be valid, before converting it into
-///    `KeyValueContinuationInternal` type, we check to ensure that
-///    additional contraints of `KeyValueContinuationV0` type is
-///    satisfied.
-///
-/// ### Note
-///
-/// There is no method with the signature `<KeyValueContinuationV0 as
-/// TryFrom<Bytes>::try_from(bytes: Bytes) ->
-/// FdbResult<KeyValueContinuationV0>`. We **do not** convert from a
-/// value of `Bytes` directly to a value of `KeyValueContinuationV0`.
-///
-/// Instead, we have the method `<KeyValueContinuationInternal as
-/// TryFrom<Bytes>::try_from(continuation: Bytes) ->
-/// FdbResult<KeyValueContinuationInternal>`. In this method we do
-/// Avro specific backwards and forwards compatibility checks and
-/// convertions prior to returning a value of
-/// `KeyValueContinuationInternal` type.
-#[derive(Debug, PartialEq, Deserialize, Serialize)]
-pub(crate) struct KeyValueContinuationV0 {
-    /// [`Key`] bytes. Valid only when `continuation_type` is `1`.
-    #[serde(with = "serde_bytes")]
-    continuation: Option<Vec<u8>>,
-
-    /// `continuation_type` is an enum represented using an `i32`.
-    ///
-    /// ```
-    /// |-------------------+-------------------------------------------|
-    /// | continuation_type | value                                     |
-    /// |-------------------+-------------------------------------------|
-    /// |                 0 | unspecified                               |
-    /// |                   | (avro default *but* semantically invalid) |
-    /// |-------------------+-------------------------------------------|
-    /// |                 1 | continuation                              |
-    /// |-------------------+-------------------------------------------|
-    /// |                 2 | begin marker                              |
-    /// |-------------------+-------------------------------------------|
-    /// |                 3 | end marker                                |
-    /// |-------------------+-------------------------------------------|
-    /// ```
-    continuation_type: i32,
-}
-
-impl KeyValueContinuationV0 {
-    /// Create a continuation from a [`Key`].
-    pub(crate) fn continuation(key: Key) -> KeyValueContinuationV0 {
-        KeyValueContinuationV0 {
-            continuation: Some((Bytes::from(key)).into()),
-            continuation_type: 1,
-        }
-    }
-
-    /// Create a begin marker continuation.
-    pub(crate) fn begin_marker() -> KeyValueContinuationV0 {
-        KeyValueContinuationV0 {
-            continuation: None,
-            continuation_type: 2,
-        }
-    }
-
-    /// Create a end marker continuation.
-    pub(crate) fn end_marker() -> KeyValueContinuationV0 {
-        KeyValueContinuationV0 {
-            continuation: None,
-            continuation_type: 3,
-        }
-    }
-}
-
-impl From<KeyValueContinuationInternal> for KeyValueContinuationV0 {
-    fn from(
-        keyvalue_continuation_internal: KeyValueContinuationInternal,
-    ) -> KeyValueContinuationV0 {
-        match keyvalue_continuation_internal {
-            KeyValueContinuationInternal::BeginMarker => KeyValueContinuationV0::begin_marker(),
-            KeyValueContinuationInternal::Continuation(key) => {
-                KeyValueContinuationV0::continuation(key)
-            }
-            KeyValueContinuationInternal::EndMarker => KeyValueContinuationV0::end_marker(),
-        }
-    }
-}
-
-impl TryFrom<KeyValueContinuationV0> for Bytes {
-    type Error = FdbError;
-
-    fn try_from(keyvalue_continuation_v0: KeyValueContinuationV0) -> FdbResult<Bytes> {
-        // Check for invalid `KeyValueContinuationV0`.
-        {
-            if keyvalue_continuation_v0.continuation_type <= 0
-                || keyvalue_continuation_v0.continuation_type > 3
-            {
-                return Err(FdbError::new(CURSOR_INVALID_CONTINUATION));
-            }
-
-            if keyvalue_continuation_v0.continuation_type == 1
-                && keyvalue_continuation_v0.continuation.is_none()
-            {
-                return Err(FdbError::new(CURSOR_INVALID_CONTINUATION));
-            }
-        }
-
-        let writers_schema_ref = KEYVALUE_CONTINUATION_SCHEMA_REGISTRY
-            .get(&0)
-            .ok_or_else(|| FdbError::new(CURSOR_INVALID_CONTINUATION))?;
-
-        // (version, bytes)
-        let continuation_tup: (i64, Bytes) = (
-            0,
-            Bytes::from(
-                apache_avro::to_value(keyvalue_continuation_v0)
-                    .and_then(|x| apache_avro::to_avro_datum(writers_schema_ref, x))
-                    .map_err(|_| FdbError::new(CURSOR_INVALID_CONTINUATION))?,
-            ),
-        );
-
-        let continuation_bytes = {
-            let mut tup = Tuple::new();
-
-            // version
-            tup.push_back::<i64>(continuation_tup.0);
-
-            tup.push_back::<Bytes>(continuation_tup.1);
-
-            tup
-        }
-        .pack();
-
-        Ok(continuation_bytes)
-    }
+pub(crate) mod pb {
+    pub(crate) use fdb_rl_proto::cursor::v1::key_value_continuation::{
+        BeginMarker as BeginMarkerV1, Continuation as ContinuationV1, EndMarker as EndMarkerV1,
+        KeyValueContinuationEnum as KeyValueContinuationEnumV1,
+    };
+    pub(crate) use fdb_rl_proto::cursor::v1::KeyValueContinuation as KeyValueContinuationV1;
 }
 
 /// Internal representation of key-value continuation.
+///
+/// We need define this type so we can implement [`Continuation`]
+/// trait on it. In addition it has `TryFrom<Bytes> for
+/// KeyValueContinuationInternal` and
+/// `TryFrom<KeyValueContinuationInternal> for Bytes` traits
+/// implemented so we can convert between `Bytes` and
+/// `KeyValueContinuationInternal`.
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum KeyValueContinuationInternal {
-    /// Marker indicating the beginning
-    BeginMarker,
-    /// Continuation
-    Continuation(Key),
-    /// Marker indicating the end
-    EndMarker,
+    /// `fdb_rl.cursor.v1.key_value_continuation_enum`
+    V1(pb::KeyValueContinuationEnumV1),
 }
 
-impl Continuation for KeyValueContinuationInternal {
-    fn to_bytes(&self) -> FdbResult<Bytes> {
-        // Return v0 version of `KeyValueContinuation`.
-        match self {
-            KeyValueContinuationInternal::BeginMarker => {
-                KeyValueContinuationV0::begin_marker().try_into()
-            }
-            KeyValueContinuationInternal::Continuation(key) => {
-                KeyValueContinuationV0::continuation(key.clone()).try_into()
-            }
-            KeyValueContinuationInternal::EndMarker => {
-                KeyValueContinuationV0::end_marker().try_into()
+impl TryFrom<KeyValueContinuationInternal> for Bytes {
+    type Error = FdbError;
+
+    fn try_from(keyvalue_continuation: KeyValueContinuationInternal) -> FdbResult<Bytes> {
+        match keyvalue_continuation {
+            KeyValueContinuationInternal::V1(keyvalue_continuation_enum_v1) => {
+                let keyvalue_continuation_v1 = pb::KeyValueContinuationV1 {
+                    key_value_continuation_enum: Some(keyvalue_continuation_enum_v1),
+                };
+
+                let mut buf = BytesMut::with_capacity(keyvalue_continuation_v1.encoded_len());
+
+                if keyvalue_continuation_v1.encode(&mut buf).is_err() {
+                    Err(FdbError::new(CURSOR_INVALID_KEYVALUE_CONTINUATION_INTERNAL))
+                } else {
+                    // (version, bytes)
+                    let continuation_tup: (i64, Bytes) = (1, Bytes::from(buf));
+
+                    let continuation_bytes = {
+                        let mut tup = Tuple::new();
+
+                        // version
+                        tup.push_back::<i64>(continuation_tup.0);
+
+                        tup.push_back::<Bytes>(continuation_tup.1);
+
+                        tup
+                    }
+                    .pack();
+
+                    Ok(Bytes::from(continuation_bytes))
+                }
             }
         }
-    }
-
-    fn is_begin_marker(&self) -> bool {
-        matches!(self, KeyValueContinuationInternal::BeginMarker)
-    }
-
-    fn is_end_marker(&self) -> bool {
-        matches!(self, KeyValueContinuationInternal::EndMarker)
     }
 }
 
@@ -257,51 +105,43 @@ impl TryFrom<Bytes> for KeyValueContinuationInternal {
             })
             .map_err(|_| FdbError::new(CURSOR_INVALID_CONTINUATION))?;
 
-        // Currently we have only one version. So, we don't have to
-        // worry about schema compatibility. In the event we have to
-        // support multiple version of avro `KeyValueContinuation`,
-        // then we will need to update the code here.
-        let writers_schema_ref = KEYVALUE_CONTINUATION_SCHEMA_REGISTRY
-            .get(&version)
-            .ok_or_else(|| FdbError::new(CURSOR_INVALID_CONTINUATION))?;
+        // Currently there is only one version.
+        if version == 1 {
+            let keyvalue_continuation_enum_v1 = pb::KeyValueContinuationV1::decode(continuation)
+                .map_err(|_| FdbError::new(CURSOR_INVALID_CONTINUATION))?
+                .key_value_continuation_enum
+                .ok_or_else(|| FdbError::new(CURSOR_INVALID_CONTINUATION))?;
 
-        let keyvalue_continuation_v0 =
-            apache_avro::from_avro_datum(writers_schema_ref, &mut continuation.reader(), None)
-                .and_then(|v| apache_avro::from_value::<KeyValueContinuationV0>(&v))
-                .map_err(|_| FdbError::new(CURSOR_INVALID_CONTINUATION))?;
-
-        keyvalue_continuation_v0.try_into()
+            Ok(KeyValueContinuationInternal::V1(
+                keyvalue_continuation_enum_v1,
+            ))
+        } else {
+            Err(FdbError::new(CURSOR_INVALID_CONTINUATION))
+        }
     }
 }
 
-impl TryFrom<KeyValueContinuationV0> for KeyValueContinuationInternal {
-    type Error = FdbError;
+impl Continuation for KeyValueContinuationInternal {
+    fn to_bytes(&self) -> FdbResult<Bytes> {
+        self.clone().try_into()
+    }
 
-    fn try_from(
-        keyvalue_continuation_v0: KeyValueContinuationV0,
-    ) -> FdbResult<KeyValueContinuationInternal> {
-        match keyvalue_continuation_v0.continuation {
-            Some(continuation) => {
-                // It *must* be a continuation containing a key
-                if keyvalue_continuation_v0.continuation_type == 1 {
-                    Ok(KeyValueContinuationInternal::Continuation(Key::from(
-                        Bytes::from(continuation),
-                    )))
-                } else {
-                    Err(FdbError::new(CURSOR_INVALID_CONTINUATION))
-                }
-            }
-            None => {
-                // It *must* be either a begin marker or end marker
-                if keyvalue_continuation_v0.continuation_type == 2 {
-                    Ok(KeyValueContinuationInternal::BeginMarker)
-                } else if keyvalue_continuation_v0.continuation_type == 3 {
-                    Ok(KeyValueContinuationInternal::EndMarker)
-                } else {
-                    Err(FdbError::new(CURSOR_INVALID_CONTINUATION))
-                }
-            }
-        }
+    fn is_begin_marker(&self) -> bool {
+        matches!(
+            self,
+            KeyValueContinuationInternal::V1(pb::KeyValueContinuationEnumV1::BeginMarker(
+                pb::BeginMarkerV1 {}
+            ))
+        )
+    }
+
+    fn is_end_marker(&self) -> bool {
+        matches!(
+            self,
+            KeyValueContinuationInternal::V1(pb::KeyValueContinuationEnumV1::EndMarker(
+                pb::EndMarkerV1 {}
+            ))
+        )
     }
 }
 
@@ -512,7 +352,9 @@ impl KeyValueCursorBuilder {
                     fdb_stream_keyvalue,
                     limit_manager,
                     values_limit,
-                    KeyValueContinuationInternal::BeginMarker,
+                    KeyValueContinuationInternal::V1(pb::KeyValueContinuationEnumV1::BeginMarker(
+                        pb::BeginMarkerV1 {},
+                    )),
                 )
             }
         })
@@ -535,7 +377,9 @@ impl KeyValueCursorBuilder {
     ) -> FdbResult<Range> {
         match maybe_continuation_internal {
             Some(continuation_internal) => match continuation_internal {
-                KeyValueContinuationInternal::BeginMarker => {
+                KeyValueContinuationInternal::V1(pb::KeyValueContinuationEnumV1::BeginMarker(
+                    pb::BeginMarkerV1 {},
+                )) => {
                     // A begin marker is only returned in the event
                     // there was an out-of-band limit (such as a
                     // timeout) even before we could attempt to read
@@ -549,15 +393,17 @@ impl KeyValueCursorBuilder {
                         reverse,
                     )
                 }
-                KeyValueContinuationInternal::Continuation(key) => {
-                    bytes_endpoint::build_range_continuation(
-                        maybe_subspace,
-                        key_range,
-                        Some(key.into()),
-                        reverse,
-                    )
-                }
-                KeyValueContinuationInternal::EndMarker => {
+                KeyValueContinuationInternal::V1(pb::KeyValueContinuationEnumV1::Continuation(
+                    pb::ContinuationV1 { continuation },
+                )) => bytes_endpoint::build_range_continuation(
+                    maybe_subspace,
+                    key_range,
+                    Some(continuation),
+                    reverse,
+                ),
+                KeyValueContinuationInternal::V1(pb::KeyValueContinuationEnumV1::EndMarker(
+                    pb::EndMarkerV1 {},
+                )) => {
                     // A end marker means that we have exhausted the
                     // range, but the client is still trying to read
                     // it. In this case, we need to build an empty
@@ -677,7 +523,10 @@ impl Cursor<KeyValue> for KeyValueCursor {
                         // error.
                         self.error = Some(cursor_error.clone());
                         Err(cursor_error)
-                    } else if let KeyValueContinuationInternal::EndMarker = self.continuation {
+                    } else if let KeyValueContinuationInternal::V1(
+                        pb::KeyValueContinuationEnumV1::EndMarker(pb::EndMarkerV1 {}),
+                    ) = self.continuation
+                    {
                         // KeyValueCursor was built using a
                         // end marker continuation. If so, set
                         // the error state and just return
@@ -688,7 +537,9 @@ impl Cursor<KeyValue> for KeyValueCursor {
                             // use `CursorResultContinuation::new`
                             // here. Therefore use `Arc::new`.
                             let cursor_result_continuation =
-                                Arc::new(KeyValueContinuationInternal::EndMarker);
+                                Arc::new(KeyValueContinuationInternal::V1(
+                                    pb::KeyValueContinuationEnumV1::EndMarker(pb::EndMarkerV1 {}),
+                                ));
                             CursorError::NoNextReason(NoNextReason::SourceExhausted(
                                 cursor_result_continuation,
                             ))
@@ -709,7 +560,11 @@ impl Cursor<KeyValue> for KeyValueCursor {
                                     // `CursorResultContinuation::new`
                                     // here. Therefore use `Arc::new`.
                                     let cursor_result_continuation =
-                                        Arc::new(KeyValueContinuationInternal::EndMarker);
+                                        Arc::new(KeyValueContinuationInternal::V1(
+                                            pb::KeyValueContinuationEnumV1::EndMarker(
+                                                pb::EndMarkerV1 {},
+                                            ),
+                                        ));
                                     CursorError::NoNextReason(NoNextReason::SourceExhausted(
                                         cursor_result_continuation,
                                     ))
@@ -742,8 +597,13 @@ impl Cursor<KeyValue> for KeyValueCursor {
                                             Key::from(key_bytes.slice(self.subspace_length..));
 
                                         // Update continuation
-                                        self.continuation =
-                                            KeyValueContinuationInternal::Continuation(key.clone());
+                                        self.continuation = KeyValueContinuationInternal::V1(
+                                            pb::KeyValueContinuationEnumV1::Continuation(
+                                                pb::ContinuationV1 {
+                                                    continuation: Bytes::from(key.clone()),
+                                                },
+                                            ),
+                                        );
 
                                         let keyvalue = KeyValue::new(key, value_bytes);
 
@@ -810,84 +670,6 @@ impl Cursor<KeyValue> for KeyValueCursor {
 
 #[cfg(test)]
 mod tests {
-    mod keyvalue_continuation_schema_registry {
-        use apache_avro::Schema;
-
-        #[test]
-        fn schema_v0_keyvalue_continuation() {
-            let schema_v0_keyvalue_continuation = Schema::parse_str(include_str!(concat!(
-                "../../avro/Continuation/KeyValueContinuation/",
-                "v0/avsc/KeyValueContinuation.avsc"
-            )));
-
-            assert!(schema_v0_keyvalue_continuation.is_ok());
-        }
-    }
-
-    mod keyvalue_continuation_v0 {
-        use bytes::Bytes;
-        use fdb::error::FdbError;
-
-        use std::convert::TryFrom;
-
-        use crate::error::CURSOR_INVALID_CONTINUATION;
-
-        use super::super::{KeyValueContinuationInternal, KeyValueContinuationV0};
-
-        #[test]
-        fn from_keyvalue_continuation_internal_from() {
-            assert_eq!(
-                KeyValueContinuationV0::from(KeyValueContinuationInternal::BeginMarker),
-                KeyValueContinuationV0::begin_marker()
-            );
-            assert_eq!(
-                KeyValueContinuationV0::from(KeyValueContinuationInternal::Continuation(
-                    Bytes::from_static(b"hello_world").into()
-                )),
-                KeyValueContinuationV0::continuation(Bytes::from_static(b"hello_world").into())
-            );
-            assert_eq!(
-                KeyValueContinuationV0::from(KeyValueContinuationInternal::EndMarker),
-                KeyValueContinuationV0::end_marker()
-            );
-        }
-
-        #[test]
-        fn try_from_keyvalue_continuation_v0_try_from() {
-            let keyvalue_continuation_v0 = KeyValueContinuationV0 {
-                continuation: None,
-                continuation_type: 0,
-            };
-            assert_eq!(
-                Err(FdbError::new(CURSOR_INVALID_CONTINUATION)),
-                Bytes::try_from(keyvalue_continuation_v0)
-            );
-
-            let keyvalue_continuation_v0 = KeyValueContinuationV0 {
-                continuation: None,
-                continuation_type: 1,
-            };
-            assert_eq!(
-                Err(FdbError::new(CURSOR_INVALID_CONTINUATION)),
-                Bytes::try_from(keyvalue_continuation_v0)
-            );
-
-            let keyvalue_continuation_v0 =
-                KeyValueContinuationV0::continuation(Bytes::from_static(b"hello_world").into());
-            assert_eq!(
-                KeyValueContinuationInternal::Continuation(
-                    Bytes::from_static(b"hello_world").into()
-                ),
-                // Convert to `KeyValueContinuationInternal`.
-                KeyValueContinuationInternal::try_from(
-                    // Convert to `Bytes`.
-                    Bytes::try_from(keyvalue_continuation_v0).unwrap()
-                )
-                .unwrap()
-            );
-        }
-    }
-
     mod keyvalue_continuation_internal {
         use bytes::Bytes;
 
@@ -899,43 +681,50 @@ mod tests {
         use crate::cursor::Continuation;
         use crate::error::CURSOR_INVALID_CONTINUATION;
 
-        use super::super::{KeyValueContinuationInternal, KeyValueContinuationV0};
+        use super::super::pb;
+        use super::super::KeyValueContinuationInternal;
 
         #[test]
         fn continuation_to_bytes() {
             assert_eq!(
-                KeyValueContinuationInternal::BeginMarker,
+                KeyValueContinuationInternal::V1(pb::KeyValueContinuationEnumV1::BeginMarker(
+                    pb::BeginMarkerV1 {}
+                ),),
                 KeyValueContinuationInternal::try_from(
-                    KeyValueContinuationInternal::to_bytes(
-                        &KeyValueContinuationInternal::BeginMarker
-                    )
-                    .unwrap()
+                    KeyValueContinuationInternal::to_bytes(&KeyValueContinuationInternal::V1(
+                        pb::KeyValueContinuationEnumV1::BeginMarker(pb::BeginMarkerV1 {}),
+                    ),)
+                    .unwrap(),
                 )
                 .unwrap()
             );
 
             assert_eq!(
-                KeyValueContinuationInternal::Continuation(
-                    Bytes::from_static(b"hello_world").into()
-                ),
+                KeyValueContinuationInternal::V1(pb::KeyValueContinuationEnumV1::Continuation(
+                    pb::ContinuationV1 {
+                        continuation: Bytes::from_static(b"hello_world"),
+                    }
+                ),),
                 KeyValueContinuationInternal::try_from(
-                    KeyValueContinuationInternal::to_bytes(
-                        &KeyValueContinuationInternal::Continuation(
-                            Bytes::from_static(b"hello_world").into()
-                        )
-                    )
-                    .unwrap()
+                    KeyValueContinuationInternal::to_bytes(&KeyValueContinuationInternal::V1(
+                        pb::KeyValueContinuationEnumV1::Continuation(pb::ContinuationV1 {
+                            continuation: Bytes::from_static(b"hello_world"),
+                        }),
+                    ),)
+                    .unwrap(),
                 )
                 .unwrap()
             );
 
             assert_eq!(
-                KeyValueContinuationInternal::EndMarker,
+                KeyValueContinuationInternal::V1(pb::KeyValueContinuationEnumV1::EndMarker(
+                    pb::EndMarkerV1 {}
+                ),),
                 KeyValueContinuationInternal::try_from(
-                    KeyValueContinuationInternal::to_bytes(
-                        &KeyValueContinuationInternal::EndMarker
-                    )
-                    .unwrap()
+                    KeyValueContinuationInternal::to_bytes(&KeyValueContinuationInternal::V1(
+                        pb::KeyValueContinuationEnumV1::EndMarker(pb::EndMarkerV1 {}),
+                    ),)
+                    .unwrap(),
                 )
                 .unwrap()
             );
@@ -944,20 +733,15 @@ mod tests {
         #[test]
         fn continuation_is_begin_marker() {
             assert!(KeyValueContinuationInternal::is_begin_marker(
-                &KeyValueContinuationInternal::BeginMarker
+                &KeyValueContinuationInternal::V1(pb::KeyValueContinuationEnumV1::BeginMarker(
+                    pb::BeginMarkerV1 {}
+                ))
             ));
-            assert!(!KeyValueContinuationInternal::is_begin_marker(
-                &KeyValueContinuationInternal::EndMarker
-            ));
-        }
 
-        #[test]
-        fn continuation_is_end_marker() {
-            assert!(KeyValueContinuationInternal::is_begin_marker(
-                &KeyValueContinuationInternal::BeginMarker
-            ));
             assert!(!KeyValueContinuationInternal::is_begin_marker(
-                &KeyValueContinuationInternal::EndMarker
+                &KeyValueContinuationInternal::V1(pb::KeyValueContinuationEnumV1::EndMarker(
+                    pb::EndMarkerV1 {}
+                ),)
             ));
         }
 
@@ -972,7 +756,7 @@ mod tests {
 
             {
                 let continuation_bytes = {
-                    let continuation_tup: (i8, Bytes) = (0, Bytes::from_static(b"some_garbage"));
+                    let continuation_tup: (i8, Bytes) = (1, Bytes::from_static(b"some_garbage"));
                     let mut tup = Tuple::new();
 
                     tup.push_back::<i8>(continuation_tup.0);
@@ -988,10 +772,12 @@ mod tests {
 
             // valid case
             {
-                let keyvalue_continuation_internal = KeyValueContinuationInternal::Continuation(
-                    Bytes::from_static(b"hello_world").into(),
+                let keyvalue_continuation_internal = KeyValueContinuationInternal::V1(
+                    pb::KeyValueContinuationEnumV1::Continuation(pb::ContinuationV1 {
+                        continuation: Bytes::from_static(b"hello_world"),
+                    }),
                 );
-                let continuation_bytes = keyvalue_continuation_internal.clone().to_bytes().unwrap();
+                let continuation_bytes = keyvalue_continuation_internal.to_bytes().unwrap();
                 let res =
                     <KeyValueContinuationInternal as TryFrom<Bytes>>::try_from(continuation_bytes);
                 assert_eq!(Ok(keyvalue_continuation_internal), res);
@@ -999,63 +785,49 @@ mod tests {
         }
 
         #[test]
-        fn try_from_keyvalue_continuation_v0_try_from() {
+        fn try_from_keyvalue_continuation_internal_try_from() {
+            // We do not a have a way to generate
+            // `CURSOR_INVALID_KEYVALUE_CONTINUATION_INTERNAL`
+            // error. So, we can only test valid cases.
             {
-                let keyvalue_continuation_v0 = KeyValueContinuationV0 {
-                    continuation: None,
-                    continuation_type: i32::MAX,
-                };
-                let res =
-                    <KeyValueContinuationInternal as TryFrom<KeyValueContinuationV0>>::try_from(
-                        keyvalue_continuation_v0,
-                    );
-                assert_eq!(Err(FdbError::new(CURSOR_INVALID_CONTINUATION)), res);
-            }
-
-            {
-                let keyvalue_continuation_v0 = KeyValueContinuationV0 {
-                    continuation: Some(Bytes::from_static(b"hello_world").into()),
-                    continuation_type: i32::MAX,
-                };
-                let res =
-                    <KeyValueContinuationInternal as TryFrom<KeyValueContinuationV0>>::try_from(
-                        keyvalue_continuation_v0,
-                    );
-                assert_eq!(Err(FdbError::new(CURSOR_INVALID_CONTINUATION)), res);
-            }
-
-            // valid cases
-            {
-                let keyvalue_continuation_v0 =
-                    KeyValueContinuationV0::continuation(Bytes::from_static(b"hello_world").into());
-                let res =
-                    <KeyValueContinuationInternal as TryFrom<KeyValueContinuationV0>>::try_from(
-                        keyvalue_continuation_v0,
-                    );
-                assert_eq!(
-                    Ok(KeyValueContinuationInternal::Continuation(
-                        Bytes::from_static(b"hello_world").into()
-                    )),
-                    res
+                let keyvalue_continuation_internal = KeyValueContinuationInternal::V1(
+                    pb::KeyValueContinuationEnumV1::BeginMarker(pb::BeginMarkerV1 {}),
                 );
+
+                let continuation_bytes = keyvalue_continuation_internal.to_bytes();
+
+                let res = <Bytes as TryFrom<KeyValueContinuationInternal>>::try_from(
+                    keyvalue_continuation_internal,
+                );
+
+                assert_eq!(continuation_bytes, res);
             }
 
             {
-                let keyvalue_continuation_v0 = KeyValueContinuationV0::begin_marker();
-                let res =
-                    <KeyValueContinuationInternal as TryFrom<KeyValueContinuationV0>>::try_from(
-                        keyvalue_continuation_v0,
-                    );
-                assert_eq!(Ok(KeyValueContinuationInternal::BeginMarker), res);
+                let keyvalue_continuation_internal = KeyValueContinuationInternal::V1(
+                    pb::KeyValueContinuationEnumV1::Continuation(pb::ContinuationV1 {
+                        continuation: Bytes::from_static(b"hello_world"),
+                    }),
+                );
+                let continuation_bytes = keyvalue_continuation_internal.to_bytes();
+                let res = <Bytes as TryFrom<KeyValueContinuationInternal>>::try_from(
+                    keyvalue_continuation_internal,
+                );
+                assert_eq!(continuation_bytes, res);
             }
 
             {
-                let keyvalue_continuation_v0 = KeyValueContinuationV0::end_marker();
-                let res =
-                    <KeyValueContinuationInternal as TryFrom<KeyValueContinuationV0>>::try_from(
-                        keyvalue_continuation_v0,
-                    );
-                assert_eq!(Ok(KeyValueContinuationInternal::EndMarker), res);
+                let keyvalue_continuation_internal = KeyValueContinuationInternal::V1(
+                    pb::KeyValueContinuationEnumV1::EndMarker(pb::EndMarkerV1 {}),
+                );
+
+                let continuation_bytes = keyvalue_continuation_internal.to_bytes();
+
+                let res = <Bytes as TryFrom<KeyValueContinuationInternal>>::try_from(
+                    keyvalue_continuation_internal,
+                );
+
+                assert_eq!(continuation_bytes, res);
             }
         }
     }

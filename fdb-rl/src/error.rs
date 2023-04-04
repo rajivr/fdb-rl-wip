@@ -12,12 +12,15 @@
 /// Provided continuation was invalid.
 pub const CURSOR_INVALID_CONTINUATION: i32 = 200;
 
+/// TODO
+pub const CURSOR_INVALID_KEYVALUE_CONTINUATION_INTERNAL: i32 = 201;
+
 /// Error occurred when trying to create a value of type
 /// [`KeyValueCursor`] using the [`build`] method.
 ///
 /// [`KeyValueCursor`]: crate::cursor::KeyValueCursor
 /// [`build`]: crate::cursor::KeyValueCursorBuilder::build
-pub const CURSOR_KEYVALUE_CURSOR_BUILDER_ERROR: i32 = 201;
+pub const CURSOR_KEYVALUE_CURSOR_BUILDER_ERROR: i32 = 202;
 
 /// Scan limit reached when calling [`split_helper::load`] function.
 ///

@@ -7,8 +7,6 @@
 )]
 #![feature(type_alias_impl_trait)]
 #![feature(async_fn_in_trait)]
-#![feature(return_position_impl_trait_in_trait)]
-#![feature(once_cell)]
 // TODO: Remove this later.
 #![allow(rustdoc::broken_intra_doc_links)]
 #![allow(unused_variables)]
