@@ -1,5 +1,5 @@
 //! Provides [`RawRecord`] type and associated items.
-use bytes::Bytes;
+use bytes::{Bytes, BytesMut};
 
 use fdb::error::{FdbError, FdbResult};
 use fdb::range::StreamingMode;
@@ -7,21 +7,74 @@ use fdb::subspace::Subspace;
 use fdb::transaction::ReadTransaction;
 use fdb::tuple::{Tuple, TupleSchema, TupleSchemaElement};
 
-use std::convert::TryFrom;
+use prost::Message;
 
-use crate::cursor::{Cursor, CursorResult, KeyValueContinuationInternal, KeyValueCursor};
+use std::convert::{TryFrom, TryInto};
+
+use crate::cursor::{
+    Continuation, Cursor, CursorResult, KeyValueContinuationInternal, KeyValueCursor,
+};
 use crate::error::{
-    RAW_RECORD_INVALID_PRIMARY_KEY_SCHEMA, RAW_RECORD_PRIMARY_KEY_TUPLE_SCHEMA_MISMATCH,
+    CURSOR_INVALID_CONTINUATION, RAW_RECORD_INVALID_PRIMARY_KEY_SCHEMA,
+    RAW_RECORD_PRIMARY_KEY_TUPLE_SCHEMA_MISMATCH,
 };
 use crate::RecordVersion;
 
+/// Protobuf types.
 pub(crate) mod pb {
-    pub(crate) use crate::cursor::pb::{
-        BeginMarkerV1, ContinuationV1, EndMarkerV1, KeyValueContinuationEnumV1,
-        KeyValueContinuationV1,
-    };
+    use fdb::error::{FdbError, FdbResult};
+
+    use std::convert::{TryFrom, TryInto};
+
+    use crate::error::CURSOR_INVALID_CONTINUATION;
+
+    pub(crate) use crate::cursor::pb::KeyValueContinuationInternalV1;
+
     // Protobuf generated types renamed to append version.
     pub(crate) use fdb_rl_proto::cursor::v1::RawRecordContinuation as RawRecordContinuationV1;
+
+    /// Protobuf message `fdb_rl.cursor.v1.RawRecordContinuation`
+    /// contains a `Required` field. So, we need to define this type.
+    ///
+    /// The `inner` field `KeyValueContinuationV1` *also* contains a
+    /// `Required` field. So, rather than using protobuf generated
+    /// `KeyValueContinuationV1`, we use
+    /// `KeyValueContinuationInternalV1`.
+    #[derive(Clone, Debug, PartialEq)]
+    pub(crate) struct RawRecordContinuationInternalV1 {
+        pub(crate) inner: KeyValueContinuationInternalV1,
+    }
+
+    impl TryFrom<RawRecordContinuationV1> for RawRecordContinuationInternalV1 {
+        type Error = FdbError;
+
+        fn try_from(
+            rawrecord_continuation_v1: RawRecordContinuationV1,
+        ) -> FdbResult<RawRecordContinuationInternalV1> {
+            rawrecord_continuation_v1
+                .inner
+                .ok_or_else(|| FdbError::new(CURSOR_INVALID_CONTINUATION))
+                .and_then(|keyvalue_continuation_v1| {
+                    keyvalue_continuation_v1
+                        .try_into()
+                        .map(
+                            |keyvalue_continuation_internal_v1| RawRecordContinuationInternalV1 {
+                                inner: keyvalue_continuation_internal_v1,
+                            },
+                        )
+                })
+        }
+    }
+
+    impl From<RawRecordContinuationInternalV1> for RawRecordContinuationV1 {
+        fn from(
+            rawrecord_continuation_internal_v1: RawRecordContinuationInternalV1,
+        ) -> RawRecordContinuationV1 {
+            RawRecordContinuationV1 {
+                inner: Some(rawrecord_continuation_internal_v1.inner.into()),
+            }
+        }
+    }
 }
 
 trait Visitor {
@@ -166,8 +219,102 @@ impl From<(RawRecordPrimaryKey, RecordVersion, Bytes)> for RawRecord {
 /// `KeyValueContinuationInternal`.
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum RawRecordContinuationInternal {
-    /// `fdb_rl.cursor.v1.RawRecordContinuation`
-    V1(pb::RawRecordContinuationV1),
+    V1(pb::RawRecordContinuationInternalV1),
+}
+
+impl TryFrom<RawRecordContinuationInternal> for Bytes {
+    type Error = FdbError;
+
+    fn try_from(
+        rawrecord_continuation_internal: RawRecordContinuationInternal,
+    ) -> FdbResult<Bytes> {
+        match rawrecord_continuation_internal {
+            RawRecordContinuationInternal::V1(rawrecord_continuation_internal_v1) => {
+                let rawrecord_continuation_v1 =
+                    pb::RawRecordContinuationV1::from(rawrecord_continuation_internal_v1);
+
+                let mut buf = BytesMut::with_capacity(rawrecord_continuation_v1.encoded_len());
+
+                rawrecord_continuation_v1
+                    .encode(&mut buf)
+                    .map_err(|_| FdbError::new(CURSOR_INVALID_CONTINUATION))
+                    .map(|_| {
+                        // (version, bytes). Version is `1`.
+                        let continuation_tup: (i64, Bytes) = (1, Bytes::from(buf));
+
+                        let continuation_bytes = {
+                            let mut tup = Tuple::new();
+
+                            // version
+                            tup.push_back::<i64>(continuation_tup.0);
+
+                            tup.push_back::<Bytes>(continuation_tup.1);
+
+                            tup
+                        }
+                        .pack();
+
+                        Bytes::from(continuation_bytes)
+                    })
+            }
+        }
+    }
+}
+
+impl TryFrom<Bytes> for RawRecordContinuationInternal {
+    type Error = FdbError;
+
+    fn try_from(continuation: Bytes) -> FdbResult<RawRecordContinuationInternal> {
+        let (version, continuation): (usize, Bytes) = Tuple::try_from(continuation)
+            .and_then(|tup| {
+                tup.get::<i64>(0)
+                    .and_then(|x| usize::try_from(x).ok())
+                    .and_then(|version| {
+                        tup.get::<&Bytes>(1).and_then(|bytes_ref| {
+                            let continuation = bytes_ref.clone();
+                            Some((version, continuation))
+                        })
+                    })
+                    .ok_or_else(|| FdbError::new(CURSOR_INVALID_CONTINUATION))
+            })
+            .map_err(|_| FdbError::new(CURSOR_INVALID_CONTINUATION))?;
+
+        // Currently there is only one version
+        if version == 1 {
+            let rawrecord_continuation_internal_v1 =
+                pb::RawRecordContinuationV1::decode(continuation)
+                    .map_err(|_| FdbError::new(CURSOR_INVALID_CONTINUATION))?
+                    .try_into()?;
+
+            Ok(RawRecordContinuationInternal::V1(
+                rawrecord_continuation_internal_v1,
+            ))
+        } else {
+            Err(FdbError::new(CURSOR_INVALID_CONTINUATION))
+        }
+    }
+}
+
+impl Continuation for RawRecordContinuationInternal {
+    fn to_bytes(&self) -> FdbResult<Bytes> {
+        self.clone().try_into()
+    }
+
+    fn is_begin_marker(&self) -> bool {
+        match self {
+            RawRecordContinuationInternal::V1(pb::RawRecordContinuationInternalV1 { inner }) => {
+                KeyValueContinuationInternal::V1(inner.clone()).is_begin_marker()
+            }
+        }
+    }
+
+    fn is_end_marker(&self) -> bool {
+        match self {
+            RawRecordContinuationInternal::V1(pb::RawRecordContinuationInternalV1 { inner }) => {
+                KeyValueContinuationInternal::V1(inner.clone()).is_end_marker()
+            }
+        }
+    }
 }
 
 /// A builder for [`RawRecordCursor`]. A value of [`RawRecordCursor`]
@@ -184,9 +331,6 @@ pub(crate) struct RawRecordCursorBuilder {
     streaming_mode: Option<StreamingMode>,
     limit: Option<usize>,
     reverse: Option<bool>,
-    // TODO: We are piggy backing on [`KeyValueContinuationInternal`]
-    //       rather than defining an avro `RawCursorContinuation`.
-    //       This is *no* longer the case!
     continuation: Option<Bytes>,
 }
 
@@ -288,7 +432,7 @@ pub(crate) struct RawRecordCursor {
     values_limit: usize,
     reverse: bool,
     key_value_cursor: KeyValueCursor,
-    continuation: KeyValueContinuationInternal,
+    continuation: RawRecordContinuationInternal,
     values_seen: usize,
 }
 
@@ -302,6 +446,10 @@ impl Cursor<RawRecord> for RawRecordCursor {
 
 #[cfg(test)]
 mod tests {
+    mod rawrecord_continuation_internal {
+        // TODO
+    }
+
     mod raw_record_primary_key_schema {
         use fdb::error::FdbError;
         use fdb::tuple::{TupleSchema, TupleSchemaElement};

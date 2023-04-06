@@ -21,20 +21,17 @@ use crate::cursor::{
     LimitManagerStoppedReason, NoNextReason,
 };
 
-use crate::error::{
-    CURSOR_INVALID_CONTINUATION, CURSOR_INVALID_KEYVALUE_CONTINUATION_INTERNAL,
-    CURSOR_KEYVALUE_CURSOR_BUILDER_ERROR,
-};
+use crate::error::{CURSOR_INVALID_CONTINUATION, CURSOR_KEYVALUE_CURSOR_BUILDER_ERROR};
 use crate::range::{bytes_endpoint, KeyRange};
 use crate::scan::ScanProperties;
 
-/// Protobuf types
+/// Protobuf types.
 pub(crate) mod pb {
     use fdb::error::{FdbError, FdbResult};
 
     use std::convert::TryFrom;
 
-    use crate::error::CURSOR_INVALID_KEYVALUE_CONTINUATION_INTERNAL;
+    use crate::error::CURSOR_INVALID_CONTINUATION;
 
     /// Protobuf generated types renamed to append version (and add
     /// `Enum` suffix).
@@ -42,6 +39,7 @@ pub(crate) mod pb {
         BeginMarker as BeginMarkerV1, Continuation as ContinuationV1, EndMarker as EndMarkerV1,
         KeyValueContinuation as KeyValueContinuationEnumV1,
     };
+
     /// Protobuf generated types renamed to append version.
     pub(crate) use fdb_rl_proto::cursor::v1::KeyValueContinuation as KeyValueContinuationV1;
 
@@ -58,12 +56,14 @@ pub(crate) mod pb {
         fn try_from(
             keyvalue_continuation_v1: KeyValueContinuationV1,
         ) -> FdbResult<KeyValueContinuationInternalV1> {
-            match keyvalue_continuation_v1.key_value_continuation {
-                Some(key_value_continuation) => Ok(KeyValueContinuationInternalV1 {
-                    key_value_continuation,
-                }),
-                None => Err(FdbError::new(CURSOR_INVALID_KEYVALUE_CONTINUATION_INTERNAL)),
-            }
+            keyvalue_continuation_v1
+                .key_value_continuation
+                .ok_or_else(|| FdbError::new(CURSOR_INVALID_CONTINUATION))
+                .map(
+                    |keyvalue_continuation_enum_v1| KeyValueContinuationInternalV1 {
+                        key_value_continuation: keyvalue_continuation_enum_v1,
+                    },
+                )
         }
     }
 
@@ -98,35 +98,33 @@ impl TryFrom<KeyValueContinuationInternal> for Bytes {
 
     fn try_from(keyvalue_continuation_internal: KeyValueContinuationInternal) -> FdbResult<Bytes> {
         match keyvalue_continuation_internal {
-            KeyValueContinuationInternal::V1(pb::KeyValueContinuationInternalV1 {
-                key_value_continuation,
-            }) => {
-                let keyvalue_continuation_v1 = pb::KeyValueContinuationV1 {
-                    key_value_continuation: Some(key_value_continuation),
-                };
+            KeyValueContinuationInternal::V1(keyvalue_continuation_internal_v1) => {
+                let keyvalue_continuation_v1 =
+                    pb::KeyValueContinuationV1::from(keyvalue_continuation_internal_v1);
 
                 let mut buf = BytesMut::with_capacity(keyvalue_continuation_v1.encoded_len());
 
-                if keyvalue_continuation_v1.encode(&mut buf).is_err() {
-                    Err(FdbError::new(CURSOR_INVALID_KEYVALUE_CONTINUATION_INTERNAL))
-                } else {
-                    // (version, bytes). Version is `1`.
-                    let continuation_tup: (i64, Bytes) = (1, Bytes::from(buf));
+                keyvalue_continuation_v1
+                    .encode(&mut buf)
+                    .map_err(|_| FdbError::new(CURSOR_INVALID_CONTINUATION))
+                    .map(|_| {
+                        // (version, bytes). Version is `1`.
+                        let continuation_tup: (i64, Bytes) = (1, Bytes::from(buf));
 
-                    let continuation_bytes = {
-                        let mut tup = Tuple::new();
+                        let continuation_bytes = {
+                            let mut tup = Tuple::new();
 
-                        // version
-                        tup.push_back::<i64>(continuation_tup.0);
+                            // version
+                            tup.push_back::<i64>(continuation_tup.0);
 
-                        tup.push_back::<Bytes>(continuation_tup.1);
+                            tup.push_back::<Bytes>(continuation_tup.1);
 
-                        tup
-                    }
-                    .pack();
+                            tup
+                        }
+                        .pack();
 
-                    Ok(Bytes::from(continuation_bytes))
-                }
+                        Bytes::from(continuation_bytes)
+                    })
             }
         }
     }

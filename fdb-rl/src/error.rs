@@ -9,11 +9,13 @@
 // 220 - `RecordContext` type
 // 230 - `raw_record` module
 
-/// Provided continuation was invalid.
+/// Continuation is invalid.
+///
+/// This error can also occur when Prost [`encode`] and [`decode`] fails.
+///
+/// [`encode`]: prost::Message::encode
+/// [`decode`]: prost::Message::decode
 pub const CURSOR_INVALID_CONTINUATION: i32 = 200;
-
-/// TODO (remove the other one and add documentation)
-pub const CURSOR_INVALID_KEYVALUE_CONTINUATION_INTERNAL: i32 = 201;
 
 /// Error occurred when trying to create a value of type
 /// [`KeyValueCursor`] using the [`build`] method.

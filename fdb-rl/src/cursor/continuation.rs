@@ -7,10 +7,13 @@ use std::fmt::{self, Debug};
 /// Prevent users from implementing private trait.
 mod private {
     use crate::cursor::KeyValueContinuationInternal;
+    use crate::raw_record::RawRecordContinuationInternal;
 
     pub trait Sealed {}
 
     impl Sealed for KeyValueContinuationInternal {}
+
+    impl Sealed for RawRecordContinuationInternal {}
 }
 
 /// Types that represent the continuation of a [`Cursor`].
