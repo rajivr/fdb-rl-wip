@@ -11,9 +11,15 @@ message KeyValueContinuation {
 
   message EndMarker {}
 
-  oneof key_value_continuation_enum {
+  // Required.
+  oneof key_value_continuation {
     BeginMarker begin_marker = 1;
     Continuation continuation = 2;
     EndMarker end_marker = 3;
   }
+}
+
+message RawRecordContinuation {
+  // Required.
+  KeyValueContinuation inner = 1;
 }

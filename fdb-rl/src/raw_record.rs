@@ -15,6 +15,15 @@ use crate::error::{
 };
 use crate::RecordVersion;
 
+pub(crate) mod pb {
+    pub(crate) use crate::cursor::pb::{
+        BeginMarkerV1, ContinuationV1, EndMarkerV1, KeyValueContinuationEnumV1,
+        KeyValueContinuationV1,
+    };
+    // Protobuf generated types renamed to append version.
+    pub(crate) use fdb_rl_proto::cursor::v1::RawRecordContinuation as RawRecordContinuationV1;
+}
+
 trait Visitor {
     fn visit_tuple_schema_element(&self, tuple_schema_element: &TupleSchemaElement) -> bool;
 }
@@ -147,6 +156,20 @@ impl From<(RawRecordPrimaryKey, RecordVersion, Bytes)> for RawRecord {
     }
 }
 
+/// Internal representation of [`RawRecord`] continuation.
+///
+/// We need define this type so we can implement [`Continuation`]
+/// trait on it. In addition it has `TryFrom<Bytes> for
+/// RawRecordContinuationInternal` and
+/// `TryFrom<RawRecordContinuationInternal> for Bytes` traits
+/// implemented so we can convert between `Bytes` and
+/// `KeyValueContinuationInternal`.
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) enum RawRecordContinuationInternal {
+    /// `fdb_rl.cursor.v1.RawRecordContinuation`
+    V1(pb::RawRecordContinuationV1),
+}
+
 /// A builder for [`RawRecordCursor`]. A value of [`RawRecordCursor`]
 /// can be built as shown below.
 ///
@@ -163,6 +186,7 @@ pub(crate) struct RawRecordCursorBuilder {
     reverse: Option<bool>,
     // TODO: We are piggy backing on [`KeyValueContinuationInternal`]
     //       rather than defining an avro `RawCursorContinuation`.
+    //       This is *no* longer the case!
     continuation: Option<Bytes>,
 }
 

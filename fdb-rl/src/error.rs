@@ -12,7 +12,7 @@
 /// Provided continuation was invalid.
 pub const CURSOR_INVALID_CONTINUATION: i32 = 200;
 
-/// TODO
+/// TODO (remove the other one and add documentation)
 pub const CURSOR_INVALID_KEYVALUE_CONTINUATION_INTERNAL: i32 = 201;
 
 /// Error occurred when trying to create a value of type
