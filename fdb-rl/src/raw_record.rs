@@ -1,22 +1,27 @@
 //! Provides [`RawRecord`] type and associated items.
-use bytes::{Bytes, BytesMut};
+use bytes::{BufMut, Bytes, BytesMut};
 
 use fdb::error::{FdbError, FdbResult};
 use fdb::range::StreamingMode;
 use fdb::subspace::Subspace;
 use fdb::transaction::ReadTransaction;
-use fdb::tuple::{Tuple, TupleSchema, TupleSchemaElement};
+use fdb::tuple::{Null, Tuple, TupleSchema, TupleSchemaElement, Versionstamp};
+use fdb::Value;
+
+use num_bigint::BigInt;
 
 use prost::Message;
 
+use std::collections::BTreeMap;
 use std::convert::{TryFrom, TryInto};
 
 use crate::cursor::{
-    Continuation, Cursor, CursorResult, KeyValueContinuationInternal, KeyValueCursor,
+    Continuation, Cursor, CursorError, CursorResult, CursorResultContinuation,
+    KeyValueContinuationInternal, KeyValueCursor, LimitManagerStoppedReason, NoNextReason,
 };
 use crate::error::{
-    CURSOR_INVALID_CONTINUATION, RAW_RECORD_INVALID_PRIMARY_KEY_SCHEMA,
-    RAW_RECORD_PRIMARY_KEY_TUPLE_SCHEMA_MISMATCH,
+    CURSOR_INVALID_CONTINUATION, RAW_RECORD_CURSOR_NEXT_ERROR, RAW_RECORD_CURSOR_STATE_ERROR,
+    RAW_RECORD_INVALID_PRIMARY_KEY_SCHEMA, RAW_RECORD_PRIMARY_KEY_TUPLE_SCHEMA_MISMATCH,
 };
 use crate::RecordVersion;
 
@@ -190,6 +195,7 @@ impl TryFrom<(RawRecordPrimaryKeySchema, Tuple)> for RawRecordPrimaryKey {
 
 /// A wrapper around all information that can be determined about a
 /// record before serializing and deserializing it.
+#[derive(Debug)]
 pub(crate) struct RawRecord {
     primary_key: RawRecordPrimaryKey,
     version: RecordVersion,
@@ -324,7 +330,7 @@ impl Continuation for RawRecordContinuationInternal {
 /// TODO
 /// ```
 
-// TODO: You need to take care of issues around limit.
+// TODO: You need to take care of issues around limit. Limit *cannot* be zero.
 pub(crate) struct RawRecordCursorBuilder {
     primary_key_schema: Option<RawRecordPrimaryKeySchema>,
     subspace: Option<Subspace>,
@@ -423,24 +429,875 @@ impl RawRecordCursorBuilder {
     }
 }
 
+#[derive(Debug)]
+enum RawRecordForwardScanStateMachineState {
+    InitiateRecordVersionRead,
+    ReadRecordVersion,
+    RawRecordAvailable,
+    RawRecordNextError,
+    RawRecordLimitReached,
+    // When the underlying key value cursor ends in a consistent
+    // state, the cursor would enter `RawRecordEndOfStream`
+    // state. Otherwise we would enter `RawRecordNextError` state.
+    RawRecordEndOfStream,
+    OutOfBandError,
+    FdbError,
+}
+
+#[derive(Debug)]
+enum RawRecordForwardScanStateMachineStateData {
+    InitiateRecordVersionRead {
+        continuation: RawRecordContinuationInternal,
+    },
+    ReadRecordVersion {
+        record_version: RecordVersion,
+        primary_key: RawRecordPrimaryKey,
+        continuation: RawRecordContinuationInternal,
+        raw_records_returned: usize,
+    },
+    RawRecordAvailable {
+        raw_record: RawRecord,
+        continuation: RawRecordContinuationInternal,
+        raw_records_returned: usize,
+    },
+    RawRecordNextError {
+        continuation: RawRecordContinuationInternal,
+    },
+    RawRecordLimitReached {
+        continuation: RawRecordContinuationInternal,
+    },
+    RawRecordEndOfStream,
+    OutOfBandError {
+        out_of_band_error_type: LimitManagerStoppedReason,
+        continuation: RawRecordContinuationInternal,
+    },
+    FdbError {
+        fdb_error: FdbError,
+        continuation: RawRecordContinuationInternal,
+    },
+}
+
+#[derive(Debug)]
+enum RawRecordForwardScanStateMachineEvent {
+    RecordVersionOk {
+        record_version: RecordVersion,
+        primary_key: RawRecordPrimaryKey,
+        continuation: RawRecordContinuationInternal,
+        raw_records_returned: usize,
+    },
+    Available {
+        raw_record: RawRecord,
+        continuation: RawRecordContinuationInternal,
+        raw_records_returned: usize,
+    },
+    NextRecordVersionOk {
+        record_version: RecordVersion,
+        primary_key: RawRecordPrimaryKey,
+        continuation: RawRecordContinuationInternal,
+        raw_records_returned: usize,
+    },
+    NextError {
+        continuation: RawRecordContinuationInternal,
+    },
+    LimitReached {
+        continuation: RawRecordContinuationInternal,
+    },
+    EndOfStream,
+    OutOfBandError {
+        out_of_band_error_type: LimitManagerStoppedReason,
+        continuation: RawRecordContinuationInternal,
+    },
+    FdbError {
+        fdb_error: FdbError,
+        continuation: RawRecordContinuationInternal,
+    },
+}
+
+#[derive(Debug)]
+/// A state machine that implements forward scan and returns values of
+/// of type [`RawRecord`].
+///
+/// See `sismic/...TODO` for the design of the state machine.
+struct RawRecordForwardScanStateMachine {
+    state_machine_state: RawRecordForwardScanStateMachineState,
+    // We use `Option` here so that we can take ownership of the data
+    // and pass it as part of the event. This would avoid unnecessary
+    // cloning.
+    //
+    // This value is taken in `next` method and assigned `Some(...)`
+    // value in `step_once_with_event` method. In final states, we do
+    // not take the value, so there is no need to assign it back.
+    state_machine_data: Option<RawRecordForwardScanStateMachineStateData>,
+}
+
+impl RawRecordForwardScanStateMachine {
+    /// If needed, perform the action (side effect) and state
+    /// transition. Return an `Option` value or `None` in case we need
+    /// to further drive the loop.
+    async fn next(
+        &mut self,
+        key_value_cursor: &mut KeyValueCursor,
+        primary_key_schema: &RawRecordPrimaryKeySchema,
+    ) -> Option<CursorResult<RawRecord>> {
+        let _: Option<CursorResult<RawRecord>> = match self.state_machine_state {
+            RawRecordForwardScanStateMachineState::InitiateRecordVersionRead => {
+                // Extract and verify state data.
+                //
+                // Non-final state. We *must* call
+                // `step_once_with_event`.
+                let continuation = self
+                    .state_machine_data
+                    .take()
+                    .and_then(|state_machine_data| {
+                        if let RawRecordForwardScanStateMachineStateData::InitiateRecordVersionRead {
+                            continuation,
+                        } = state_machine_data
+                        {
+                            Some(continuation)
+                        } else {
+                            None
+                        }
+                    })
+                    .expect("invalid state_machine_data");
+
+                let next_kv = key_value_cursor.next().await;
+
+                match next_kv {
+                    Ok(cursor_success) => {
+                        let (key, value) = cursor_success.into_value().into_parts();
+
+                        // Extract a value of type
+                        // `FdbResult<(RawRecordPrimaryKey,
+                        // RecordVersion)>`, which will give us the
+                        // information that we need to make the
+                        // correct transition.
+                        let res = Tuple::try_from(key)
+                            .and_then(|mut tup| {
+                                // Verify that the split index is
+                                // `-1`.
+                                let idx = tup
+                                    .pop_back::<i8>()
+                                    .ok_or_else(|| FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR))?;
+                                if idx == -1 {
+                                    Ok(tup)
+                                } else {
+                                    Err(FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR))
+                                }
+                            })
+                            .and_then(|tup| {
+                                // Verify that tuple matches the
+                                // primary key schema.
+                                RawRecordPrimaryKey::try_from((primary_key_schema.clone(), tup))
+                            })
+                            .and_then(|primary_key| {
+                                // Extract record version.
+                                let tup = Tuple::try_from(value)?;
+
+                                let incarnation_version = if let Some(bi) = tup.get::<BigInt>(0) {
+                                    u64::try_from(bi)
+                                        .map(|x| Some(x))
+                                        .map_err(|_| FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR))
+                                } else if let Some(Null) = tup.get::<Null>(0) {
+                                    Ok(None)
+                                } else {
+                                    Err(FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR))
+                                };
+
+                                let record_version =
+                                    incarnation_version.and_then(|maybe_incarnation_version| {
+                                        tup.get::<&Versionstamp>(1)
+                                            .map(|vs| {
+                                                let vs = vs.clone();
+
+                                                if let Some(i) = maybe_incarnation_version {
+                                                    RecordVersion::from((i, vs))
+                                                } else {
+                                                    RecordVersion::from(vs)
+                                                }
+                                            })
+                                            .ok_or_else(|| {
+                                                FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR)
+                                            })
+                                    });
+
+                                Ok((primary_key, record_version?))
+                            });
+
+                        match res {
+                            Ok((primary_key, record_version)) => {
+                                // We have only the first record's
+                                // record version and not its contents
+                                // yet. So we set this value to `0`.
+                                let raw_records_returned = 0;
+                                self.step_once_with_event(
+                                    RawRecordForwardScanStateMachineEvent::RecordVersionOk {
+                                        record_version,
+                                        primary_key,
+                                        continuation,
+                                        raw_records_returned,
+                                    },
+                                );
+                                None
+                            }
+                            Err(_) => {
+                                self.step_once_with_event(
+                                    RawRecordForwardScanStateMachineEvent::NextError {
+                                        continuation,
+                                    },
+                                );
+                                None
+                            }
+                        }
+                    }
+                    Err(cursor_error) => match cursor_error {
+                        CursorError::FdbError(fdb_error, _) => {
+                            self.step_once_with_event(
+                                RawRecordForwardScanStateMachineEvent::FdbError {
+                                    fdb_error,
+                                    continuation,
+                                },
+                            );
+                            None
+                        }
+                        CursorError::NoNextReason(no_next_reason) => match no_next_reason {
+                            NoNextReason::SourceExhausted(_) => {
+                                // We encountered the end of stream
+                                // before reading the
+                                // `RecordVersion`. So we can safely
+                                // enter `EndOfStream` state.
+                                self.step_once_with_event(
+                                    RawRecordForwardScanStateMachineEvent::EndOfStream,
+                                );
+                                None
+                            }
+                            NoNextReason::ReturnLimitReached(_) => {
+                                // We do not set in-band limit on the
+                                // key value cursor. This is an
+                                // unexpected state error.
+                                let fdb_error = FdbError::new(RAW_RECORD_CURSOR_STATE_ERROR);
+                                self.step_once_with_event(
+                                    RawRecordForwardScanStateMachineEvent::FdbError {
+                                        fdb_error,
+                                        continuation,
+                                    },
+                                );
+                                None
+                            }
+                            // Out of band errors
+                            NoNextReason::TimeLimitReached(_) => {
+                                let out_of_band_error_type =
+                                    LimitManagerStoppedReason::TimeLimitReached;
+                                self.step_once_with_event(
+                                    RawRecordForwardScanStateMachineEvent::OutOfBandError {
+                                        out_of_band_error_type,
+                                        continuation,
+                                    },
+                                );
+                                None
+                            }
+                            NoNextReason::ByteLimitReached(_) => {
+                                let out_of_band_error_type =
+                                    LimitManagerStoppedReason::ByteLimitReached;
+                                self.step_once_with_event(
+                                    RawRecordForwardScanStateMachineEvent::OutOfBandError {
+                                        out_of_band_error_type,
+                                        continuation,
+                                    },
+                                );
+                                None
+                            }
+                            NoNextReason::KeyValueLimitReached(_) => {
+                                let out_of_band_error_type =
+                                    LimitManagerStoppedReason::KeyValueLimitReached;
+                                self.step_once_with_event(
+                                    RawRecordForwardScanStateMachineEvent::OutOfBandError {
+                                        out_of_band_error_type,
+                                        continuation,
+                                    },
+                                );
+                                None
+                            }
+                        },
+                    },
+                }
+            }
+            RawRecordForwardScanStateMachineState::ReadRecordVersion => {
+                // Extract and verify state data.
+                //
+                // Non-final state. We *must* call
+                // `step_once_with_event`.
+                let (record_version, primary_key, continuation, raw_records_returned) = self
+                    .state_machine_data
+                    .take()
+                    .and_then(|state_machine_data| {
+                        if let RawRecordForwardScanStateMachineStateData::ReadRecordVersion {
+                            record_version,
+                            primary_key,
+                            continuation,
+                            raw_records_returned,
+                        } = state_machine_data
+                        {
+                            Some((
+                                record_version,
+                                primary_key,
+                                continuation,
+                                raw_records_returned,
+                            ))
+                        } else {
+                            None
+                        }
+                    })
+                    .expect("invalid state_machine_data");
+
+                // enum LoopResult {
+                //     ,
+                //     CursorError,
+                // }
+
+                // let record_bytes = BytesMut::new();
+                // let mut idx = 0;
+                // // let mut
+
+                // TODO: Continue from here after introducting
+                // "versioning and splits" into split helper.
+                // refactor `pop_` and `get::` code.x
+
+                // First we need to ensure that at-least the split `0`
+                // is valid.
+
+                let next_kv = key_value_cursor.next().await;
+
+                let _: Result<FdbResult<(BytesMut, CursorResultContinuation)>, CursorError> =
+                    next_kv.and_then(|cursor_success| {
+                        // Extract key, value and the new
+                        // continuation. We will need to return the
+                        // new continuation when the record is well
+                        // formed.
+                        let (keyvalue, new_continuation) = cursor_success.into_parts();
+
+                        let (key, value) = keyvalue.into_parts();
+
+                        // Extract a value of type
+                        // `FdbResult<BytesMut>` once you verify that
+                        // the key and value is well formed.
+                        let res = Tuple::try_from(key)
+                            .and_then(|mut tup| {
+                                // Verify that the split index is `0`
+                                let idx = tup
+                                    .pop_back::<i8>()
+                                    .ok_or_else(|| FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR))?;
+
+                                if idx == 0 {
+                                    Ok(tup)
+                                } else {
+                                    Err(FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR))
+                                }
+                            })
+                            .and_then(|tup| {
+                                // We check if our primary key tuple
+                                // matches with the tuple at we are
+                                // seeing at split index of `0`.
+                                if primary_key.key == tup {
+                                    Ok(())
+                                } else {
+                                    Err(FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR))
+                                }
+                            })
+                            .and_then(|_| {
+                                // The key is well formed. We can
+                                // safely return the value.
+                                Ok({
+                                    let mut b = BytesMut::new();
+                                    b.put(Bytes::from(value));
+                                    b
+                                })
+                            });
+
+                        Ok(res.map(|x| (x, new_continuation)))
+                    });
+
+                // // You can get a
+                // // RawRecord +
+
+                // let _ = loop {
+                //     let next_kv = key_value_cursor.next().await;
+                // };
+
+                todo!();
+            }
+            RawRecordForwardScanStateMachineState::RawRecordAvailable => todo!(),
+            RawRecordForwardScanStateMachineState::RawRecordNextError => todo!(),
+            RawRecordForwardScanStateMachineState::RawRecordLimitReached => todo!(),
+            RawRecordForwardScanStateMachineState::RawRecordEndOfStream => todo!(),
+            RawRecordForwardScanStateMachineState::OutOfBandError => todo!(),
+            RawRecordForwardScanStateMachineState::FdbError => todo!(),
+        };
+        todo!();
+    }
+
+    // TODO: This can be easily unit tested.
+    fn step_once_with_event(&mut self, event: RawRecordForwardScanStateMachineEvent) {
+        self.state_machine_state = match self.state_machine_state {
+            RawRecordForwardScanStateMachineState::InitiateRecordVersionRead => match event {
+                RawRecordForwardScanStateMachineEvent::RecordVersionOk {
+                    record_version,
+                    primary_key,
+                    continuation,
+                    raw_records_returned,
+                } => {
+                    self.state_machine_data = Some(
+                        RawRecordForwardScanStateMachineStateData::ReadRecordVersion {
+                            record_version,
+                            primary_key,
+                            continuation,
+                            raw_records_returned,
+                        },
+                    );
+                    RawRecordForwardScanStateMachineState::ReadRecordVersion
+                }
+                RawRecordForwardScanStateMachineEvent::NextError { continuation } => {
+                    self.state_machine_data = Some(
+                        RawRecordForwardScanStateMachineStateData::RawRecordNextError {
+                            continuation,
+                        },
+                    );
+                    RawRecordForwardScanStateMachineState::RawRecordNextError
+                }
+                RawRecordForwardScanStateMachineEvent::EndOfStream => {
+                    self.state_machine_data =
+                        Some(RawRecordForwardScanStateMachineStateData::RawRecordEndOfStream);
+                    RawRecordForwardScanStateMachineState::RawRecordEndOfStream
+                }
+                RawRecordForwardScanStateMachineEvent::OutOfBandError {
+                    out_of_band_error_type,
+                    continuation,
+                } => {
+                    self.state_machine_data =
+                        Some(RawRecordForwardScanStateMachineStateData::OutOfBandError {
+                            out_of_band_error_type,
+                            continuation,
+                        });
+                    RawRecordForwardScanStateMachineState::OutOfBandError
+                }
+                RawRecordForwardScanStateMachineEvent::FdbError {
+                    fdb_error,
+                    continuation,
+                } => {
+                    self.state_machine_data =
+                        Some(RawRecordForwardScanStateMachineStateData::FdbError {
+                            fdb_error,
+                            continuation,
+                        });
+                    RawRecordForwardScanStateMachineState::FdbError
+                }
+                _ => panic!("Invalid event!"),
+            },
+            RawRecordForwardScanStateMachineState::ReadRecordVersion => todo!(),
+            RawRecordForwardScanStateMachineState::RawRecordAvailable => todo!(),
+            RawRecordForwardScanStateMachineState::RawRecordNextError
+            | RawRecordForwardScanStateMachineState::RawRecordLimitReached
+            | RawRecordForwardScanStateMachineState::RawRecordEndOfStream
+            | RawRecordForwardScanStateMachineState::OutOfBandError
+            | RawRecordForwardScanStateMachineState::FdbError => {
+                // Final states. No event should be received.
+                panic!("Invalid event!");
+            }
+        };
+    }
+}
+
+#[derive(Debug)]
+enum RawRecordReverseScanStateMachineState {
+    InitiateLastSplitRead,
+    ReadLastSplit,
+    RawRecordAvailable,
+    RawRecordNextError,
+    RawRecordLimitReached,
+    // When the underlying key value cursor ends in a consistent
+    // state, the cursor would enter `RawRecordEndOfStream`
+    // state. Otherwise we would enter `RawRecordNextError` state.
+    RawRecordEndOfStream,
+    OutOfBandError,
+    FdbError,
+}
+
+#[derive(Debug)]
+enum RawRecordReverseScanStateMachineStateData {
+    InitiateLastSplitRead {
+        continuation: RawRecordContinuationInternal,
+    },
+    ReadLastSplit {
+        primary_key: RawRecordPrimaryKey,
+        record_btree: BTreeMap<i8, Value>,
+        continuation: RawRecordContinuationInternal,
+    },
+    RawRecordAvailable {
+        raw_record: RawRecord,
+        continuation: RawRecordContinuationInternal,
+        raw_records_returned: usize,
+    },
+    RawRecordNextError {
+        continuation: RawRecordContinuationInternal,
+    },
+    RawRecordLimitReached {
+        continuation: RawRecordContinuationInternal,
+    },
+    RawRecordEndOfStream,
+    OutOfBandError {
+        out_of_band_error_type: LimitManagerStoppedReason,
+        continuation: RawRecordContinuationInternal,
+    },
+    FdbError {
+        fdb_error: FdbError,
+        continuation: RawRecordContinuationInternal,
+    },
+}
+
+#[derive(Debug)]
+enum RawRecordReverseScanStateMachineEvent {
+    LastSplitOk {
+        primary_key: RawRecordPrimaryKey,
+        record_btree: BTreeMap<i8, Value>,
+        continuation: RawRecordContinuationInternal,
+    },
+    Available {
+        raw_record: RawRecord,
+        continuation: RawRecordContinuationInternal,
+        raw_records_returned: usize,
+    },
+    NextLastSplitOk {
+        record_btree: BTreeMap<i8, Value>,
+        primary_key: RawRecordPrimaryKey,
+        continuation: RawRecordContinuationInternal,
+        raw_records_returned: usize,
+    },
+    NextError {
+        continuation: RawRecordContinuationInternal,
+    },
+    LimitReached {
+        continuation: RawRecordContinuationInternal,
+    },
+    EndOfStream,
+    OutOfBandError {
+        out_of_band_error_type: LimitManagerStoppedReason,
+        continuation: RawRecordContinuationInternal,
+    },
+    FdbError {
+        fdb_error: FdbError,
+        continuation: RawRecordContinuationInternal,
+    },
+}
+
+#[derive(Debug)]
+/// A state machine that implements reverse scan and returns values of
+/// of type [`RawRecord`].
+///
+/// See `sismic/...TODO` for the design of the state machine.
+struct RawRecordReverseScanStateMachine {
+    state_machine_state: RawRecordReverseScanStateMachineState,
+    // We use `Option` here so that we can take ownership of the data
+    // and pass it as part of the event. This would avoid unnecessary
+    // cloning.
+    //
+    // This value is taken in `next` method and assigned `Some(...)`
+    // value in `step_once_with_event` method. In final states, we do
+    // not take the value, so there is no need to assign it back.
+    state_machine_data: Option<RawRecordReverseScanStateMachineStateData>,
+}
+
+impl RawRecordReverseScanStateMachine {
+    /// If needed, perform the action (side effect) and state
+    /// transition. Return an `Option` value or `None` in case we need
+    /// to further drive the loop.
+    async fn next(
+        &mut self,
+        key_value_cursor: &mut KeyValueCursor,
+        primary_key_schema: &RawRecordPrimaryKeySchema,
+    ) -> Option<CursorResult<RawRecord>> {
+        let _: Option<CursorResult<RawRecord>> = match self.state_machine_state {
+            RawRecordReverseScanStateMachineState::InitiateLastSplitRead => {
+                // Extract and verify state data.
+                //
+                // Non-final state. We *must* call
+                // `step_once_with_event`.
+                let continuation = self
+                    .state_machine_data
+                    .take()
+                    .and_then(|state_machine_data| {
+                        if let RawRecordReverseScanStateMachineStateData::InitiateLastSplitRead {
+                            continuation,
+                        } = state_machine_data
+                        {
+                            Some(continuation)
+                        } else {
+                            None
+                        }
+                    })
+                    .expect("invalid state_machine_data");
+
+                let next_kv = key_value_cursor.next().await;
+
+                match next_kv {
+                    Ok(cursor_success) => {
+                        let (key, value) = cursor_success.into_value().into_parts();
+
+                        // Extract a value of type
+                        // `FdbResult<(RawRecordPrimaryKey,
+                        // BTreeMap<i8, Value>)>`, which will give us
+                        // the information that we need to make the
+                        // correct transition.
+                        let res = Tuple::try_from(key)
+                            .and_then(|mut tup| {
+                                // Verify that the split index is
+                                // `>=0`.
+                                let idx = tup
+                                    .pop_back::<i8>()
+                                    .ok_or_else(|| FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR))?;
+                                if idx >= 0 {
+                                    Ok((tup, idx))
+                                } else {
+                                    Err(FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR))
+                                }
+                            })
+                            .and_then(|(tup, idx)| {
+                                // Verify that tuple matches the
+                                // primary key schema.
+                                let primary_key = RawRecordPrimaryKey::try_from((
+                                    primary_key_schema.clone(),
+                                    tup,
+                                ))?;
+
+                                let mut record_btree = BTreeMap::new();
+                                record_btree.insert(idx, value);
+
+                                Ok((primary_key, record_btree))
+                            });
+
+                        match res {
+                            Ok((primary_key, record_btree)) => {
+                                self.step_once_with_event(
+                                    RawRecordReverseScanStateMachineEvent::LastSplitOk {
+                                        primary_key,
+                                        record_btree,
+                                        continuation,
+                                    },
+                                );
+                                None
+                            }
+                            Err(_) => {
+                                self.step_once_with_event(
+                                    RawRecordReverseScanStateMachineEvent::NextError {
+                                        continuation,
+                                    },
+                                );
+                                None
+                            }
+                        }
+                    }
+                    Err(cursor_error) => match cursor_error {
+                        CursorError::FdbError(fdb_error, _) => {
+                            self.step_once_with_event(
+                                RawRecordReverseScanStateMachineEvent::FdbError {
+                                    fdb_error,
+                                    continuation,
+                                },
+                            );
+                            None
+                        }
+                        CursorError::NoNextReason(no_next_reason) => match no_next_reason {
+                            NoNextReason::SourceExhausted(_) => {
+                                // We encountered the end of stream
+                                // before reading the last split. So
+                                // we can safely enter `EndOfStream`
+                                // state.
+                                self.step_once_with_event(
+                                    RawRecordReverseScanStateMachineEvent::EndOfStream,
+                                );
+                                None
+                            }
+                            NoNextReason::ReturnLimitReached(_) => {
+                                // We do not set in-band limit on the
+                                // key value cursor. This is an
+                                // unexpected state error.
+                                let fdb_error = FdbError::new(RAW_RECORD_CURSOR_STATE_ERROR);
+                                self.step_once_with_event(
+                                    RawRecordReverseScanStateMachineEvent::FdbError {
+                                        fdb_error,
+                                        continuation,
+                                    },
+                                );
+                                None
+                            }
+                            // Out of band errors
+                            NoNextReason::TimeLimitReached(_) => {
+                                let out_of_band_error_type =
+                                    LimitManagerStoppedReason::TimeLimitReached;
+                                self.step_once_with_event(
+                                    RawRecordReverseScanStateMachineEvent::OutOfBandError {
+                                        out_of_band_error_type,
+                                        continuation,
+                                    },
+                                );
+                                None
+                            }
+                            NoNextReason::ByteLimitReached(_) => {
+                                let out_of_band_error_type =
+                                    LimitManagerStoppedReason::ByteLimitReached;
+                                self.step_once_with_event(
+                                    RawRecordReverseScanStateMachineEvent::OutOfBandError {
+                                        out_of_band_error_type,
+                                        continuation,
+                                    },
+                                );
+                                None
+                            }
+                            NoNextReason::KeyValueLimitReached(_) => {
+                                let out_of_band_error_type =
+                                    LimitManagerStoppedReason::KeyValueLimitReached;
+                                self.step_once_with_event(
+                                    RawRecordReverseScanStateMachineEvent::OutOfBandError {
+                                        out_of_band_error_type,
+                                        continuation,
+                                    },
+                                );
+                                None
+                            }
+                        },
+                    },
+                }
+            }
+            RawRecordReverseScanStateMachineState::ReadLastSplit => todo!(),
+            RawRecordReverseScanStateMachineState::RawRecordAvailable => todo!(),
+            RawRecordReverseScanStateMachineState::RawRecordNextError => todo!(),
+            RawRecordReverseScanStateMachineState::RawRecordLimitReached => todo!(),
+            RawRecordReverseScanStateMachineState::RawRecordEndOfStream => todo!(),
+            RawRecordReverseScanStateMachineState::OutOfBandError => todo!(),
+            RawRecordReverseScanStateMachineState::FdbError => todo!(),
+        };
+        todo!();
+    }
+
+    // TODO: This can be easily unit tested.
+    fn step_once_with_event(&mut self, event: RawRecordReverseScanStateMachineEvent) {
+        self.state_machine_state = match self.state_machine_state {
+            RawRecordReverseScanStateMachineState::InitiateLastSplitRead => match event {
+                RawRecordReverseScanStateMachineEvent::LastSplitOk {
+                    primary_key,
+                    record_btree,
+                    continuation,
+                } => {
+                    self.state_machine_data =
+                        Some(RawRecordReverseScanStateMachineStateData::ReadLastSplit {
+                            primary_key,
+                            record_btree,
+                            continuation,
+                        });
+                    RawRecordReverseScanStateMachineState::ReadLastSplit
+                }
+                RawRecordReverseScanStateMachineEvent::NextError { continuation } => {
+                    self.state_machine_data = Some(
+                        RawRecordReverseScanStateMachineStateData::RawRecordNextError {
+                            continuation,
+                        },
+                    );
+                    RawRecordReverseScanStateMachineState::RawRecordNextError
+                }
+                RawRecordReverseScanStateMachineEvent::EndOfStream => {
+                    self.state_machine_data =
+                        Some(RawRecordReverseScanStateMachineStateData::RawRecordEndOfStream);
+                    RawRecordReverseScanStateMachineState::RawRecordEndOfStream
+                }
+                RawRecordReverseScanStateMachineEvent::OutOfBandError {
+                    out_of_band_error_type,
+                    continuation,
+                } => {
+                    self.state_machine_data =
+                        Some(RawRecordReverseScanStateMachineStateData::OutOfBandError {
+                            out_of_band_error_type,
+                            continuation,
+                        });
+                    RawRecordReverseScanStateMachineState::OutOfBandError
+                }
+                RawRecordReverseScanStateMachineEvent::FdbError {
+                    fdb_error,
+                    continuation,
+                } => {
+                    self.state_machine_data =
+                        Some(RawRecordReverseScanStateMachineStateData::FdbError {
+                            fdb_error,
+                            continuation,
+                        });
+                    RawRecordReverseScanStateMachineState::FdbError
+                }
+                _ => panic!("Invalid event!"),
+            },
+            RawRecordReverseScanStateMachineState::ReadLastSplit => todo!(),
+            RawRecordReverseScanStateMachineState::RawRecordAvailable => todo!(),
+            RawRecordReverseScanStateMachineState::RawRecordNextError
+            | RawRecordReverseScanStateMachineState::RawRecordLimitReached
+            | RawRecordReverseScanStateMachineState::RawRecordEndOfStream
+            | RawRecordReverseScanStateMachineState::OutOfBandError
+            | RawRecordReverseScanStateMachineState::FdbError => {
+                // Final states. No event should be received.
+                panic!("Invalid event!");
+            }
+        };
+    }
+}
+
+#[derive(Debug)]
+enum RawRecordStateMachine {
+    ForwardScan(RawRecordForwardScanStateMachine),
+    ReverseScan(RawRecordReverseScanStateMachine),
+}
+
 /// A cursor that returns [`RawRecord`]s from the FDB database.
 //
 // TODO: `NoNextReason::ReturnLimitReached` would be specific number
 // of `RawRecord`.
+#[derive(Debug)]
 pub(crate) struct RawRecordCursor {
     primary_key_schema: RawRecordPrimaryKeySchema,
     values_limit: usize,
-    reverse: bool,
     key_value_cursor: KeyValueCursor,
-    continuation: RawRecordContinuationInternal,
-    values_seen: usize,
+    raw_record_state_machine: RawRecordStateMachine,
 }
 
 impl Cursor<RawRecord> for RawRecordCursor {
-    /// TODO
-
+    /// Return the next [`RawRecord`].
+    ///
+    /// In regular state machines, where transitions are represented
+    /// using `event [guard] / action` and we directly send the event
+    /// to the state machine.
+    ///
+    /// *However*, in this case, all side effect of reading from the
+    /// database is managed by the driver loop (below) and we only use
+    /// the state machine to manage state data.
+    ///
+    /// When we are in a state where we can return data (or error), we
+    /// exit the loop and return the data. This is managed by
+    /// returning a `Some(_: CursorResult<RawRecord>)` value.
     async fn next(&mut self) -> CursorResult<RawRecord> {
-        todo!();
+        loop {
+            match self.raw_record_state_machine {
+                RawRecordStateMachine::ForwardScan(ref mut forward_scan_state_machine) => {
+                    if let Some(res) = forward_scan_state_machine
+                        .next(&mut self.key_value_cursor, &self.primary_key_schema)
+                        .await
+                    {
+                        return res;
+                    }
+                }
+                RawRecordStateMachine::ReverseScan(ref mut reverse_scan_state_machine) => {
+                    if let Some(res) = reverse_scan_state_machine
+                        .next(&mut self.key_value_cursor, &self.primary_key_schema)
+                        .await
+                    {
+                        return res;
+                    }
+                }
+            }
+        }
     }
 }
 

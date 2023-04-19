@@ -37,8 +37,14 @@ pub type CursorResultContinuation = Arc<dyn Continuation + Send + Sync + 'static
 pub enum NoNextReason {
     /// The underlying scan, irrespective of any limit, has reached
     /// the end (in-band).
+    ///
+    /// If the cursor reaches return limit and exhausts the source at
+    /// the same time, then return limit is returned.
     SourceExhausted(CursorResultContinuation),
     /// The limit on the number of items to return was reached (in-band).
+    ///
+    /// If the cursor reaches return limit and exhausts the source at
+    /// the same time, then return limit is returned.
     ReturnLimitReached(CursorResultContinuation),
     /// The limit on the amount of time that a scan can take was
     /// reached (out-of-band).

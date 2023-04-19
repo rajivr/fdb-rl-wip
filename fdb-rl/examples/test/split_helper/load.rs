@@ -11,7 +11,7 @@ use fdb::tuple::{Null, Tuple, Versionstamp};
 use fdb::{Key, Value};
 
 use fdb_rl::error::{
-    SPLIT_HELPER_INVALID_PRIMARY_KEY, SPLIT_HELPER_LOAD_INVALID_RECORD_VERSION,
+    SPLIT_HELPER_INVALID_PRIMARY_KEY, SPLIT_HELPER_LOAD_INVALID_RECORD_HEADER,
     SPLIT_HELPER_LOAD_INVALID_SERIALIZED_BYTES, SPLIT_HELPER_SCAN_LIMIT_REACHED,
 };
 use fdb_rl::scan::{KeyValueScanLimiter, ScanLimiter};
@@ -111,8 +111,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         Trial::test("load", load),
         Trial::test("load_primary_key_invalid", load_primary_key_invalid),
         Trial::test(
-            "load_primary_key_invalid_record_version",
-            load_primary_key_invalid_record_version,
+            "load_primary_key_invalid_record_header",
+            load_primary_key_invalid_record_header,
         ),
         Trial::test(
             "load_primary_key_invalid_record_content",
@@ -303,11 +303,11 @@ fn setup() -> Result<(), Box<dyn Error>> {
                         .await?;
                     }
 
-                    // add invalid record version
+                    // add invalid record header
                     {
                         let full_primary_key_tuple = {
                             let tup: (&str, &str, &str, &str, &str) =
-                                ("sub", "space", "primary", "key", "invalid_record_version");
+                                ("sub", "space", "primary", "key", "invalid_record_header");
 
                             let mut t = Tuple::new();
                             t.push_back::<String>(tup.0.to_string());
@@ -330,7 +330,7 @@ fn setup() -> Result<(), Box<dyn Error>> {
                             .pack(),
                         );
 
-                        let value = Value::from(Bytes::from_static(b"invalid record version"));
+                        let value = Value::from(Bytes::from_static(b"invalid record header"));
 
                         tr.set(key, value);
 
@@ -378,19 +378,27 @@ fn setup() -> Result<(), Box<dyn Error>> {
                         );
 
                         let value = {
-                            // `incarnation_version` is `None`.
-                            let tup: (Option<u64>, Versionstamp) =
-                                (None, Versionstamp::incomplete(15));
+                            // (header_version, data_splits, incarnation, versionstamp)
+                            let tup: (i8, i8, Option<u64>, Versionstamp) =
+                                (0, 2, None, Versionstamp::incomplete(15));
 
                             let mut t = Tuple::new();
 
-                            if let Some(i) = tup.0 {
+                            // header_version
+                            t.push_back::<i8>(tup.0);
+
+                            // data_splits
+                            t.push_back::<i8>(tup.1);
+
+                            // incarnation
+                            if let Some(i) = tup.2 {
                                 t.push_back::<BigInt>(i.into());
                             } else {
                                 t.push_back::<Null>(Null);
                             }
 
-                            t.push_back::<Versionstamp>(tup.1);
+                            // versionstamp
+                            t.push_back::<Versionstamp>(tup.3);
 
                             t
                         }
@@ -674,7 +682,7 @@ fn load_primary_key_invalid() -> Result<(), Failed> {
     Ok(())
 }
 
-fn load_primary_key_invalid_record_version() -> Result<(), Failed> {
+fn load_primary_key_invalid_record_header() -> Result<(), Failed> {
     let rt = Builder::new_current_thread().build()?;
 
     let fdb_database_ref = unsafe { FDB_DATABASE.as_ref().unwrap() };
@@ -694,7 +702,7 @@ fn load_primary_key_invalid_record_version() -> Result<(), Failed> {
                     }));
 
                     let primary_key_tuple = {
-                        let tup: (&str, &str, &str) = ("primary", "key", "invalid_record_version");
+                        let tup: (&str, &str, &str) = ("primary", "key", "invalid_record_header");
 
                         let mut t = Tuple::new();
                         t.push_back::<String>(tup.0.to_string());
@@ -707,7 +715,7 @@ fn load_primary_key_invalid_record_version() -> Result<(), Failed> {
 
                     assert_eq!(
                         res,
-                        Err(FdbError::new(SPLIT_HELPER_LOAD_INVALID_RECORD_VERSION))
+                        Err(FdbError::new(SPLIT_HELPER_LOAD_INVALID_RECORD_HEADER))
                     );
 
                     Ok(())

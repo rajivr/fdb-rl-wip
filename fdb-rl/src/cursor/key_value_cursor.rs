@@ -219,7 +219,12 @@ impl Continuation for KeyValueContinuationInternal {
 ///
 /// Methods [`KeyValueCursorBuilder::subspace`] and
 /// [`KeyValueCursorBuilder::continuation`] can be used when needed,
-/// and are not to build a value of type [`KeyValueCursor`].
+/// and are not needed to build a value of type [`KeyValueCursor`].
+///
+/// **Note:** Please make sure you read about the limitation mentioned
+/// in the documentation for
+/// [`KeyValueCursorBuilder::scan_properties`].
+//
 //
 // It is *not* possible for `KeyValueCursorBuilder` to safely derive
 // `ParitialEq`. This is because, `ScanProperties` type contains a
@@ -280,8 +285,17 @@ impl KeyValueCursorBuilder {
     /// [`ScanProperties`]) to set a limit of `0`. *Infact* if you set
     /// the limit to `0`, you are indicating that you want [unlimited]
     /// rows, which almost always is not the behavior that you
-    /// want. The correct way to handle this is not to create the
-    /// [`KeyValueCursor`], when you want a limit of `0`.
+    /// want.
+    ///
+    /// The correct way to handle this is not to create the
+    /// [`KeyValueCursor`], when you want a limit of `0`. If you
+    /// provide a limit of `0` or less, the behavior that **you will**
+    /// actually get is that you will be requesting [`i32::MAX`] key
+    /// values.
+    ///
+    /// Since [`KeyValueCursor`] is a low-level API we expect the
+    /// users of this API to be aware of this limitation if you are
+    /// using this API.
     ///
     /// If you intend to set a continuation, then you *must* use the
     /// same [`RangeOptions`] (within [`ScanProperties`]) used to

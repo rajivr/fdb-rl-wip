@@ -39,10 +39,10 @@ pub const SPLIT_HELPER_SCAN_LIMIT_REACHED: i32 = 210;
 pub const SPLIT_HELPER_INVALID_PRIMARY_KEY: i32 = 211;
 
 /// [`split_helper::load`] function encountered an invalid record
-/// version for the primary key.
+/// header for the primary key.
 ///
 /// [`split_helper::load`]: crate::split_helper::load
-pub const SPLIT_HELPER_LOAD_INVALID_RECORD_VERSION: i32 = 212;
+pub const SPLIT_HELPER_LOAD_INVALID_RECORD_HEADER: i32 = 212;
 
 /// [`split_helper::load`] function encountered an invalid record
 /// seralized bytes for the primary key.
@@ -81,3 +81,9 @@ pub const RAW_RECORD_PRIMARY_KEY_TUPLE_SCHEMA_MISMATCH: i32 = 231;
 
 /// TODO
 pub const RAW_RECORD_CURSOR_BUILDER_ERROR: i32 = 232;
+
+/// TODO (Error occured when parsing the key or value)
+pub const RAW_RECORD_CURSOR_NEXT_ERROR: i32 = 233;
+
+/// TODO (The cursor entered an invalid state)
+pub const RAW_RECORD_CURSOR_STATE_ERROR: i32 = 234;

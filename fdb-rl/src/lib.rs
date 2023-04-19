@@ -20,9 +20,9 @@
 //! consist of a schema (`RecordSchema`) containing multiple
 //! `RecordEntity`s.
 //!
-//! Each `RecordEntity` will map to seralized byte array such as an
-//! Avro Record and will have a primary key tuple and optionally one
-//! or more secondary indexes.
+//! Each `RecordEntity` will map to seralized byte array such as a
+//! Protobuf Message and will have a primary key tuple and optionally
+//! one or more secondary indexes.
 //!
 //! This crate will provide:
 //! - APIs for Schema and Index management.
@@ -36,8 +36,8 @@
 //! In addition, a simple transactionally consistent queuing system
 //! similar to QuiCK will also be implemented.
 //!
-//! *There are no plans to implement a query execution engine or other
-//! higher level database features.*
+//! *There are no plans to implement a query planner or other higher
+//! level database features.*
 mod raw_record;
 mod record_context;
 mod record_version;
