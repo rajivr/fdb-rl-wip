@@ -5,24 +5,25 @@ use fdb::error::{FdbError, FdbResult};
 use fdb::range::StreamingMode;
 use fdb::subspace::Subspace;
 use fdb::transaction::ReadTransaction;
-use fdb::tuple::{Null, Tuple, TupleSchema, TupleSchemaElement, Versionstamp};
+use fdb::tuple::{Tuple, TupleSchema, TupleSchemaElement};
 use fdb::Value;
-
-use num_bigint::BigInt;
 
 use prost::Message;
 
+use std::any::Any;
 use std::collections::BTreeMap;
 use std::convert::{TryFrom, TryInto};
+use std::sync::Arc;
 
 use crate::cursor::{
-    Continuation, Cursor, CursorError, CursorResult, CursorResultContinuation,
-    KeyValueContinuationInternal, KeyValueCursor, LimitManagerStoppedReason, NoNextReason,
+    Continuation, Cursor, CursorError, CursorResult, CursorSuccess, KeyValueContinuationInternal,
+    KeyValueCursor, LimitManagerStoppedReason, NoNextReason,
 };
 use crate::error::{
     CURSOR_INVALID_CONTINUATION, RAW_RECORD_CURSOR_NEXT_ERROR, RAW_RECORD_CURSOR_STATE_ERROR,
     RAW_RECORD_INVALID_PRIMARY_KEY_SCHEMA, RAW_RECORD_PRIMARY_KEY_TUPLE_SCHEMA_MISMATCH,
 };
+use crate::split_helper::RecordHeaderV0;
 use crate::RecordVersion;
 
 /// Protobuf types.
@@ -450,15 +451,16 @@ enum RawRecordForwardScanStateMachineStateData {
         continuation: RawRecordContinuationInternal,
     },
     ReadRecordVersion {
+        data_splits: i8,
         record_version: RecordVersion,
         primary_key: RawRecordPrimaryKey,
         continuation: RawRecordContinuationInternal,
-        raw_records_returned: usize,
+        records_already_returned: usize,
     },
     RawRecordAvailable {
         raw_record: RawRecord,
         continuation: RawRecordContinuationInternal,
-        raw_records_returned: usize,
+        records_already_returned: usize,
     },
     RawRecordNextError {
         continuation: RawRecordContinuationInternal,
@@ -480,21 +482,22 @@ enum RawRecordForwardScanStateMachineStateData {
 #[derive(Debug)]
 enum RawRecordForwardScanStateMachineEvent {
     RecordVersionOk {
+        data_splits: i8,
         record_version: RecordVersion,
         primary_key: RawRecordPrimaryKey,
         continuation: RawRecordContinuationInternal,
-        raw_records_returned: usize,
+        records_already_returned: usize,
     },
     Available {
         raw_record: RawRecord,
         continuation: RawRecordContinuationInternal,
-        raw_records_returned: usize,
+        records_already_returned: usize,
     },
     NextRecordVersionOk {
         record_version: RecordVersion,
         primary_key: RawRecordPrimaryKey,
         continuation: RawRecordContinuationInternal,
-        raw_records_returned: usize,
+        records_already_returned: usize,
     },
     NextError {
         continuation: RawRecordContinuationInternal,
@@ -567,7 +570,7 @@ impl RawRecordForwardScanStateMachine {
                         let (key, value) = cursor_success.into_value().into_parts();
 
                         // Extract a value of type
-                        // `FdbResult<(RawRecordPrimaryKey,
+                        // `FdbResult<(RawRecordPrimaryKey, i8,
                         // RecordVersion)>`, which will give us the
                         // information that we need to make the
                         // correct transition.
@@ -590,51 +593,27 @@ impl RawRecordForwardScanStateMachine {
                                 RawRecordPrimaryKey::try_from((primary_key_schema.clone(), tup))
                             })
                             .and_then(|primary_key| {
-                                // Extract record version.
-                                let tup = Tuple::try_from(value)?;
+                                let (data_splits, record_version) =
+                                    RecordHeaderV0::try_from(value)?.into_parts();
 
-                                let incarnation_version = if let Some(bi) = tup.get::<BigInt>(0) {
-                                    u64::try_from(bi)
-                                        .map(|x| Some(x))
-                                        .map_err(|_| FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR))
-                                } else if let Some(Null) = tup.get::<Null>(0) {
-                                    Ok(None)
-                                } else {
-                                    Err(FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR))
-                                };
-
-                                let record_version =
-                                    incarnation_version.and_then(|maybe_incarnation_version| {
-                                        tup.get::<&Versionstamp>(1)
-                                            .map(|vs| {
-                                                let vs = vs.clone();
-
-                                                if let Some(i) = maybe_incarnation_version {
-                                                    RecordVersion::from((i, vs))
-                                                } else {
-                                                    RecordVersion::from(vs)
-                                                }
-                                            })
-                                            .ok_or_else(|| {
-                                                FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR)
-                                            })
-                                    });
-
-                                Ok((primary_key, record_version?))
+                                Ok((primary_key, data_splits, record_version))
                             });
 
                         match res {
-                            Ok((primary_key, record_version)) => {
+                            Ok((primary_key, data_splits, record_version)) => {
                                 // We have only the first record's
-                                // record version and not its contents
-                                // yet. So we set this value to `0`.
-                                let raw_records_returned = 0;
+                                // record version, primary key, data
+                                // splits and not its contents yet. So
+                                // we set this value to `0`.
+                                let records_already_returned = 0;
+
                                 self.step_once_with_event(
                                     RawRecordForwardScanStateMachineEvent::RecordVersionOk {
+                                        data_splits,
                                         record_version,
                                         primary_key,
                                         continuation,
-                                        raw_records_returned,
+                                        records_already_returned,
                                     },
                                 );
                                 None
@@ -726,22 +705,30 @@ impl RawRecordForwardScanStateMachine {
                 //
                 // Non-final state. We *must* call
                 // `step_once_with_event`.
-                let (record_version, primary_key, continuation, raw_records_returned) = self
+                let (
+                    data_splits,
+                    record_version,
+                    primary_key,
+                    continuation,
+                    records_already_returned,
+                ) = self
                     .state_machine_data
                     .take()
                     .and_then(|state_machine_data| {
                         if let RawRecordForwardScanStateMachineStateData::ReadRecordVersion {
+                            data_splits,
                             record_version,
                             primary_key,
                             continuation,
-                            raw_records_returned,
+                            records_already_returned,
                         } = state_machine_data
                         {
                             Some((
+                                data_splits,
                                 record_version,
                                 primary_key,
                                 continuation,
-                                raw_records_returned,
+                                records_already_returned,
                             ))
                         } else {
                             None
@@ -749,81 +736,231 @@ impl RawRecordForwardScanStateMachine {
                     })
                     .expect("invalid state_machine_data");
 
-                // enum LoopResult {
-                //     ,
-                //     CursorError,
-                // }
+                let mut split_index = 0;
 
-                // let record_bytes = BytesMut::new();
-                // let mut idx = 0;
-                // // let mut
+                let mut record_data_buf = BytesMut::new();
 
-                // TODO: Continue from here after introducting
-                // "versioning and splits" into split helper.
-                // refactor `pop_` and `get::` code.x
+                // Extract a value of type
+                // `CursorResult<FdbResult<Bytes>>`.
+                //
+                // The inner `Bytes` would be the unsplit record data.
+                let next_record_data = loop {
+                    let next_kv = key_value_cursor.next().await;
 
-                // First we need to ensure that at-least the split `0`
-                // is valid.
+                    // Extract a value of type
+                    // `CursorResult<FdbResult<Bytes>>`.
+                    let res = next_kv.map(|cursor_success| {
+                        cursor_success.map(|keyvalue| {
+                            let (key, value) = keyvalue.into_parts();
 
-                let next_kv = key_value_cursor.next().await;
+                            // Extract a value of type `FdbResult<Bytes>`
+                            // once you verify that the key is well
+                            // formed.
+                            Tuple::try_from(key)
+                                .and_then(|mut tup| {
+                                    // Verify that the index in the key
+                                    // tuple matches `split_index`.
+                                    let idx = tup.pop_back::<i8>().ok_or_else(|| {
+                                        FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR)
+                                    })?;
 
-                let _: Result<FdbResult<(BytesMut, CursorResultContinuation)>, CursorError> =
-                    next_kv.and_then(|cursor_success| {
-                        // Extract key, value and the new
-                        // continuation. We will need to return the
-                        // new continuation when the record is well
-                        // formed.
-                        let (keyvalue, new_continuation) = cursor_success.into_parts();
-
-                        let (key, value) = keyvalue.into_parts();
-
-                        // Extract a value of type
-                        // `FdbResult<BytesMut>` once you verify that
-                        // the key and value is well formed.
-                        let res = Tuple::try_from(key)
-                            .and_then(|mut tup| {
-                                // Verify that the split index is `0`
-                                let idx = tup
-                                    .pop_back::<i8>()
-                                    .ok_or_else(|| FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR))?;
-
-                                if idx == 0 {
-                                    Ok(tup)
-                                } else {
-                                    Err(FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR))
-                                }
-                            })
-                            .and_then(|tup| {
-                                // We check if our primary key tuple
-                                // matches with the tuple at we are
-                                // seeing at split index of `0`.
-                                if primary_key.key == tup {
-                                    Ok(())
-                                } else {
-                                    Err(FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR))
-                                }
-                            })
-                            .and_then(|_| {
-                                // The key is well formed. We can
-                                // safely return the value.
-                                Ok({
-                                    let mut b = BytesMut::new();
-                                    b.put(Bytes::from(value));
-                                    b
+                                    if idx == split_index {
+                                        Ok(tup)
+                                    } else {
+                                        Err(FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR))
+                                    }
                                 })
-                            });
-
-                        Ok(res.map(|x| (x, new_continuation)))
+                                .and_then(|tup| {
+                                    // We check if our primary key tuple
+                                    // matches with the tuple that we are
+                                    // seeing at the current
+                                    // `split_index`.
+                                    if primary_key.key == tup {
+                                        Ok(())
+                                    } else {
+                                        Err(FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR))
+                                    }
+                                })
+                                .and_then(|_| {
+                                    // The key is well formed. We can
+                                    // safely return the value and the
+                                    // key value continuation.
+                                    Ok(Bytes::from(value))
+                                })
+                        })
                     });
 
-                // // You can get a
-                // // RawRecord +
+                    match res {
+                        Ok(cursor_success) => {
+                            let (fdb_result, kv_continuation) = cursor_success.into_parts();
 
-                // let _ = loop {
-                //     let next_kv = key_value_cursor.next().await;
-                // };
+                            match fdb_result {
+                                Ok(bytes) => {
+                                    // increment `split_index`
+                                    split_index += 1;
 
-                todo!();
+                                    record_data_buf.put(bytes);
+
+                                    if split_index == data_splits {
+                                        break Ok(CursorSuccess::new(
+                                            Ok(Bytes::from(record_data_buf)),
+                                            kv_continuation,
+                                        ));
+                                    }
+
+                                    // Continue iterating the loop.
+                                }
+                                Err(err) => {
+                                    break Ok(CursorSuccess::new(Err(err), kv_continuation))
+                                }
+                            }
+                        }
+                        Err(cursor_error) => break Err(cursor_error),
+                    }
+                };
+
+                match next_record_data {
+                    Ok(cursor_success) => {
+                        // `cursor_success` is a value of type
+                        // `CursorResult<FdbResult<Bytes>>`. If we
+                        // have a inner `Err` value, then we assume it
+                        // to be a next error.
+                        let (res, kv_continuation) = cursor_success.into_parts();
+                        match res {
+                            Ok(record_bytes) => {
+                                let kv_continuation: Arc<dyn Any + Send + Sync + 'static> =
+                                    kv_continuation;
+
+                                // Downcasting should not fail. But if
+                                // does, send `NextError` event.
+                                match kv_continuation.downcast::<KeyValueContinuationInternal>() {
+                                    Ok(arc_kv_continuation_internal) => {
+                                        let kv_continuation_internal =
+                                            Arc::unwrap_or_clone(arc_kv_continuation_internal);
+                                        let KeyValueContinuationInternal::V1(
+                                            pb_keyvalue_continuation_internal_v1,
+                                        ) = kv_continuation_internal;
+
+                                        // This is our new
+                                        // continuation based on
+                                        // `kv_continuation.
+                                        let continuation = RawRecordContinuationInternal::V1(
+                                            pb::RawRecordContinuationInternalV1::from(
+                                                pb::RawRecordContinuationInternalV1 {
+                                                    inner: pb_keyvalue_continuation_internal_v1,
+                                                },
+                                            ),
+                                        );
+
+                                        let raw_record = RawRecord::from((
+                                            primary_key,
+                                            record_version,
+                                            record_bytes,
+                                        ));
+
+                                        self.step_once_with_event(
+                                            RawRecordForwardScanStateMachineEvent::Available {
+                                                raw_record,
+                                                continuation,
+                                                records_already_returned,
+                                            },
+                                        );
+                                        None
+                                    }
+                                    Err(_) => {
+                                        self.step_once_with_event(
+                                            RawRecordForwardScanStateMachineEvent::NextError {
+                                                continuation,
+                                            },
+                                        );
+                                        None
+                                    }
+                                }
+                            }
+                            Err(_) => {
+                                self.step_once_with_event(
+                                    RawRecordForwardScanStateMachineEvent::NextError {
+                                        continuation,
+                                    },
+                                );
+                                None
+                            }
+                        }
+                    }
+                    Err(cursor_error) => match cursor_error {
+                        CursorError::FdbError(fdb_error, _) => {
+                            self.step_once_with_event(
+                                RawRecordForwardScanStateMachineEvent::FdbError {
+                                    fdb_error,
+                                    continuation,
+                                },
+                            );
+                            None
+                        }
+                        CursorError::NoNextReason(no_next_reason) => match no_next_reason {
+                            NoNextReason::SourceExhausted(_) => {
+                                // We are not suppose to get a
+                                // `SourceExhausted` error. This is
+                                // because even an empty record value
+                                // will contain atleast one data
+                                // split.
+                                self.step_once_with_event(
+                                    RawRecordForwardScanStateMachineEvent::NextError {
+                                        continuation,
+                                    },
+                                );
+                                None
+                            }
+                            NoNextReason::ReturnLimitReached(_) => {
+                                // We do not set in-band limit on the
+                                // key value cursor. This is an
+                                // unexpected state error.
+                                let fdb_error = FdbError::new(RAW_RECORD_CURSOR_STATE_ERROR);
+                                self.step_once_with_event(
+                                    RawRecordForwardScanStateMachineEvent::FdbError {
+                                        fdb_error,
+                                        continuation,
+                                    },
+                                );
+                                None
+                            }
+                            // Out of band errors
+                            NoNextReason::TimeLimitReached(_) => {
+                                let out_of_band_error_type =
+                                    LimitManagerStoppedReason::TimeLimitReached;
+                                self.step_once_with_event(
+                                    RawRecordForwardScanStateMachineEvent::OutOfBandError {
+                                        out_of_band_error_type,
+                                        continuation,
+                                    },
+                                );
+                                None
+                            }
+                            NoNextReason::ByteLimitReached(_) => {
+                                let out_of_band_error_type =
+                                    LimitManagerStoppedReason::ByteLimitReached;
+                                self.step_once_with_event(
+                                    RawRecordForwardScanStateMachineEvent::OutOfBandError {
+                                        out_of_band_error_type,
+                                        continuation,
+                                    },
+                                );
+                                None
+                            }
+                            NoNextReason::KeyValueLimitReached(_) => {
+                                let out_of_band_error_type =
+                                    LimitManagerStoppedReason::KeyValueLimitReached;
+                                self.step_once_with_event(
+                                    RawRecordForwardScanStateMachineEvent::OutOfBandError {
+                                        out_of_band_error_type,
+                                        continuation,
+                                    },
+                                );
+                                None
+                            }
+                        },
+                    },
+                }
             }
             RawRecordForwardScanStateMachineState::RawRecordAvailable => todo!(),
             RawRecordForwardScanStateMachineState::RawRecordNextError => todo!(),
@@ -840,17 +977,19 @@ impl RawRecordForwardScanStateMachine {
         self.state_machine_state = match self.state_machine_state {
             RawRecordForwardScanStateMachineState::InitiateRecordVersionRead => match event {
                 RawRecordForwardScanStateMachineEvent::RecordVersionOk {
+                    data_splits,
                     record_version,
                     primary_key,
                     continuation,
-                    raw_records_returned,
+                    records_already_returned,
                 } => {
                     self.state_machine_data = Some(
                         RawRecordForwardScanStateMachineStateData::ReadRecordVersion {
+                            data_splits,
                             record_version,
                             primary_key,
                             continuation,
-                            raw_records_returned,
+                            records_already_returned,
                         },
                     );
                     RawRecordForwardScanStateMachineState::ReadRecordVersion
@@ -892,7 +1031,53 @@ impl RawRecordForwardScanStateMachine {
                 }
                 _ => panic!("Invalid event!"),
             },
-            RawRecordForwardScanStateMachineState::ReadRecordVersion => todo!(),
+            RawRecordForwardScanStateMachineState::ReadRecordVersion => match event {
+                RawRecordForwardScanStateMachineEvent::Available {
+                    raw_record,
+                    continuation,
+                    records_already_returned,
+                } => {
+                    self.state_machine_data = Some(
+                        RawRecordForwardScanStateMachineStateData::RawRecordAvailable {
+                            raw_record,
+                            continuation,
+                            records_already_returned,
+                        },
+                    );
+                    RawRecordForwardScanStateMachineState::RawRecordAvailable
+                }
+                RawRecordForwardScanStateMachineEvent::NextError { continuation } => {
+                    self.state_machine_data = Some(
+                        RawRecordForwardScanStateMachineStateData::RawRecordNextError {
+                            continuation,
+                        },
+                    );
+                    RawRecordForwardScanStateMachineState::RawRecordNextError
+                }
+                RawRecordForwardScanStateMachineEvent::OutOfBandError {
+                    out_of_band_error_type,
+                    continuation,
+                } => {
+                    self.state_machine_data =
+                        Some(RawRecordForwardScanStateMachineStateData::OutOfBandError {
+                            out_of_band_error_type,
+                            continuation,
+                        });
+                    RawRecordForwardScanStateMachineState::OutOfBandError
+                }
+                RawRecordForwardScanStateMachineEvent::FdbError {
+                    fdb_error,
+                    continuation,
+                } => {
+                    self.state_machine_data =
+                        Some(RawRecordForwardScanStateMachineStateData::FdbError {
+                            fdb_error,
+                            continuation,
+                        });
+                    RawRecordForwardScanStateMachineState::FdbError
+                }
+                _ => panic!("Invalid event!"),
+            },
             RawRecordForwardScanStateMachineState::RawRecordAvailable => todo!(),
             RawRecordForwardScanStateMachineState::RawRecordNextError
             | RawRecordForwardScanStateMachineState::RawRecordLimitReached
@@ -927,14 +1112,16 @@ enum RawRecordReverseScanStateMachineStateData {
         continuation: RawRecordContinuationInternal,
     },
     ReadLastSplit {
+        data_splits: i8,
         primary_key: RawRecordPrimaryKey,
-        record_btree: BTreeMap<i8, Value>,
+        last_split_value: Value,
         continuation: RawRecordContinuationInternal,
+        records_already_returned: usize,
     },
     RawRecordAvailable {
         raw_record: RawRecord,
         continuation: RawRecordContinuationInternal,
-        raw_records_returned: usize,
+        records_already_returned: usize,
     },
     RawRecordNextError {
         continuation: RawRecordContinuationInternal,
@@ -957,19 +1144,21 @@ enum RawRecordReverseScanStateMachineStateData {
 enum RawRecordReverseScanStateMachineEvent {
     LastSplitOk {
         primary_key: RawRecordPrimaryKey,
-        record_btree: BTreeMap<i8, Value>,
+        data_splits: i8,
+        last_split_value: Value,
         continuation: RawRecordContinuationInternal,
+        records_already_returned: usize,
     },
     Available {
         raw_record: RawRecord,
         continuation: RawRecordContinuationInternal,
-        raw_records_returned: usize,
+        records_already_returned: usize,
     },
     NextLastSplitOk {
         record_btree: BTreeMap<i8, Value>,
         primary_key: RawRecordPrimaryKey,
         continuation: RawRecordContinuationInternal,
-        raw_records_returned: usize,
+        records_already_returned: usize,
     },
     NextError {
         continuation: RawRecordContinuationInternal,
@@ -1042,10 +1231,10 @@ impl RawRecordReverseScanStateMachine {
                         let (key, value) = cursor_success.into_value().into_parts();
 
                         // Extract a value of type
-                        // `FdbResult<(RawRecordPrimaryKey,
-                        // BTreeMap<i8, Value>)>`, which will give us
-                        // the information that we need to make the
-                        // correct transition.
+                        // `FdbResult<(RawRecordPrimaryKey, i8,
+                        // Value)>, which will give us the information
+                        // that we need to make the correct
+                        // transition.
                         let res = Tuple::try_from(key)
                             .and_then(|mut tup| {
                                 // Verify that the split index is
@@ -1054,12 +1243,14 @@ impl RawRecordReverseScanStateMachine {
                                     .pop_back::<i8>()
                                     .ok_or_else(|| FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR))?;
                                 if idx >= 0 {
-                                    Ok((tup, idx))
+                                    // `data_splits` is last index plus one.
+                                    let data_splits = idx + 1;
+                                    Ok((tup, data_splits))
                                 } else {
                                     Err(FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR))
                                 }
                             })
-                            .and_then(|(tup, idx)| {
+                            .and_then(|(tup, data_splits)| {
                                 // Verify that tuple matches the
                                 // primary key schema.
                                 let primary_key = RawRecordPrimaryKey::try_from((
@@ -1067,19 +1258,26 @@ impl RawRecordReverseScanStateMachine {
                                     tup,
                                 ))?;
 
-                                let mut record_btree = BTreeMap::new();
-                                record_btree.insert(idx, value);
+                                let last_data_split_value = value;
 
-                                Ok((primary_key, record_btree))
+                                Ok((primary_key, data_splits, last_data_split_value))
                             });
 
                         match res {
-                            Ok((primary_key, record_btree)) => {
+                            Ok((primary_key, data_splits, last_split_value)) => {
+                                // We only have last record's last
+                                // data split, number of data splits
+                                // in the last record and the primary
+                                // key. So, we set this value to `0`.
+                                let records_already_returned = 0;
+
                                 self.step_once_with_event(
                                     RawRecordReverseScanStateMachineEvent::LastSplitOk {
                                         primary_key,
-                                        record_btree,
+                                        data_splits,
+                                        last_split_value,
                                         continuation,
+                                        records_already_returned,
                                     },
                                 );
                                 None
@@ -1183,14 +1381,18 @@ impl RawRecordReverseScanStateMachine {
             RawRecordReverseScanStateMachineState::InitiateLastSplitRead => match event {
                 RawRecordReverseScanStateMachineEvent::LastSplitOk {
                     primary_key,
-                    record_btree,
+                    data_splits,
+                    last_split_value,
                     continuation,
+                    records_already_returned,
                 } => {
                     self.state_machine_data =
                         Some(RawRecordReverseScanStateMachineStateData::ReadLastSplit {
                             primary_key,
-                            record_btree,
+                            data_splits,
+                            last_split_value,
                             continuation,
+                            records_already_returned,
                         });
                     RawRecordReverseScanStateMachineState::ReadLastSplit
                 }
@@ -1231,7 +1433,10 @@ impl RawRecordReverseScanStateMachine {
                 }
                 _ => panic!("Invalid event!"),
             },
-            RawRecordReverseScanStateMachineState::ReadLastSplit => todo!(),
+            RawRecordReverseScanStateMachineState::ReadLastSplit => {
+		// TODO: Continue from here.
+		todo!();
+	    }
             RawRecordReverseScanStateMachineState::RawRecordAvailable => todo!(),
             RawRecordReverseScanStateMachineState::RawRecordNextError
             | RawRecordReverseScanStateMachineState::RawRecordLimitReached

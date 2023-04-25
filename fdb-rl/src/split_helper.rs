@@ -99,8 +99,14 @@ use crate::RecordVersion;
 const SPLIT_RECORD_SIZE: usize = 100_000;
 
 /// Record header version `0`.
+///
+/// The [`RawRecord`] type cursor implementation uses this type. If we
+/// decide to transition to newer record headers versions, we will
+/// need to make corresponding changes to [`RawRecord`].
+///
+/// [`RawRecord`]: crate::raw_record::RawRecord;
 #[derive(Debug, PartialEq)]
-struct RecordHeaderV0 {
+pub(crate) struct RecordHeaderV0 {
     header_version: i8,
     data_splits: i8,
     incarnation: Option<u64>,
@@ -198,6 +204,23 @@ impl RecordHeaderV0 {
         }
 
         Ok(())
+    }
+
+    pub(crate) fn into_parts(self) -> (i8, RecordVersion) {
+        let RecordHeaderV0 {
+            data_splits,
+            incarnation,
+            versionstamp,
+            ..
+        } = self;
+
+        let record_version = if let Some(i) = incarnation {
+            RecordVersion::from((i, versionstamp))
+        } else {
+            RecordVersion::from(versionstamp)
+        };
+
+        (data_splits, record_version)
     }
 }
 

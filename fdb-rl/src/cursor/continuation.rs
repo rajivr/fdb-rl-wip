@@ -2,6 +2,7 @@ use bytes::Bytes;
 
 use fdb::error::FdbResult;
 
+use std::any::Any;
 use std::fmt::{self, Debug};
 
 /// Prevent users from implementing private trait.
@@ -28,7 +29,7 @@ mod private {
 /// [`Cursor`]: crate::cursor::Cursor
 /// [`CursorSuccess`]: crate::cursor::CursorSuccess
 /// [`CursorError`]: crate::cursor::CursorError
-pub trait Continuation: private::Sealed {
+pub trait Continuation: private::Sealed + Any {
     /// Serialize this continuation to a [`Bytes`] value.
     // The reason why we need to return `FdbResult<Bytes>` is because
     // Avro serialization can return an error.

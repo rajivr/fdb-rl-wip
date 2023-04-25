@@ -74,6 +74,21 @@ impl<T> CursorSuccess<T> {
         }
     }
 
+    /// Map [`CursorSuccess<T>`] to [`CursorSuccess<U>`].
+    pub fn map<F, U>(self, f: F) -> CursorSuccess<U>
+    where
+        F: FnOnce(T) -> U,
+    {
+        let CursorSuccess {
+            value,
+            continuation,
+        } = self;
+        CursorSuccess {
+            value: f(value),
+            continuation,
+        }
+    }
+
     /// Gets a reference to success value from [`CursorSuccess`].
     pub fn get_value_ref(&self) -> &T {
         &self.value
