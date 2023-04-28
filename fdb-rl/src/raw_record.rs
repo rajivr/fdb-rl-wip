@@ -736,7 +736,9 @@ impl RawRecordForwardScanStateMachine {
                     })
                     .expect("invalid state_machine_data");
 
-                let mut split_index = 0;
+                // When `next_split_index == data_splits` then we
+                // would have read the entire record data.
+                let mut next_split_index = 0;
 
                 let mut record_data_buf = BytesMut::new();
 
@@ -764,17 +766,17 @@ impl RawRecordForwardScanStateMachine {
                                         FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR)
                                     })?;
 
-                                    if idx == split_index {
+                                    if idx == next_split_index {
                                         Ok(tup)
                                     } else {
                                         Err(FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR))
                                     }
                                 })
                                 .and_then(|tup| {
-                                    // We check if our primary key tuple
-                                    // matches with the tuple that we are
-                                    // seeing at the current
-                                    // `split_index`.
+                                    // We check if our primary key
+                                    // tuple matches with the tuple
+                                    // that we are seeing at the
+                                    // current `next_split_index`.
                                     if primary_key.key == tup {
                                         Ok(())
                                     } else {
@@ -796,12 +798,12 @@ impl RawRecordForwardScanStateMachine {
 
                             match fdb_result {
                                 Ok(bytes) => {
-                                    // increment `split_index`
-                                    split_index += 1;
+                                    // Increment `next_split_index`
+                                    next_split_index += 1;
 
                                     record_data_buf.put(bytes);
 
-                                    if split_index == data_splits {
+                                    if next_split_index == data_splits {
                                         break Ok(CursorSuccess::new(
                                             Ok(Bytes::from(record_data_buf)),
                                             kv_continuation,
@@ -1143,8 +1145,8 @@ enum RawRecordReverseScanStateMachineStateData {
 #[derive(Debug)]
 enum RawRecordReverseScanStateMachineEvent {
     LastSplitOk {
-        primary_key: RawRecordPrimaryKey,
         data_splits: i8,
+        primary_key: RawRecordPrimaryKey,
         last_split_value: Value,
         continuation: RawRecordContinuationInternal,
         records_already_returned: usize,
@@ -1364,7 +1366,451 @@ impl RawRecordReverseScanStateMachine {
                     },
                 }
             }
-            RawRecordReverseScanStateMachineState::ReadLastSplit => todo!(),
+            RawRecordReverseScanStateMachineState::ReadLastSplit => {
+                // Extract and verify state data.
+                //
+                // Non-final state. We *must* call
+                // `step_once_with_event`.
+                let (
+                    data_splits,
+                    primary_key,
+                    last_split_value,
+                    continuation,
+                    records_already_returned,
+                ) = self
+                    .state_machine_data
+                    .take()
+                    .and_then(|state_machine_data| {
+                        if let RawRecordReverseScanStateMachineStateData::ReadLastSplit {
+                            data_splits,
+                            primary_key,
+                            last_split_value,
+                            continuation,
+                            records_already_returned,
+                        } = state_machine_data
+                        {
+                            Some((
+                                data_splits,
+                                primary_key,
+                                last_split_value,
+                                continuation,
+                                records_already_returned,
+                            ))
+                        } else {
+                            None
+                        }
+                    })
+                    .expect("invalid state_machine_data");
+
+                // When `next_split_index == -1` then we would have
+                // read the entire record data.
+                let mut next_split_index = data_splits - 1;
+
+                let mut record_data_btreemap = BTreeMap::new();
+
+                record_data_btreemap.insert(next_split_index, Bytes::from(last_split_value));
+
+                next_split_index = next_split_index - 1;
+
+                // Extract a value of type `Result<FdbResult<Bytes>,
+                // CursorError>`.
+                //
+                // The inner `Bytes` would be the record data that has
+                // been reassembled.
+                //
+                // As we are returning a value of
+                // `Result<FdbResult<Bytes>, CursorError>`, we are not
+                // capturing continuation information.
+                //
+                // Continuation information would have gotten captured
+                // if we returned a value of type
+                // `CursorResult<FdbResult<Bytes>>`.
+                //
+                // However, we do not need continuation information at
+                // this stage. Continuation information becomes
+                // relevant when we read the record header key.
+                let next_record_data = loop {
+                    if next_split_index == -1 {
+                        // When `next_split_index == -1`, means we
+                        // expect to read record header next. So we
+                        // can reassemble the record data.
+                        let mut record_data_buf = BytesMut::new();
+
+                        record_data_btreemap.into_values().for_each(|b| {
+                            record_data_buf.put(b);
+                        });
+
+                        break Ok(Ok(Bytes::from(record_data_buf)));
+                    } else {
+                        let next_kv = key_value_cursor.next().await;
+
+                        // Extract a value of type
+                        // `CursorResult<FdbResult<Bytes>>`.
+                        let res = next_kv.map(|cursor_success| {
+                            cursor_success.map(|keyvalue| {
+                                let (key, value) = keyvalue.into_parts();
+
+                                // Extract a value of type `FdbResult<Bytes>`
+                                // once you verify that the key is well
+                                // formed.
+                                Tuple::try_from(key)
+                                    .and_then(|mut tup| {
+                                        // Verify that the index in the key
+                                        // tuple matches `split_index`.
+                                        let idx = tup.pop_back::<i8>().ok_or_else(|| {
+                                            FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR)
+                                        })?;
+
+                                        if idx == next_split_index {
+                                            Ok(tup)
+                                        } else {
+                                            Err(FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR))
+                                        }
+                                    })
+                                    .and_then(|tup| {
+                                        // We check if our primary key
+                                        // tuple matches with the tuple
+                                        // that we are seeing at the
+                                        // current `next_split_index`.
+                                        if primary_key.key == tup {
+                                            Ok(())
+                                        } else {
+                                            Err(FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR))
+                                        }
+                                    })
+                                    .and_then(|_| {
+                                        // The key is well formed. We can
+                                        // safely return the value and the
+                                        // key value continuation.
+                                        Ok(Bytes::from(value))
+                                    })
+                            })
+                        });
+
+                        match res {
+                            Ok(cursor_success) => {
+                                // `cursor_success` is a value of type
+                                // `CursorResult<FdbResult<Bytes>>`. If we
+                                // have a inner `Err` value, then we assume it
+                                // to be a next error.
+                                //
+                                // We do not care about
+                                // `CursorResultContinuation` inside
+                                // `CursorResult` because the actual
+                                // continuation that we need to return
+                                // in case of success would be the
+                                // record header continuation.
+                                let fdb_result = cursor_success.into_value();
+
+                                match fdb_result {
+                                    Ok(record_bytes) => {
+                                        record_data_btreemap
+                                            .insert(next_split_index, Bytes::from(record_bytes));
+
+                                        // Decrement `next_split_index`
+                                        next_split_index -= 1;
+
+                                        // Continue iterating the loop.
+                                    }
+                                    Err(err) => break Ok(Err(err)),
+                                }
+                            }
+                            Err(cursor_error) => break Err(cursor_error),
+                        }
+                    }
+                };
+
+                match next_record_data {
+                    Ok(fdb_result) => match fdb_result {
+                        Ok(record_bytes) => {
+                            // We have record bytes. We now need to
+                            // read the record version.
+                            let next_kv = key_value_cursor.next().await;
+
+                            // Extract a value of type
+                            // `CursorResult<FdbResult<RecordVersion>>`.
+                            let res = next_kv.map(|cursor_success| {
+                                cursor_success.map(|key_value| {
+                                    let (key, value) = key_value.into_parts();
+
+                                    // Extract a value of type
+                                    // `FdbResult<RecordVersion>`,
+                                    // which will give us the
+                                    // information that we need to
+                                    // make the correct transition.
+                                    Tuple::try_from(key)
+                                        .and_then(|mut tup| {
+                                            // Verify that the split index is
+                                            // `-1`.
+                                            let idx = tup.pop_back::<i8>().ok_or_else(|| {
+                                                FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR)
+                                            })?;
+                                            if idx == -1 {
+                                                Ok(tup)
+                                            } else {
+                                                Err(FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR))
+                                            }
+                                        })
+                                        .and_then(|tup| {
+                                            // We check if our primary key
+                                            // tuple matches with the tuple
+                                            // that we are seeing at the
+                                            // current `next_split_index`.
+                                            if primary_key.key == tup {
+                                                Ok(())
+                                            } else {
+                                                Err(FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR))
+                                            }
+                                        })
+                                        .and_then(|_| {
+                                            let (record_header_data_splits, record_version) =
+                                                RecordHeaderV0::try_from(value)?.into_parts();
+
+                                            // Ensure that data splits
+                                            // in the header matches
+                                            // with what we saw when
+                                            // we read the last value
+                                            // split.
+                                            if record_header_data_splits == data_splits {
+                                                Ok(record_version)
+                                            } else {
+                                                Err(FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR))
+                                            }
+                                        })
+                                })
+                            });
+
+                            match res {
+                                Ok(cursor_success) => {
+                                    // `cursor_success` is a value of
+                                    // type
+                                    // `CursorResult<FdbResult<RecordVersion>>`. If
+                                    // we have a inner `Err` value,
+                                    // then we assume it to be a next
+                                    // error.
+                                    let (res, kv_continuation) = cursor_success.into_parts();
+                                    match res {
+                                        Ok(record_version) => {
+                                            let kv_continuation: Arc<
+                                                dyn Any + Send + Sync + 'static,
+                                            > = kv_continuation;
+
+                                            // Downcasting should not fail. But if
+                                            // does, send `NextError` event.
+                                            match kv_continuation
+                                                .downcast::<KeyValueContinuationInternal>()
+                                            {
+                                                Ok(arc_kv_continuation_internal) => {
+                                                    let kv_continuation_internal =
+                                                        Arc::unwrap_or_clone(
+                                                            arc_kv_continuation_internal,
+                                                        );
+                                                    let KeyValueContinuationInternal::V1(
+                                                        pb_keyvalue_continuation_internal_v1,
+                                                    ) = kv_continuation_internal;
+
+                                                    // This is our new
+                                                    // continuation based on
+                                                    // `kv_continuation.
+                                                    let continuation =
+							RawRecordContinuationInternal::V1(
+							    pb::RawRecordContinuationInternalV1::from(
+								pb::RawRecordContinuationInternalV1 {
+								    inner: pb_keyvalue_continuation_internal_v1,
+								},
+							    ),
+							);
+
+                                                    let raw_record = RawRecord::from((
+                                                        primary_key,
+                                                        record_version,
+                                                        record_bytes,
+                                                    ));
+
+                                                    self.step_once_with_event(
+							RawRecordReverseScanStateMachineEvent::Available {
+							    raw_record,
+							    continuation,
+							    records_already_returned,
+							},
+						    );
+                                                    None
+                                                }
+                                                Err(_) => {
+                                                    self.step_once_with_event(
+							RawRecordReverseScanStateMachineEvent::NextError {
+							    continuation,
+							},
+						    );
+                                                    None
+                                                }
+                                            }
+                                        }
+                                        Err(_) => {
+                                            self.step_once_with_event(
+                                                RawRecordReverseScanStateMachineEvent::NextError {
+                                                    continuation,
+                                                },
+                                            );
+                                            None
+                                        }
+                                    }
+                                }
+                                Err(cursor_error) => match cursor_error {
+                                    CursorError::FdbError(fdb_error, _) => {
+                                        self.step_once_with_event(
+                                            RawRecordReverseScanStateMachineEvent::FdbError {
+                                                fdb_error,
+                                                continuation,
+                                            },
+                                        );
+                                        None
+                                    }
+                                    CursorError::NoNextReason(no_next_reason) => {
+                                        match no_next_reason {
+                                            NoNextReason::SourceExhausted(_) => {
+                                                // We are not suppose to get a
+                                                // `SourceExhausted` error.
+                                                self.step_once_with_event(
+						    RawRecordReverseScanStateMachineEvent::NextError {
+							continuation
+						    });
+                                                None
+                                            }
+                                            NoNextReason::ReturnLimitReached(_) => {
+                                                // We do not set in-band limit on the
+                                                // key value cursor. This is an
+                                                // unexpected state error.
+                                                let fdb_error =
+                                                    FdbError::new(RAW_RECORD_CURSOR_STATE_ERROR);
+                                                self.step_once_with_event(
+						    RawRecordReverseScanStateMachineEvent::FdbError {
+							fdb_error,
+							continuation,
+						    },
+						);
+                                                None
+                                            }
+                                            // Out of band errors
+                                            NoNextReason::TimeLimitReached(_) => {
+                                                let out_of_band_error_type =
+                                                    LimitManagerStoppedReason::TimeLimitReached;
+                                                self.step_once_with_event(
+						    RawRecordReverseScanStateMachineEvent::OutOfBandError {
+							out_of_band_error_type,
+							continuation,
+						    },
+						);
+                                                None
+                                            }
+                                            NoNextReason::ByteLimitReached(_) => {
+                                                let out_of_band_error_type =
+                                                    LimitManagerStoppedReason::ByteLimitReached;
+                                                self.step_once_with_event(
+						    RawRecordReverseScanStateMachineEvent::OutOfBandError {
+							out_of_band_error_type,
+							continuation,
+						    },
+						);
+                                                None
+                                            }
+                                            NoNextReason::KeyValueLimitReached(_) => {
+                                                let out_of_band_error_type =
+                                                    LimitManagerStoppedReason::KeyValueLimitReached;
+                                                self.step_once_with_event(
+						    RawRecordReverseScanStateMachineEvent::OutOfBandError {
+							out_of_band_error_type,
+							continuation,
+						    },
+						);
+                                                None
+                                            }
+                                        }
+                                    }
+                                },
+                            }
+                        }
+                        Err(_) => {
+                            self.step_once_with_event(
+                                RawRecordReverseScanStateMachineEvent::NextError { continuation },
+                            );
+                            None
+                        }
+                    },
+                    Err(cursor_error) => match cursor_error {
+                        CursorError::FdbError(fdb_error, _) => {
+                            self.step_once_with_event(
+                                RawRecordReverseScanStateMachineEvent::FdbError {
+                                    fdb_error,
+                                    continuation,
+                                },
+                            );
+                            None
+                        }
+                        CursorError::NoNextReason(no_next_reason) => match no_next_reason {
+                            NoNextReason::SourceExhausted(_) => {
+                                // We are not suppose to get a
+                                // `SourceExhausted` error. We have
+                                // not read the record header yet, so
+                                // this is totally unexpected.
+                                self.step_once_with_event(
+                                    RawRecordReverseScanStateMachineEvent::NextError {
+                                        continuation,
+                                    },
+                                );
+                                None
+                            }
+                            NoNextReason::ReturnLimitReached(_) => {
+                                // We do not set in-band limit on the
+                                // key value cursor. This is an
+                                // unexpected state error.
+                                let fdb_error = FdbError::new(RAW_RECORD_CURSOR_STATE_ERROR);
+                                self.step_once_with_event(
+                                    RawRecordReverseScanStateMachineEvent::FdbError {
+                                        fdb_error,
+                                        continuation,
+                                    },
+                                );
+                                None
+                            }
+                            // Out of band errors
+                            NoNextReason::TimeLimitReached(_) => {
+                                let out_of_band_error_type =
+                                    LimitManagerStoppedReason::TimeLimitReached;
+                                self.step_once_with_event(
+                                    RawRecordReverseScanStateMachineEvent::OutOfBandError {
+                                        out_of_band_error_type,
+                                        continuation,
+                                    },
+                                );
+                                None
+                            }
+                            NoNextReason::ByteLimitReached(_) => {
+                                let out_of_band_error_type =
+                                    LimitManagerStoppedReason::ByteLimitReached;
+                                self.step_once_with_event(
+                                    RawRecordReverseScanStateMachineEvent::OutOfBandError {
+                                        out_of_band_error_type,
+                                        continuation,
+                                    },
+                                );
+                                None
+                            }
+                            NoNextReason::KeyValueLimitReached(_) => {
+                                let out_of_band_error_type =
+                                    LimitManagerStoppedReason::KeyValueLimitReached;
+                                self.step_once_with_event(
+                                    RawRecordReverseScanStateMachineEvent::OutOfBandError {
+                                        out_of_band_error_type,
+                                        continuation,
+                                    },
+                                );
+                                None
+                            }
+                        },
+                    },
+                }
+            }
             RawRecordReverseScanStateMachineState::RawRecordAvailable => todo!(),
             RawRecordReverseScanStateMachineState::RawRecordNextError => todo!(),
             RawRecordReverseScanStateMachineState::RawRecordLimitReached => todo!(),
@@ -1434,9 +1880,9 @@ impl RawRecordReverseScanStateMachine {
                 _ => panic!("Invalid event!"),
             },
             RawRecordReverseScanStateMachineState::ReadLastSplit => {
-		// TODO: Continue from here.
-		todo!();
-	    }
+                // TODO: Continue from here.
+                todo!();
+            }
             RawRecordReverseScanStateMachineState::RawRecordAvailable => todo!(),
             RawRecordReverseScanStateMachineState::RawRecordNextError
             | RawRecordReverseScanStateMachineState::RawRecordLimitReached
