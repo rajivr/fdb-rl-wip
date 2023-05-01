@@ -1,0 +1,48 @@
+statechart:
+  name: RawRecordCursor (Reverse Scan)
+  preamble: |
+    **Context:**
+    ------------
+    Immutable:
+      primary_key_schema
+      values_limit
+    Mutable:
+      key_value_cusor
+      raw_record_state_machine
+  root state:
+    name: RawRecordReverseScanStateMachine
+    initial: InitiateLastSplitRead
+    states:
+      - name: InitiateLastSplitRead
+        transitions:
+          - event: LastSplitOk{data_splits, primary_key last_split_value, continuation, records_already_returned}
+            target: ReadLastSplit
+          - event: NextError{continuation}
+            target: RawRecordNextError
+          - event: EndOfStream
+            target: RawRecordEndOfStream
+          - event: OutOfBandError{out_of_band_error_type, continuation}
+            target: OutOfBandError
+          - event: FdbError{fdb_error, continuation}
+            target: FdbError
+      - name: ReadLastSplit
+        transitions:
+          - event: Available{raw_record, continuation, raw_records_returned}
+            target: RawRecordAvailable
+          - event: NextError{continuation}
+            target: RawRecordNextError
+          - event: OutOfBandError{out_of_band_error_type, continuation}
+            target: OutOfBandError
+          - event: FdbError{fdb_error, continuation}
+            target: FdbError
+      - name: RawRecordAvailable
+      - name: RawRecordNextError
+        type: final
+      - name: RawRecordLimitReached
+        type: final
+      - name: RawRecordEndOfStream
+        type: final
+      - name: OutOfBandError
+        type: final
+      - name: FdbError
+        type: final

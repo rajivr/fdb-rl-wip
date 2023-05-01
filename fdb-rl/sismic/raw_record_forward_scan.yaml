@@ -1,0 +1,61 @@
+statechart:
+  name: RawRecordCursor (Forward Scan)
+  preamble: |
+    **Context:**
+    ------------
+    Immutable:
+      primary_key_schema
+      values_limit
+    Mutable:
+      key_value_cusor
+      raw_record_state_machine
+  root state:
+    name: RawRecordForwardScanStateMachine
+    initial: InitiateRecordVersionRead
+    states:
+      - name: InitiateRecordVersionRead
+        transitions:
+          - event: RecordVersionOk{data_splits, record_version, primary_key, continuation, raw_records_returned}
+            target: ReadRecordVersion
+          - event: NextError{continuation}
+            target: RawRecordNextError
+          - event: EndOfStream
+            target: RawRecordEndOfStream
+          - event: OutOfBandError{out_of_band_error_type, continuation}
+            target: OutOfBandError
+          - event: FdbError{fdb_error, continuation}
+            target: FdbError
+      - name: ReadRecordVersion
+        transitions:
+          - event: Available{raw_record, continuation, raw_records_returned}
+            target: RawRecordAvailable
+          - event: NextError{continuation}
+            target: RawRecordNextError
+          - event: OutOfBandError{out_of_band_error_type, continuation}
+            target: OutOfBandError
+          - event: FdbError{fdb_error, continuation}
+            target: FdbError
+      - name: RawRecordAvailable
+        transitions:
+          - event: RecordVersionOk{data_splits, record_version, primary_key, continuation, records_already_returned}
+            target: ReadRecordVersion
+          - event: NextError{continuation}
+            target: RawRecordNextError
+          - event: LimitReached {continuation}
+            target: RawRecordLimitReached
+          - event: EndOfStream
+            target: RawRecordEndOfStream
+          - event: OutOfBandError{out_of_band_error_type, continuation}
+            target: OutOfBandError
+          - event: FdbError{fdb_error, continuation}
+            target: FdbError
+      - name: RawRecordNextError
+        type: final
+      - name: RawRecordLimitReached
+        type: final
+      - name: RawRecordEndOfStream
+        type: final
+      - name: OutOfBandError
+        type: final
+      - name: FdbError
+        type: final

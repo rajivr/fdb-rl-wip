@@ -493,12 +493,6 @@ enum RawRecordForwardScanStateMachineEvent {
         continuation: RawRecordContinuationInternal,
         records_already_returned: usize,
     },
-    NextRecordVersionOk {
-        record_version: RecordVersion,
-        primary_key: RawRecordPrimaryKey,
-        continuation: RawRecordContinuationInternal,
-        records_already_returned: usize,
-    },
     NextError {
         continuation: RawRecordContinuationInternal,
     },
@@ -541,6 +535,7 @@ impl RawRecordForwardScanStateMachine {
         &mut self,
         key_value_cursor: &mut KeyValueCursor,
         primary_key_schema: &RawRecordPrimaryKeySchema,
+        values_limit: usize,
     ) -> Option<CursorResult<RawRecord>> {
         let _: Option<CursorResult<RawRecord>> = match self.state_machine_state {
             RawRecordForwardScanStateMachineState::InitiateRecordVersionRead => {
@@ -964,7 +959,182 @@ impl RawRecordForwardScanStateMachine {
                     },
                 }
             }
-            RawRecordForwardScanStateMachineState::RawRecordAvailable => todo!(),
+            RawRecordForwardScanStateMachineState::RawRecordAvailable => {
+                // Extract and verify state data.
+                //
+                // Non-final state. We *must* call
+                // `step_once_with_event`.
+                //
+                // In addition, we will be returning a `Some(...)` (a
+                // value of `RawRecord`) in this state.
+                let (raw_record, continuation, mut records_already_returned) = self
+                    .state_machine_data
+                    .take()
+                    .and_then(|state_machine_data| {
+                        if let RawRecordForwardScanStateMachineStateData::RawRecordAvailable {
+                            raw_record,
+                            continuation,
+                            records_already_returned,
+                        } = state_machine_data
+                        {
+                            Some((raw_record, continuation, records_already_returned))
+                        } else {
+                            None
+                        }
+                    })
+                    .expect("invalid state_machine_data");
+
+                if records_already_returned + 1 == values_limit {
+                    // First check if we are going to hit the
+                    // `values_limit`.
+                    //
+                    // This also ensures that in case we encounter a
+                    // situation of `LimitReached` and
+                    // `SourceExhasted` happening at the same time, we
+                    // will return `LimitReached`.
+                    self.step_once_with_event(
+                        RawRecordForwardScanStateMachineEvent::LimitReached {
+                            continuation: continuation.clone(),
+                        },
+                    );
+                } else {
+                    // We still need to return more raw records. Attempt
+                    // to read the next raw record's record version.
+
+                    let next_kv = key_value_cursor.next().await;
+
+                    match next_kv {
+                        Ok(cursor_success) => {
+                            let (key, value) = cursor_success.into_value().into_parts();
+
+                            // Extract a value of type
+                            // `FdbResult<(RawRecordPrimaryKey, i8,
+                            // RecordVersion)>`, which will give us the
+                            // information that we need to make the
+                            // correct transition.
+                            let res = Tuple::try_from(key)
+                                .and_then(|mut tup| {
+                                    // Verify that the split index is
+                                    // `-1`.
+                                    let idx = tup.pop_back::<i8>().ok_or_else(|| {
+                                        FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR)
+                                    })?;
+                                    if idx == -1 {
+                                        Ok(tup)
+                                    } else {
+                                        Err(FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR))
+                                    }
+                                })
+                                .and_then(|tup| {
+                                    // Verify that tuple matches the
+                                    // primary key schema.
+                                    RawRecordPrimaryKey::try_from((primary_key_schema.clone(), tup))
+                                })
+                                .and_then(|primary_key| {
+                                    let (data_splits, record_version) =
+                                        RecordHeaderV0::try_from(value)?.into_parts();
+
+                                    Ok((primary_key, data_splits, record_version))
+                                });
+
+                            match res {
+                                Ok((primary_key, data_splits, record_version)) => {
+                                    // We will be returning a raw
+                                    // record below.
+                                    records_already_returned += 1;
+
+                                    self.step_once_with_event(
+                                        RawRecordForwardScanStateMachineEvent::RecordVersionOk {
+                                            data_splits,
+                                            record_version,
+                                            primary_key,
+                                            continuation: continuation.clone(),
+                                            records_already_returned,
+                                        },
+                                    );
+                                }
+                                Err(_) => {
+                                    self.step_once_with_event(
+                                        RawRecordForwardScanStateMachineEvent::NextError {
+                                            continuation: continuation.clone(),
+                                        },
+                                    );
+                                }
+                            }
+                        }
+                        Err(cursor_error) => match cursor_error {
+                            CursorError::FdbError(fdb_error, _) => {
+                                self.step_once_with_event(
+                                    RawRecordForwardScanStateMachineEvent::FdbError {
+                                        fdb_error,
+                                        continuation: continuation.clone(),
+                                    },
+                                );
+                            }
+                            CursorError::NoNextReason(no_next_reason) => match no_next_reason {
+                                NoNextReason::SourceExhausted(_) => {
+                                    // We encountered the end of stream
+                                    // before reading the
+                                    // `RecordVersion`. So we can safely
+                                    // enter `EndOfStream` state.
+                                    self.step_once_with_event(
+                                        RawRecordForwardScanStateMachineEvent::EndOfStream,
+                                    );
+                                }
+                                NoNextReason::ReturnLimitReached(_) => {
+                                    // We do not set in-band limit on the
+                                    // key value cursor. This is an
+                                    // unexpected state error.
+                                    let fdb_error = FdbError::new(RAW_RECORD_CURSOR_STATE_ERROR);
+                                    self.step_once_with_event(
+                                        RawRecordForwardScanStateMachineEvent::FdbError {
+                                            fdb_error,
+                                            continuation: continuation.clone(),
+                                        },
+                                    );
+                                }
+                                // Out of band errors
+                                NoNextReason::TimeLimitReached(_) => {
+                                    let out_of_band_error_type =
+                                        LimitManagerStoppedReason::TimeLimitReached;
+                                    self.step_once_with_event(
+                                        RawRecordForwardScanStateMachineEvent::OutOfBandError {
+                                            out_of_band_error_type,
+                                            continuation: continuation.clone(),
+                                        },
+                                    );
+                                }
+                                NoNextReason::ByteLimitReached(_) => {
+                                    let out_of_band_error_type =
+                                        LimitManagerStoppedReason::ByteLimitReached;
+                                    self.step_once_with_event(
+                                        RawRecordForwardScanStateMachineEvent::OutOfBandError {
+                                            out_of_band_error_type,
+                                            continuation: continuation.clone(),
+                                        },
+                                    );
+                                }
+                                NoNextReason::KeyValueLimitReached(_) => {
+                                    let out_of_band_error_type =
+                                        LimitManagerStoppedReason::KeyValueLimitReached;
+                                    self.step_once_with_event(
+                                        RawRecordForwardScanStateMachineEvent::OutOfBandError {
+                                            out_of_band_error_type,
+                                            continuation: continuation.clone(),
+                                        },
+                                    );
+                                }
+                            },
+                        },
+                    }
+                }
+
+                let cursor_result_continuation = Arc::new(continuation);
+                Some(Ok(CursorSuccess::new(
+                    raw_record,
+                    cursor_result_continuation,
+                )))
+            }
             RawRecordForwardScanStateMachineState::RawRecordNextError => todo!(),
             RawRecordForwardScanStateMachineState::RawRecordLimitReached => todo!(),
             RawRecordForwardScanStateMachineState::RawRecordEndOfStream => todo!(),
@@ -1080,7 +1250,70 @@ impl RawRecordForwardScanStateMachine {
                 }
                 _ => panic!("Invalid event!"),
             },
-            RawRecordForwardScanStateMachineState::RawRecordAvailable => todo!(),
+            RawRecordForwardScanStateMachineState::RawRecordAvailable => match event {
+                RawRecordForwardScanStateMachineEvent::RecordVersionOk {
+                    data_splits,
+                    record_version,
+                    primary_key,
+                    continuation,
+                    records_already_returned,
+                } => {
+                    self.state_machine_data = Some(
+                        RawRecordForwardScanStateMachineStateData::ReadRecordVersion {
+                            data_splits,
+                            record_version,
+                            primary_key,
+                            continuation,
+                            records_already_returned,
+                        },
+                    );
+                    RawRecordForwardScanStateMachineState::ReadRecordVersion
+                }
+                RawRecordForwardScanStateMachineEvent::NextError { continuation } => {
+                    self.state_machine_data = Some(
+                        RawRecordForwardScanStateMachineStateData::RawRecordNextError {
+                            continuation,
+                        },
+                    );
+                    RawRecordForwardScanStateMachineState::RawRecordNextError
+                }
+                RawRecordForwardScanStateMachineEvent::LimitReached { continuation } => {
+                    self.state_machine_data = Some(
+                        RawRecordForwardScanStateMachineStateData::RawRecordLimitReached {
+                            continuation,
+                        },
+                    );
+                    RawRecordForwardScanStateMachineState::RawRecordLimitReached
+                }
+                RawRecordForwardScanStateMachineEvent::EndOfStream => {
+                    self.state_machine_data =
+                        Some(RawRecordForwardScanStateMachineStateData::RawRecordEndOfStream);
+                    RawRecordForwardScanStateMachineState::RawRecordEndOfStream
+                }
+                RawRecordForwardScanStateMachineEvent::OutOfBandError {
+                    out_of_band_error_type,
+                    continuation,
+                } => {
+                    self.state_machine_data =
+                        Some(RawRecordForwardScanStateMachineStateData::OutOfBandError {
+                            out_of_band_error_type,
+                            continuation,
+                        });
+                    RawRecordForwardScanStateMachineState::OutOfBandError
+                }
+                RawRecordForwardScanStateMachineEvent::FdbError {
+                    fdb_error,
+                    continuation,
+                } => {
+                    self.state_machine_data =
+                        Some(RawRecordForwardScanStateMachineStateData::FdbError {
+                            fdb_error,
+                            continuation,
+                        });
+                    RawRecordForwardScanStateMachineState::FdbError
+                }
+                _ => panic!("Invalid event!"),
+            },
             RawRecordForwardScanStateMachineState::RawRecordNextError
             | RawRecordForwardScanStateMachineState::RawRecordLimitReached
             | RawRecordForwardScanStateMachineState::RawRecordEndOfStream
@@ -1153,12 +1386,6 @@ enum RawRecordReverseScanStateMachineEvent {
     },
     Available {
         raw_record: RawRecord,
-        continuation: RawRecordContinuationInternal,
-        records_already_returned: usize,
-    },
-    NextLastSplitOk {
-        record_btree: BTreeMap<i8, Value>,
-        primary_key: RawRecordPrimaryKey,
         continuation: RawRecordContinuationInternal,
         records_already_returned: usize,
     },
@@ -1811,7 +2038,9 @@ impl RawRecordReverseScanStateMachine {
                     },
                 }
             }
-            RawRecordReverseScanStateMachineState::RawRecordAvailable => todo!(),
+            RawRecordReverseScanStateMachineState::RawRecordAvailable => {
+		// TODO: Continue from here.
+	    }
             RawRecordReverseScanStateMachineState::RawRecordNextError => todo!(),
             RawRecordReverseScanStateMachineState::RawRecordLimitReached => todo!(),
             RawRecordReverseScanStateMachineState::RawRecordEndOfStream => todo!(),
@@ -1879,10 +2108,53 @@ impl RawRecordReverseScanStateMachine {
                 }
                 _ => panic!("Invalid event!"),
             },
-            RawRecordReverseScanStateMachineState::ReadLastSplit => {
-                // TODO: Continue from here.
-                todo!();
-            }
+            RawRecordReverseScanStateMachineState::ReadLastSplit => match event {
+                RawRecordReverseScanStateMachineEvent::Available {
+                    raw_record,
+                    continuation,
+                    records_already_returned,
+                } => {
+                    self.state_machine_data = Some(
+                        RawRecordReverseScanStateMachineStateData::RawRecordAvailable {
+                            raw_record,
+                            continuation,
+                            records_already_returned,
+                        },
+                    );
+                    RawRecordReverseScanStateMachineState::RawRecordAvailable
+                }
+                RawRecordReverseScanStateMachineEvent::NextError { continuation } => {
+                    self.state_machine_data = Some(
+                        RawRecordReverseScanStateMachineStateData::RawRecordNextError {
+                            continuation,
+                        },
+                    );
+                    RawRecordReverseScanStateMachineState::RawRecordNextError
+                }
+                RawRecordReverseScanStateMachineEvent::OutOfBandError {
+                    out_of_band_error_type,
+                    continuation,
+                } => {
+                    self.state_machine_data =
+                        Some(RawRecordReverseScanStateMachineStateData::OutOfBandError {
+                            out_of_band_error_type,
+                            continuation,
+                        });
+                    RawRecordReverseScanStateMachineState::OutOfBandError
+                }
+                RawRecordReverseScanStateMachineEvent::FdbError {
+                    fdb_error,
+                    continuation,
+                } => {
+                    self.state_machine_data =
+                        Some(RawRecordReverseScanStateMachineStateData::FdbError {
+                            fdb_error,
+                            continuation,
+                        });
+                    RawRecordReverseScanStateMachineState::FdbError
+                }
+                _ => panic!("Invalid event!"),
+            },
             RawRecordReverseScanStateMachineState::RawRecordAvailable => todo!(),
             RawRecordReverseScanStateMachineState::RawRecordNextError
             | RawRecordReverseScanStateMachineState::RawRecordLimitReached
@@ -1933,7 +2205,11 @@ impl Cursor<RawRecord> for RawRecordCursor {
             match self.raw_record_state_machine {
                 RawRecordStateMachine::ForwardScan(ref mut forward_scan_state_machine) => {
                     if let Some(res) = forward_scan_state_machine
-                        .next(&mut self.key_value_cursor, &self.primary_key_schema)
+                        .next(
+                            &mut self.key_value_cursor,
+                            &self.primary_key_schema,
+                            self.values_limit,
+                        )
                         .await
                     {
                         return res;
