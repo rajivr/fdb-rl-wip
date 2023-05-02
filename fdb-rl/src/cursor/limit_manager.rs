@@ -5,7 +5,7 @@ use crate::scan::ScanLimiter;
 // It is consistent to name the variant with the same postfix
 // `LimitReached`.
 #[allow(clippy::enum_variant_names)]
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub(crate) enum LimitManagerStoppedReason {
     /// The limit on the number of key-values to scan was reached.
     KeyValueLimitReached,

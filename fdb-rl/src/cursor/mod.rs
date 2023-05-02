@@ -12,8 +12,8 @@ mod limit_manager;
 
 pub(crate) mod pb {
     pub(crate) use super::key_value_cursor::pb::{
-        BeginMarkerV1, ContinuationV1, EndMarkerV1, KeyValueContinuationEnumV1,
-        KeyValueContinuationInternalV1,
+        KeyValueContinuationInternalV1, ProtoBeginMarkerV1, ProtoContinuationV1, ProtoEndMarkerV1,
+        ProtoKeyValueContinuationEnumV1,
     };
 }
 

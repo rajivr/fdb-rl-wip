@@ -36,6 +36,19 @@ statechart:
           - event: FdbError{fdb_error, continuation}
             target: FdbError
       - name: RawRecordAvailable
+        transitions:
+          - event: LastSplitOk{data_splits, primary_key last_split_value, continuation, records_already_returned}
+            target: ReadLastSplit
+          - event: NextError{continuation}
+            target: RawRecordNextError
+          - event: LimitReached {continuation}
+            target: RawRecordLimitReached
+          - event: EndOfStream
+            target: RawRecordEndOfStream
+          - event: OutOfBandError{out_of_band_error_type, continuation}
+            target: OutOfBandError
+          - event: FdbError{fdb_error, continuation}
+            target: FdbError
       - name: RawRecordNextError
         type: final
       - name: RawRecordLimitReached

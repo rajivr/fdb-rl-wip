@@ -36,8 +36,9 @@ pub(crate) mod pb {
 
     pub(crate) use crate::cursor::pb::KeyValueContinuationInternalV1;
 
-    // Protobuf generated types renamed to append version.
-    pub(crate) use fdb_rl_proto::cursor::v1::RawRecordContinuation as RawRecordContinuationV1;
+    // Protobuf generated types renamed to prepend `Proto` and append
+    // version.
+    pub(crate) use fdb_rl_proto::cursor::v1::RawRecordContinuation as ProtoRawRecordContinuationV1;
 
     /// Protobuf message `fdb_rl.cursor.v1.RawRecordContinuation`
     /// contains a `Required` field. So, we need to define this type.
@@ -51,11 +52,11 @@ pub(crate) mod pb {
         pub(crate) inner: KeyValueContinuationInternalV1,
     }
 
-    impl TryFrom<RawRecordContinuationV1> for RawRecordContinuationInternalV1 {
+    impl TryFrom<ProtoRawRecordContinuationV1> for RawRecordContinuationInternalV1 {
         type Error = FdbError;
 
         fn try_from(
-            rawrecord_continuation_v1: RawRecordContinuationV1,
+            rawrecord_continuation_v1: ProtoRawRecordContinuationV1,
         ) -> FdbResult<RawRecordContinuationInternalV1> {
             rawrecord_continuation_v1
                 .inner
@@ -72,11 +73,11 @@ pub(crate) mod pb {
         }
     }
 
-    impl From<RawRecordContinuationInternalV1> for RawRecordContinuationV1 {
+    impl From<RawRecordContinuationInternalV1> for ProtoRawRecordContinuationV1 {
         fn from(
             rawrecord_continuation_internal_v1: RawRecordContinuationInternalV1,
-        ) -> RawRecordContinuationV1 {
-            RawRecordContinuationV1 {
+        ) -> ProtoRawRecordContinuationV1 {
+            ProtoRawRecordContinuationV1 {
                 inner: Some(rawrecord_continuation_internal_v1.inner.into()),
             }
         }
@@ -150,7 +151,7 @@ pub(crate) struct RawRecordPrimaryKeySchema {
 }
 
 impl RawRecordPrimaryKeySchema {
-    /// Get reference to [`TupleSchema].
+    /// Get reference to [`TupleSchema`].
     fn get_tuple_schema_ref(&self) -> &TupleSchema {
         &self.inner
     }
@@ -229,6 +230,21 @@ pub(crate) enum RawRecordContinuationInternal {
     V1(pb::RawRecordContinuationInternalV1),
 }
 
+impl RawRecordContinuationInternal {
+    /// Create a `V1` end marker value.
+    pub(crate) fn new_v1_end_marker() -> RawRecordContinuationInternal {
+        let KeyValueContinuationInternal::V1(pb_keyvalue_continuation_internal_v1) =
+            KeyValueContinuationInternal::new_v1_end_marker();
+
+        let rawrecord_continuation_internal_v1 =
+            RawRecordContinuationInternal::V1(pb::RawRecordContinuationInternalV1 {
+                inner: pb_keyvalue_continuation_internal_v1,
+            });
+
+        rawrecord_continuation_internal_v1
+    }
+}
+
 impl TryFrom<RawRecordContinuationInternal> for Bytes {
     type Error = FdbError;
 
@@ -238,7 +254,7 @@ impl TryFrom<RawRecordContinuationInternal> for Bytes {
         match rawrecord_continuation_internal {
             RawRecordContinuationInternal::V1(rawrecord_continuation_internal_v1) => {
                 let rawrecord_continuation_v1 =
-                    pb::RawRecordContinuationV1::from(rawrecord_continuation_internal_v1);
+                    pb::ProtoRawRecordContinuationV1::from(rawrecord_continuation_internal_v1);
 
                 let mut buf = BytesMut::with_capacity(rawrecord_continuation_v1.encoded_len());
 
@@ -289,7 +305,7 @@ impl TryFrom<Bytes> for RawRecordContinuationInternal {
         // Currently there is only one version
         if version == 1 {
             let rawrecord_continuation_internal_v1 =
-                pb::RawRecordContinuationV1::decode(continuation)
+                pb::ProtoRawRecordContinuationV1::decode(continuation)
                     .map_err(|_| FdbError::new(CURSOR_INVALID_CONTINUATION))?
                     .try_into()?;
 
@@ -514,7 +530,8 @@ enum RawRecordForwardScanStateMachineEvent {
 /// A state machine that implements forward scan and returns values of
 /// of type [`RawRecord`].
 ///
-/// See `sismic/...TODO` for the design of the state machine.
+/// See `sismic/raw_record_forward_scan.yaml` for the design of the
+/// state machine.
 struct RawRecordForwardScanStateMachine {
     state_machine_state: RawRecordForwardScanStateMachineState,
     // We use `Option` here so that we can take ownership of the data
@@ -537,7 +554,7 @@ impl RawRecordForwardScanStateMachine {
         primary_key_schema: &RawRecordPrimaryKeySchema,
         values_limit: usize,
     ) -> Option<CursorResult<RawRecord>> {
-        let _: Option<CursorResult<RawRecord>> = match self.state_machine_state {
+        match self.state_machine_state {
             RawRecordForwardScanStateMachineState::InitiateRecordVersionRead => {
                 // Extract and verify state data.
                 //
@@ -842,11 +859,9 @@ impl RawRecordForwardScanStateMachine {
                                         // continuation based on
                                         // `kv_continuation.
                                         let continuation = RawRecordContinuationInternal::V1(
-                                            pb::RawRecordContinuationInternalV1::from(
-                                                pb::RawRecordContinuationInternalV1 {
-                                                    inner: pb_keyvalue_continuation_internal_v1,
-                                                },
-                                            ),
+                                            pb::RawRecordContinuationInternalV1 {
+                                                inner: pb_keyvalue_continuation_internal_v1,
+                                            },
                                         );
 
                                         let raw_record = RawRecord::from((
@@ -990,8 +1005,8 @@ impl RawRecordForwardScanStateMachine {
                     //
                     // This also ensures that in case we encounter a
                     // situation of `LimitReached` and
-                    // `SourceExhasted` happening at the same time, we
-                    // will return `LimitReached`.
+                    // `SourceExhausted` happening at the same time,
+                    // we will return `LimitReached`.
                     self.step_once_with_event(
                         RawRecordForwardScanStateMachineEvent::LimitReached {
                             continuation: continuation.clone(),
@@ -1130,18 +1145,160 @@ impl RawRecordForwardScanStateMachine {
                 }
 
                 let cursor_result_continuation = Arc::new(continuation);
+
                 Some(Ok(CursorSuccess::new(
                     raw_record,
                     cursor_result_continuation,
                 )))
             }
-            RawRecordForwardScanStateMachineState::RawRecordNextError => todo!(),
-            RawRecordForwardScanStateMachineState::RawRecordLimitReached => todo!(),
-            RawRecordForwardScanStateMachineState::RawRecordEndOfStream => todo!(),
-            RawRecordForwardScanStateMachineState::OutOfBandError => todo!(),
-            RawRecordForwardScanStateMachineState::FdbError => todo!(),
-        };
-        todo!();
+            RawRecordForwardScanStateMachineState::RawRecordNextError => {
+                // Final state. We do not `take` state data from
+                // `state_machine_data`.
+                //
+                // We also do not call `step_once_with_event`.
+                //
+                // We will be returning a `Some(...)` (a value of
+                // `CursorError`) in this state.
+                let continuation = self
+                    .state_machine_data
+                    .as_ref()
+                    .and_then(|state_machine_data| {
+                        if let RawRecordForwardScanStateMachineStateData::RawRecordNextError {
+                            continuation,
+                        } = state_machine_data
+                        {
+                            Some(continuation.clone())
+                        } else {
+                            None
+                        }
+                    })
+                    .expect("invalid state_machine_data");
+
+                let cursor_result_continuation = Arc::new(continuation);
+                let fdb_error = FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR);
+
+                Some(Err(CursorError::FdbError(
+                    fdb_error,
+                    cursor_result_continuation,
+                )))
+            }
+            RawRecordForwardScanStateMachineState::RawRecordLimitReached => {
+                // Final state. We do not `take` state data from
+                // `state_machine_data`.
+                //
+                // We also do not call `step_once_with_event`.
+                //
+                // We will be returning a `Some(...)` (a value of
+                // `CursorError`) in this state.
+                let continuation = self
+                    .state_machine_data
+                    .as_ref()
+                    .and_then(|state_machine_data| {
+                        if let RawRecordForwardScanStateMachineStateData::RawRecordLimitReached {
+                            continuation,
+                        } = state_machine_data
+                        {
+                            Some(continuation.clone())
+                        } else {
+                            None
+                        }
+                    })
+                    .expect("invalid state_machine_data");
+
+                let cursor_result_continuation = Arc::new(continuation);
+
+                Some(Err(CursorError::NoNextReason(
+                    NoNextReason::ReturnLimitReached(cursor_result_continuation),
+                )))
+            }
+            RawRecordForwardScanStateMachineState::RawRecordEndOfStream => {
+                // Final state. We do not `take` state data from
+                // `state_machine_data`.
+                //
+                // We also do not call `step_once_with_event`.
+                //
+                // We will be returning a `Some(...)` (a value of
+                // `CursorError`) in this state.
+                let continuation = RawRecordContinuationInternal::new_v1_end_marker();
+
+                let cursor_result_continuation = Arc::new(continuation);
+
+                Some(Err(CursorError::NoNextReason(
+                    NoNextReason::SourceExhausted(cursor_result_continuation),
+                )))
+            }
+            RawRecordForwardScanStateMachineState::OutOfBandError => {
+                // Final state. We do not `take` state data from
+                // `state_machine_data`.
+                //
+                // We also do not call `step_once_with_event`.
+                //
+                // We will be returning a `Some(...)` (a value of
+                // `CursorError`) in this state.
+                let (out_of_band_error_type, continuation) = self
+                    .state_machine_data
+                    .as_ref()
+                    .and_then(|state_machine_data| {
+                        if let RawRecordForwardScanStateMachineStateData::OutOfBandError {
+                            out_of_band_error_type,
+                            continuation,
+                        } = state_machine_data
+                        {
+                            Some((out_of_band_error_type.clone(), continuation.clone()))
+                        } else {
+                            None
+                        }
+                    })
+                    .expect("invalid state_machine_data");
+
+                let cursor_result_continuation = Arc::new(continuation);
+
+                let no_next_reason = match out_of_band_error_type {
+                    LimitManagerStoppedReason::TimeLimitReached => {
+                        NoNextReason::TimeLimitReached(cursor_result_continuation)
+                    }
+                    LimitManagerStoppedReason::ByteLimitReached => {
+                        NoNextReason::ByteLimitReached(cursor_result_continuation)
+                    }
+                    LimitManagerStoppedReason::KeyValueLimitReached => {
+                        NoNextReason::KeyValueLimitReached(cursor_result_continuation)
+                    }
+                };
+
+                Some(Err(CursorError::NoNextReason(no_next_reason)))
+            }
+            RawRecordForwardScanStateMachineState::FdbError => {
+                // Final state. We do not `take` state data from
+                // `state_machine_data`.
+                //
+                // We also do not call `step_once_with_event`.
+                //
+                // We will be returning a `Some(...)` (a value of
+                // `CursorError`) in this state.
+                let (fdb_error, continuation) = self
+                    .state_machine_data
+                    .as_ref()
+                    .and_then(|state_machine_data| {
+                        if let RawRecordForwardScanStateMachineStateData::FdbError {
+                            fdb_error,
+                            continuation,
+                        } = state_machine_data
+                        {
+                            Some((fdb_error.clone(), continuation.clone()))
+                        } else {
+                            None
+                        }
+                    })
+                    .expect("invalid state_machine_data");
+
+                let cursor_result_continuation = Arc::new(continuation);
+
+                Some(Err(CursorError::FdbError(
+                    fdb_error,
+                    cursor_result_continuation,
+                )))
+            }
+        }
     }
 
     // TODO: This can be easily unit tested.
@@ -1410,7 +1567,8 @@ enum RawRecordReverseScanStateMachineEvent {
 /// A state machine that implements reverse scan and returns values of
 /// of type [`RawRecord`].
 ///
-/// See `sismic/...TODO` for the design of the state machine.
+/// See `sismic/raw_record_reverse_scan.yaml` for the design of the
+/// state machine.
 struct RawRecordReverseScanStateMachine {
     state_machine_state: RawRecordReverseScanStateMachineState,
     // We use `Option` here so that we can take ownership of the data
@@ -1431,8 +1589,9 @@ impl RawRecordReverseScanStateMachine {
         &mut self,
         key_value_cursor: &mut KeyValueCursor,
         primary_key_schema: &RawRecordPrimaryKeySchema,
+        values_limit: usize,
     ) -> Option<CursorResult<RawRecord>> {
-        let _: Option<CursorResult<RawRecord>> = match self.state_machine_state {
+        match self.state_machine_state {
             RawRecordReverseScanStateMachineState::InitiateLastSplitRead => {
                 // Extract and verify state data.
                 //
@@ -1841,11 +2000,9 @@ impl RawRecordReverseScanStateMachine {
                                                     // `kv_continuation.
                                                     let continuation =
 							RawRecordContinuationInternal::V1(
-							    pb::RawRecordContinuationInternalV1::from(
 								pb::RawRecordContinuationInternalV1 {
 								    inner: pb_keyvalue_continuation_internal_v1,
 								},
-							    ),
 							);
 
                                                     let raw_record = RawRecord::from((
@@ -2039,15 +2196,332 @@ impl RawRecordReverseScanStateMachine {
                 }
             }
             RawRecordReverseScanStateMachineState::RawRecordAvailable => {
-		// TODO: Continue from here.
-	    }
-            RawRecordReverseScanStateMachineState::RawRecordNextError => todo!(),
-            RawRecordReverseScanStateMachineState::RawRecordLimitReached => todo!(),
-            RawRecordReverseScanStateMachineState::RawRecordEndOfStream => todo!(),
-            RawRecordReverseScanStateMachineState::OutOfBandError => todo!(),
-            RawRecordReverseScanStateMachineState::FdbError => todo!(),
-        };
-        todo!();
+                // Extract and verify state data.
+                //
+                // Non-final state. We *must* call
+                // `step_once_with_event`.
+                //
+                // In addition, we will be returning a `Some(...)` (a
+                // value of `RawRecord`) in this state.
+                let (raw_record, continuation, mut records_already_returned) = self
+                    .state_machine_data
+                    .take()
+                    .and_then(|state_machine_data| {
+                        if let RawRecordReverseScanStateMachineStateData::RawRecordAvailable {
+                            raw_record,
+                            continuation,
+                            records_already_returned,
+                        } = state_machine_data
+                        {
+                            Some((raw_record, continuation, records_already_returned))
+                        } else {
+                            None
+                        }
+                    })
+                    .expect("invalid state_machine_data");
+
+                if records_already_returned + 1 == values_limit {
+                    // First check if we are going to hit the
+                    // `values_limit`.
+                    //
+                    // This also ensures that in case we encounter a
+                    // situation of `LimitReached` and
+                    // `SourceExhausted` happening at the same time,
+                    // we will return `LimitReached`.
+                    self.step_once_with_event(
+                        RawRecordReverseScanStateMachineEvent::LimitReached {
+                            continuation: continuation.clone(),
+                        },
+                    );
+                } else {
+                    // We still need to return more raw records. Attempt
+                    // to read the next raw record's last data split.
+
+                    let next_kv = key_value_cursor.next().await;
+
+                    match next_kv {
+                        Ok(cursor_success) => {
+                            let (key, value) = cursor_success.into_value().into_parts();
+
+                            // Extract a value of type
+                            // `FdbResult<(RawRecordPrimaryKey, i8,
+                            // Value)>, which will give us the information
+                            // that we need to make the correct
+                            // transition.
+                            let res = Tuple::try_from(key)
+                                .and_then(|mut tup| {
+                                    // Verify that the split index is
+                                    // `>=0`.
+                                    let idx = tup.pop_back::<i8>().ok_or_else(|| {
+                                        FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR)
+                                    })?;
+                                    if idx >= 0 {
+                                        // `data_splits` is last index plus one.
+                                        let data_splits = idx + 1;
+                                        Ok((tup, data_splits))
+                                    } else {
+                                        Err(FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR))
+                                    }
+                                })
+                                .and_then(|(tup, data_splits)| {
+                                    // Verify that tuple matches the
+                                    // primary key schema.
+                                    let primary_key = RawRecordPrimaryKey::try_from((
+                                        primary_key_schema.clone(),
+                                        tup,
+                                    ))?;
+
+                                    let last_data_split_value = value;
+
+                                    Ok((primary_key, data_splits, last_data_split_value))
+                                });
+
+                            match res {
+                                Ok((primary_key, data_splits, last_split_value)) => {
+                                    // We will be returning a raw
+                                    // record below.
+                                    records_already_returned += 1;
+
+                                    self.step_once_with_event(
+                                        RawRecordReverseScanStateMachineEvent::LastSplitOk {
+                                            primary_key,
+                                            data_splits,
+                                            last_split_value,
+                                            continuation: continuation.clone(),
+                                            records_already_returned,
+                                        },
+                                    );
+                                }
+                                Err(_) => {
+                                    self.step_once_with_event(
+                                        RawRecordReverseScanStateMachineEvent::NextError {
+                                            continuation: continuation.clone(),
+                                        },
+                                    );
+                                }
+                            }
+                        }
+                        Err(cursor_error) => match cursor_error {
+                            CursorError::FdbError(fdb_error, _) => {
+                                self.step_once_with_event(
+                                    RawRecordReverseScanStateMachineEvent::FdbError {
+                                        fdb_error,
+                                        continuation: continuation.clone(),
+                                    },
+                                );
+                            }
+                            CursorError::NoNextReason(no_next_reason) => match no_next_reason {
+                                NoNextReason::SourceExhausted(_) => {
+                                    // We encountered the end of stream
+                                    // before reading the last split. So
+                                    // we can safely enter `EndOfStream`
+                                    // state.
+                                    self.step_once_with_event(
+                                        RawRecordReverseScanStateMachineEvent::EndOfStream,
+                                    );
+                                }
+                                NoNextReason::ReturnLimitReached(_) => {
+                                    // We do not set in-band limit on the
+                                    // key value cursor. This is an
+                                    // unexpected state error.
+                                    let fdb_error = FdbError::new(RAW_RECORD_CURSOR_STATE_ERROR);
+                                    self.step_once_with_event(
+                                        RawRecordReverseScanStateMachineEvent::FdbError {
+                                            fdb_error,
+                                            continuation: continuation.clone(),
+                                        },
+                                    );
+                                }
+                                // Out of band errors
+                                NoNextReason::TimeLimitReached(_) => {
+                                    let out_of_band_error_type =
+                                        LimitManagerStoppedReason::TimeLimitReached;
+                                    self.step_once_with_event(
+                                        RawRecordReverseScanStateMachineEvent::OutOfBandError {
+                                            out_of_band_error_type,
+                                            continuation: continuation.clone(),
+                                        },
+                                    );
+                                }
+                                NoNextReason::ByteLimitReached(_) => {
+                                    let out_of_band_error_type =
+                                        LimitManagerStoppedReason::ByteLimitReached;
+                                    self.step_once_with_event(
+                                        RawRecordReverseScanStateMachineEvent::OutOfBandError {
+                                            out_of_band_error_type,
+                                            continuation: continuation.clone(),
+                                        },
+                                    );
+                                }
+                                NoNextReason::KeyValueLimitReached(_) => {
+                                    let out_of_band_error_type =
+                                        LimitManagerStoppedReason::KeyValueLimitReached;
+                                    self.step_once_with_event(
+                                        RawRecordReverseScanStateMachineEvent::OutOfBandError {
+                                            out_of_band_error_type,
+                                            continuation: continuation.clone(),
+                                        },
+                                    );
+                                }
+                            },
+                        },
+                    }
+                }
+
+                let cursor_result_continuation = Arc::new(continuation);
+                Some(Ok(CursorSuccess::new(
+                    raw_record,
+                    cursor_result_continuation,
+                )))
+            }
+            RawRecordReverseScanStateMachineState::RawRecordNextError => {
+                // Final state. We do not `take` state data from
+                // `state_machine_data`.
+                //
+                // We also do not call `step_once_with_event`.
+                //
+                // We will be returning a `Some(...)` (a value of
+                // `CursorError`) in this state.
+                let continuation = self
+                    .state_machine_data
+                    .as_ref()
+                    .and_then(|state_machine_data| {
+                        if let RawRecordReverseScanStateMachineStateData::RawRecordNextError {
+                            continuation,
+                        } = state_machine_data
+                        {
+                            Some(continuation.clone())
+                        } else {
+                            None
+                        }
+                    })
+                    .expect("invalid state_machine_data");
+
+                let cursor_result_continuation = Arc::new(continuation);
+                let fdb_error = FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR);
+
+                Some(Err(CursorError::FdbError(
+                    fdb_error,
+                    cursor_result_continuation,
+                )))
+            }
+            RawRecordReverseScanStateMachineState::RawRecordLimitReached => {
+                // Final state. We do not `take` state data from
+                // `state_machine_data`.
+                //
+                // We also do not call `step_once_with_event`.
+                //
+                // We will be returning a `Some(...)` (a value of
+                // `CursorError`) in this state.
+                let continuation = self
+                    .state_machine_data
+                    .as_ref()
+                    .and_then(|state_machine_data| {
+                        if let RawRecordReverseScanStateMachineStateData::RawRecordLimitReached {
+                            continuation,
+                        } = state_machine_data
+                        {
+                            Some(continuation.clone())
+                        } else {
+                            None
+                        }
+                    })
+                    .expect("invalid state_machine_data");
+
+                let cursor_result_continuation = Arc::new(continuation);
+
+                Some(Err(CursorError::NoNextReason(
+                    NoNextReason::ReturnLimitReached(cursor_result_continuation),
+                )))
+            }
+            RawRecordReverseScanStateMachineState::RawRecordEndOfStream => {
+                // Final state. We do not `take` state data from
+                // `state_machine_data`.
+                //
+                // We also do not call `step_once_with_event`.
+                //
+                // We will be returning a `Some(...)` (a value of
+                // `CursorError`) in this state.
+                let continuation = RawRecordContinuationInternal::new_v1_end_marker();
+
+                let cursor_result_continuation = Arc::new(continuation);
+
+                Some(Err(CursorError::NoNextReason(
+                    NoNextReason::SourceExhausted(cursor_result_continuation),
+                )))
+            }
+            RawRecordReverseScanStateMachineState::OutOfBandError => {
+                // Final state. We do not `take` state data from
+                // `state_machine_data`.
+                //
+                // We also do not call `step_once_with_event`.
+                //
+                // We will be returning a `Some(...)` (a value of
+                // `CursorError`) in this state.
+                let (out_of_band_error_type, continuation) = self
+                    .state_machine_data
+                    .as_ref()
+                    .and_then(|state_machine_data| {
+                        if let RawRecordReverseScanStateMachineStateData::OutOfBandError {
+                            out_of_band_error_type,
+                            continuation,
+                        } = state_machine_data
+                        {
+                            Some((out_of_band_error_type.clone(), continuation.clone()))
+                        } else {
+                            None
+                        }
+                    })
+                    .expect("invalid state_machine_data");
+
+                let cursor_result_continuation = Arc::new(continuation);
+
+                let no_next_reason = match out_of_band_error_type {
+                    LimitManagerStoppedReason::TimeLimitReached => {
+                        NoNextReason::TimeLimitReached(cursor_result_continuation)
+                    }
+                    LimitManagerStoppedReason::ByteLimitReached => {
+                        NoNextReason::ByteLimitReached(cursor_result_continuation)
+                    }
+                    LimitManagerStoppedReason::KeyValueLimitReached => {
+                        NoNextReason::KeyValueLimitReached(cursor_result_continuation)
+                    }
+                };
+
+                Some(Err(CursorError::NoNextReason(no_next_reason)))
+            }
+            RawRecordReverseScanStateMachineState::FdbError => {
+                // Final state. We do not `take` state data from
+                // `state_machine_data`.
+                //
+                // We also do not call `step_once_with_event`.
+                //
+                // We will be returning a `Some(...)` (a value of
+                // `CursorError`) in this state.
+                let (fdb_error, continuation) = self
+                    .state_machine_data
+                    .as_ref()
+                    .and_then(|state_machine_data| {
+                        if let RawRecordReverseScanStateMachineStateData::FdbError {
+                            fdb_error,
+                            continuation,
+                        } = state_machine_data
+                        {
+                            Some((fdb_error.clone(), continuation.clone()))
+                        } else {
+                            None
+                        }
+                    })
+                    .expect("invalid state_machine_data");
+
+                let cursor_result_continuation = Arc::new(continuation);
+
+                Some(Err(CursorError::FdbError(
+                    fdb_error,
+                    cursor_result_continuation,
+                )))
+            }
+        }
     }
 
     // TODO: This can be easily unit tested.
@@ -2155,7 +2629,69 @@ impl RawRecordReverseScanStateMachine {
                 }
                 _ => panic!("Invalid event!"),
             },
-            RawRecordReverseScanStateMachineState::RawRecordAvailable => todo!(),
+            RawRecordReverseScanStateMachineState::RawRecordAvailable => match event {
+                RawRecordReverseScanStateMachineEvent::LastSplitOk {
+                    primary_key,
+                    data_splits,
+                    last_split_value,
+                    continuation,
+                    records_already_returned,
+                } => {
+                    self.state_machine_data =
+                        Some(RawRecordReverseScanStateMachineStateData::ReadLastSplit {
+                            primary_key,
+                            data_splits,
+                            last_split_value,
+                            continuation,
+                            records_already_returned,
+                        });
+                    RawRecordReverseScanStateMachineState::ReadLastSplit
+                }
+                RawRecordReverseScanStateMachineEvent::NextError { continuation } => {
+                    self.state_machine_data = Some(
+                        RawRecordReverseScanStateMachineStateData::RawRecordNextError {
+                            continuation,
+                        },
+                    );
+                    RawRecordReverseScanStateMachineState::RawRecordNextError
+                }
+                RawRecordReverseScanStateMachineEvent::LimitReached { continuation } => {
+                    self.state_machine_data = Some(
+                        RawRecordReverseScanStateMachineStateData::RawRecordLimitReached {
+                            continuation,
+                        },
+                    );
+                    RawRecordReverseScanStateMachineState::RawRecordLimitReached
+                }
+                RawRecordReverseScanStateMachineEvent::EndOfStream => {
+                    self.state_machine_data =
+                        Some(RawRecordReverseScanStateMachineStateData::RawRecordEndOfStream);
+                    RawRecordReverseScanStateMachineState::RawRecordEndOfStream
+                }
+                RawRecordReverseScanStateMachineEvent::OutOfBandError {
+                    out_of_band_error_type,
+                    continuation,
+                } => {
+                    self.state_machine_data =
+                        Some(RawRecordReverseScanStateMachineStateData::OutOfBandError {
+                            out_of_band_error_type,
+                            continuation,
+                        });
+                    RawRecordReverseScanStateMachineState::OutOfBandError
+                }
+                RawRecordReverseScanStateMachineEvent::FdbError {
+                    fdb_error,
+                    continuation,
+                } => {
+                    self.state_machine_data =
+                        Some(RawRecordReverseScanStateMachineStateData::FdbError {
+                            fdb_error,
+                            continuation,
+                        });
+                    RawRecordReverseScanStateMachineState::FdbError
+                }
+                _ => panic!("Invalid event!"),
+            },
             RawRecordReverseScanStateMachineState::RawRecordNextError
             | RawRecordReverseScanStateMachineState::RawRecordLimitReached
             | RawRecordReverseScanStateMachineState::RawRecordEndOfStream
@@ -2217,7 +2753,11 @@ impl Cursor<RawRecord> for RawRecordCursor {
                 }
                 RawRecordStateMachine::ReverseScan(ref mut reverse_scan_state_machine) => {
                     if let Some(res) = reverse_scan_state_machine
-                        .next(&mut self.key_value_cursor, &self.primary_key_schema)
+                        .next(
+                            &mut self.key_value_cursor,
+                            &self.primary_key_schema,
+                            self.values_limit,
+                        )
                         .await
                     {
                         return res;
