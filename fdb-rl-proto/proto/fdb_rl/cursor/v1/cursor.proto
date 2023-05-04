@@ -5,8 +5,8 @@ package fdb_rl.cursor.v1;
 message KeyValueContinuation {
   message BeginMarker {}
 
-  message Continuation {
-    bytes continuation = 1;
+  message KeyMarker {
+    bytes key_marker = 1;
   }
 
   message EndMarker {}
@@ -14,7 +14,7 @@ message KeyValueContinuation {
   // Required.
   oneof key_value_continuation {
     BeginMarker begin_marker = 1;
-    Continuation continuation = 2;
+    KeyMarker key_marker = 2;
     EndMarker end_marker = 3;
   }
 }

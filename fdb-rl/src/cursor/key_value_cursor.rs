@@ -36,8 +36,8 @@ pub(crate) mod pb {
     /// Protobuf generated types renamed to prepend `Proto` and append
     /// version (and add `Enum` suffix).
     pub(crate) use fdb_rl_proto::cursor::v1::key_value_continuation::{
-        BeginMarker as ProtoBeginMarkerV1, Continuation as ProtoContinuationV1,
-        EndMarker as ProtoEndMarkerV1, KeyValueContinuation as ProtoKeyValueContinuationEnumV1,
+        BeginMarker as ProtoBeginMarkerV1, EndMarker as ProtoEndMarkerV1,
+        KeyMarker as ProtoKeyMarkerV1, KeyValueContinuation as ProtoKeyValueContinuationEnumV1,
     };
 
     /// Protobuf generated types renamed to append version.
@@ -94,11 +94,29 @@ pub(crate) enum KeyValueContinuationInternal {
 }
 
 impl KeyValueContinuationInternal {
-    /// Create a `V1` end marker value.
-    pub(crate) fn new_v1_end_marker() -> KeyValueContinuationInternal {
+    /// Create a `V1` begin marker value.
+    pub(crate) fn new_v1_begin_marker() -> KeyValueContinuationInternal {
         KeyValueContinuationInternal::V1(pb::KeyValueContinuationInternalV1 {
             key_value_continuation: pb::ProtoKeyValueContinuationEnumV1::BeginMarker(
                 pb::ProtoBeginMarkerV1 {},
+            ),
+        })
+    }
+
+    /// Create a `V1` key marker value.
+    pub(crate) fn new_v1_key_marker(key_marker: Bytes) -> KeyValueContinuationInternal {
+        KeyValueContinuationInternal::V1(pb::KeyValueContinuationInternalV1 {
+            key_value_continuation: pb::ProtoKeyValueContinuationEnumV1::KeyMarker(
+                pb::ProtoKeyMarkerV1 { key_marker },
+            ),
+        })
+    }
+
+    /// Create a `V1` end marker value.
+    pub(crate) fn new_v1_end_marker() -> KeyValueContinuationInternal {
+        KeyValueContinuationInternal::V1(pb::KeyValueContinuationInternalV1 {
+            key_value_continuation: pb::ProtoKeyValueContinuationEnumV1::EndMarker(
+                pb::ProtoEndMarkerV1 {},
             ),
         })
     }
@@ -424,11 +442,7 @@ impl KeyValueCursorBuilder {
                     fdb_stream_keyvalue,
                     limit_manager,
                     values_limit,
-                    KeyValueContinuationInternal::V1(pb::KeyValueContinuationInternalV1 {
-                        key_value_continuation: pb::ProtoKeyValueContinuationEnumV1::BeginMarker(
-                            pb::ProtoBeginMarkerV1 {},
-                        ),
-                    }),
+                    KeyValueContinuationInternal::new_v1_begin_marker(),
                 )
             }
         })
@@ -470,13 +484,13 @@ impl KeyValueCursorBuilder {
                 }
                 KeyValueContinuationInternal::V1(pb::KeyValueContinuationInternalV1 {
                     key_value_continuation:
-                        pb::ProtoKeyValueContinuationEnumV1::Continuation(pb::ProtoContinuationV1 {
-                            continuation,
+                        pb::ProtoKeyValueContinuationEnumV1::KeyMarker(pb::ProtoKeyMarkerV1 {
+                            key_marker,
                         }),
                 }) => bytes_endpoint::build_range_continuation(
                     maybe_subspace,
                     key_range,
-                    Some(continuation),
+                    Some(key_marker),
                     reverse,
                 ),
                 KeyValueContinuationInternal::V1(pb::KeyValueContinuationInternalV1 {
@@ -619,14 +633,7 @@ impl Cursor<KeyValue> for KeyValueCursor {
                             // use `CursorResultContinuation::new`
                             // here. Therefore use `Arc::new`.
                             let cursor_result_continuation =
-                                Arc::new(KeyValueContinuationInternal::V1(
-                                    pb::KeyValueContinuationInternalV1 {
-                                        key_value_continuation:
-                                            pb::ProtoKeyValueContinuationEnumV1::EndMarker(
-                                                pb::ProtoEndMarkerV1 {},
-                                            ),
-                                    },
-                                ));
+                                Arc::new(KeyValueContinuationInternal::new_v1_end_marker());
                             CursorError::NoNextReason(NoNextReason::SourceExhausted(
                                 cursor_result_continuation,
                             ))
@@ -647,14 +654,7 @@ impl Cursor<KeyValue> for KeyValueCursor {
                                     // `CursorResultContinuation::new`
                                     // here. Therefore use `Arc::new`.
                                     let cursor_result_continuation =
-                                        Arc::new(KeyValueContinuationInternal::V1(
-                                            pb::KeyValueContinuationInternalV1 {
-                                                key_value_continuation:
-                                                    pb::ProtoKeyValueContinuationEnumV1::EndMarker(
-                                                        pb::ProtoEndMarkerV1 {},
-                                                    ),
-                                            },
-                                        ));
+                                        Arc::new(KeyValueContinuationInternal::new_v1_end_marker());
                                     CursorError::NoNextReason(NoNextReason::SourceExhausted(
                                         cursor_result_continuation,
                                     ))
@@ -687,16 +687,10 @@ impl Cursor<KeyValue> for KeyValueCursor {
                                             Key::from(key_bytes.slice(self.subspace_length..));
 
                                         // Update continuation
-                                        self.continuation = KeyValueContinuationInternal::V1(
-                                            pb::KeyValueContinuationInternalV1 {
-                                                key_value_continuation:
-                                                    pb::ProtoKeyValueContinuationEnumV1::Continuation(
-                                                        pb::ProtoContinuationV1 {
-                                                            continuation: Bytes::from(key.clone()),
-                                                        },
-                                                    ),
-                                            },
-                                        );
+                                        self.continuation =
+                                            KeyValueContinuationInternal::new_v1_key_marker(
+                                                Bytes::from(key.clone()),
+                                            );
 
                                         let keyvalue = KeyValue::new(key, value_bytes);
 
@@ -774,69 +768,40 @@ mod tests {
         use crate::cursor::Continuation;
         use crate::error::CURSOR_INVALID_CONTINUATION;
 
-        use super::super::pb;
         use super::super::KeyValueContinuationInternal;
 
         #[test]
         fn continuation_to_bytes() {
             assert_eq!(
-                KeyValueContinuationInternal::V1(pb::KeyValueContinuationInternalV1 {
-                    key_value_continuation: pb::ProtoKeyValueContinuationEnumV1::BeginMarker(
-                        pb::ProtoBeginMarkerV1 {}
-                    )
-                }),
+                KeyValueContinuationInternal::new_v1_begin_marker(),
                 KeyValueContinuationInternal::try_from(
-                    KeyValueContinuationInternal::to_bytes(&KeyValueContinuationInternal::V1(
-                        pb::KeyValueContinuationInternalV1 {
-                            key_value_continuation:
-                                pb::ProtoKeyValueContinuationEnumV1::BeginMarker(
-                                    pb::ProtoBeginMarkerV1 {}
-                                )
-                        }
-                    ))
+                    KeyValueContinuationInternal::to_bytes(
+                        &KeyValueContinuationInternal::new_v1_begin_marker()
+                    )
                     .unwrap(),
                 )
                 .unwrap()
             );
 
             assert_eq!(
-                KeyValueContinuationInternal::V1(pb::KeyValueContinuationInternalV1 {
-                    key_value_continuation: pb::ProtoKeyValueContinuationEnumV1::Continuation(
-                        pb::ProtoContinuationV1 {
-                            continuation: Bytes::from_static(b"hello_world"),
-                        }
-                    )
-                }),
+                KeyValueContinuationInternal::new_v1_key_marker(Bytes::from_static(b"hello_world")),
                 KeyValueContinuationInternal::try_from(
-                    KeyValueContinuationInternal::to_bytes(&KeyValueContinuationInternal::V1(
-                        pb::KeyValueContinuationInternalV1 {
-                            key_value_continuation:
-                                pb::ProtoKeyValueContinuationEnumV1::Continuation(
-                                    pb::ProtoContinuationV1 {
-                                        continuation: Bytes::from_static(b"hello_world"),
-                                    }
-                                )
-                        }
-                    ))
+                    KeyValueContinuationInternal::to_bytes(
+                        &KeyValueContinuationInternal::new_v1_key_marker(Bytes::from_static(
+                            b"hello_world"
+                        ))
+                    )
                     .unwrap(),
                 )
                 .unwrap()
             );
 
             assert_eq!(
-                KeyValueContinuationInternal::V1(pb::KeyValueContinuationInternalV1 {
-                    key_value_continuation: pb::ProtoKeyValueContinuationEnumV1::EndMarker(
-                        pb::ProtoEndMarkerV1 {}
-                    )
-                }),
+                KeyValueContinuationInternal::new_v1_end_marker(),
                 KeyValueContinuationInternal::try_from(
-                    KeyValueContinuationInternal::to_bytes(&KeyValueContinuationInternal::V1(
-                        pb::KeyValueContinuationInternalV1 {
-                            key_value_continuation: pb::ProtoKeyValueContinuationEnumV1::EndMarker(
-                                pb::ProtoEndMarkerV1 {}
-                            )
-                        }
-                    ))
+                    KeyValueContinuationInternal::to_bytes(
+                        &KeyValueContinuationInternal::new_v1_end_marker()
+                    )
                     .unwrap(),
                 )
                 .unwrap()
@@ -846,19 +811,11 @@ mod tests {
         #[test]
         fn continuation_is_begin_marker() {
             assert!(KeyValueContinuationInternal::is_begin_marker(
-                &KeyValueContinuationInternal::V1(pb::KeyValueContinuationInternalV1 {
-                    key_value_continuation: pb::ProtoKeyValueContinuationEnumV1::BeginMarker(
-                        pb::ProtoBeginMarkerV1 {}
-                    )
-                })
+                &KeyValueContinuationInternal::new_v1_begin_marker()
             ));
 
             assert!(!KeyValueContinuationInternal::is_begin_marker(
-                &KeyValueContinuationInternal::V1(pb::KeyValueContinuationInternalV1 {
-                    key_value_continuation: pb::ProtoKeyValueContinuationEnumV1::EndMarker(
-                        pb::ProtoEndMarkerV1 {}
-                    )
-                }),
+                &KeyValueContinuationInternal::new_v1_end_marker()
             ));
         }
 
@@ -890,13 +847,9 @@ mod tests {
             // valid case
             {
                 let keyvalue_continuation_internal =
-                    KeyValueContinuationInternal::V1(pb::KeyValueContinuationInternalV1 {
-                        key_value_continuation: pb::ProtoKeyValueContinuationEnumV1::Continuation(
-                            pb::ProtoContinuationV1 {
-                                continuation: Bytes::from_static(b"hello_world"),
-                            },
-                        ),
-                    });
+                    KeyValueContinuationInternal::new_v1_key_marker(Bytes::from_static(
+                        b"hello_world",
+                    ));
 
                 let continuation_bytes = keyvalue_continuation_internal.to_bytes().unwrap();
                 let res =
@@ -914,13 +867,9 @@ mod tests {
             // path.
             {
                 let keyvalue_continuation_internal =
-                    KeyValueContinuationInternal::V1(pb::KeyValueContinuationInternalV1 {
-                        key_value_continuation: pb::ProtoKeyValueContinuationEnumV1::Continuation(
-                            pb::ProtoContinuationV1 {
-                                continuation: Bytes::from_static(b"hello_world"),
-                            },
-                        ),
-                    });
+                    KeyValueContinuationInternal::new_v1_key_marker(Bytes::from_static(
+                        b"hello_world",
+                    ));
 
                 let continuation_bytes = keyvalue_continuation_internal.to_bytes();
 
@@ -933,13 +882,9 @@ mod tests {
 
             {
                 let keyvalue_continuation_internal =
-                    KeyValueContinuationInternal::V1(pb::KeyValueContinuationInternalV1 {
-                        key_value_continuation: pb::ProtoKeyValueContinuationEnumV1::Continuation(
-                            pb::ProtoContinuationV1 {
-                                continuation: Bytes::from_static(b"hello_world"),
-                            },
-                        ),
-                    });
+                    KeyValueContinuationInternal::new_v1_key_marker(Bytes::from_static(
+                        b"hello_world",
+                    ));
 
                 let continuation_bytes = keyvalue_continuation_internal.to_bytes();
                 let res = <Bytes as TryFrom<KeyValueContinuationInternal>>::try_from(
@@ -950,11 +895,7 @@ mod tests {
 
             {
                 let keyvalue_continuation_internal =
-                    KeyValueContinuationInternal::V1(pb::KeyValueContinuationInternalV1 {
-                        key_value_continuation: pb::ProtoKeyValueContinuationEnumV1::EndMarker(
-                            pb::ProtoEndMarkerV1 {},
-                        ),
-                    });
+                    KeyValueContinuationInternal::new_v1_end_marker();
 
                 let continuation_bytes = keyvalue_continuation_internal.to_bytes();
 

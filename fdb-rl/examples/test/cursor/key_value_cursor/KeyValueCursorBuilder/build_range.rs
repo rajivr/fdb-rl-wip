@@ -10,8 +10,8 @@ use fdb::{Key, KeySelector, Value};
 
 use fdb_rl::range::{KeyHighEndpoint, KeyLowEndpoint, KeyRange};
 use fdb_rl::test::cursor::key_value_cursor::{
-    key_value_continuation_v1_begin_marker_bytes, key_value_continuation_v1_continuation_bytes,
-    key_value_continuation_v1_end_marker_bytes, key_value_cursor_builder_build_range,
+    key_value_continuation_v1_begin_marker_bytes, key_value_continuation_v1_end_marker_bytes,
+    key_value_continuation_v1_key_marker_bytes, key_value_cursor_builder_build_range,
 };
 
 use libtest_mimic::{Arguments, Failed, Trial};
@@ -1778,7 +1778,7 @@ fn no_subspace_start_end_forward_continuation_first() -> Result<(), Failed> {
                 .read(|tr| async move {
                     let maybe_subspace = None;
                     let key_range = KeyRange::new(KeyLowEndpoint::Start, KeyHighEndpoint::End);
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x00")),
                     )?);
                     let reverse = false;
@@ -1845,7 +1845,7 @@ fn no_subspace_start_end_reverse_continuation_first() -> Result<(), Failed> {
                 .read(|tr| async move {
                     let maybe_subspace = None;
                     let key_range = KeyRange::new(KeyLowEndpoint::Start, KeyHighEndpoint::End);
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x09")),
                     )?);
                     let reverse = true;
@@ -1906,7 +1906,7 @@ fn no_subspace_start_end_forward_continuation_last() -> Result<(), Failed> {
                 .read(|tr| async move {
                     let maybe_subspace = None;
                     let key_range = KeyRange::new(KeyLowEndpoint::Start, KeyHighEndpoint::End);
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x09")),
                     )?);
                     let reverse = false;
@@ -1971,7 +1971,7 @@ fn no_subspace_start_end_reverse_continuation_last() -> Result<(), Failed> {
                 .read(|tr| async move {
                     let maybe_subspace = None;
                     let key_range = KeyRange::new(KeyLowEndpoint::Start, KeyHighEndpoint::End);
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x00")),
                     )?);
                     let reverse = true;
@@ -2029,7 +2029,7 @@ fn no_subspace_start_end_forward_continuation_middle() -> Result<(), Failed> {
                 .read(|tr| async move {
                     let maybe_subspace = None;
                     let key_range = KeyRange::new(KeyLowEndpoint::Start, KeyHighEndpoint::End);
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = false;
@@ -2096,7 +2096,7 @@ fn no_subspace_start_end_reverse_continuation_middle() -> Result<(), Failed> {
                 .read(|tr| async move {
                     let maybe_subspace = None;
                     let key_range = KeyRange::new(KeyLowEndpoint::Start, KeyHighEndpoint::End);
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = true;
@@ -3070,7 +3070,7 @@ fn no_subspace_inclusive_inclusive_one_forward_continuation_first() -> Result<()
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = false;
@@ -3147,7 +3147,7 @@ fn no_subspace_inclusive_inclusive_one_reverse_continuation_first() -> Result<()
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = true;
@@ -3663,7 +3663,7 @@ fn no_subspace_inclusive_inclusive_two_forward_continuation_first() -> Result<()
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x06"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = false;
@@ -3741,7 +3741,7 @@ fn no_subspace_inclusive_inclusive_two_reverse_continuation_first() -> Result<()
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x06"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x06")),
                     )?);
                     let reverse = true;
@@ -3817,7 +3817,7 @@ fn no_subspace_inclusive_inclusive_two_forward_continuation_last() -> Result<(),
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x06"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x06")),
                     )?);
                     let reverse = false;
@@ -3894,7 +3894,7 @@ fn no_subspace_inclusive_inclusive_two_reverse_continuation_last() -> Result<(),
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x06"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = true;
@@ -4411,7 +4411,7 @@ fn no_subspace_inclusive_inclusive_three_forward_continuation_first() -> Result<
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = false;
@@ -4489,7 +4489,7 @@ fn no_subspace_inclusive_inclusive_three_reverse_continuation_first() -> Result<
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x07")),
                     )?);
                     let reverse = true;
@@ -4565,7 +4565,7 @@ fn no_subspace_inclusive_inclusive_three_forward_continuation_last() -> Result<(
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x07")),
                     )?);
                     let reverse = false;
@@ -4642,7 +4642,7 @@ fn no_subspace_inclusive_inclusive_three_reverse_continuation_last() -> Result<(
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = true;
@@ -4717,7 +4717,7 @@ fn no_subspace_inclusive_inclusive_three_forward_continuation_middle() -> Result
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x06")),
                     )?);
                     let reverse = false;
@@ -4795,7 +4795,7 @@ fn no_subspace_inclusive_inclusive_three_reverse_continuation_middle() -> Result
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x06")),
                     )?);
                     let reverse = true;
@@ -5755,7 +5755,7 @@ fn no_subspace_inclusive_exclusive_one_forward_continuation_first() -> Result<()
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x06"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = false;
@@ -5832,7 +5832,7 @@ fn no_subspace_inclusive_exclusive_one_reverse_continuation_first() -> Result<()
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x06"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = true;
@@ -6348,7 +6348,7 @@ fn no_subspace_inclusive_exclusive_two_forward_continuation_first() -> Result<()
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = false;
@@ -6426,7 +6426,7 @@ fn no_subspace_inclusive_exclusive_two_reverse_continuation_first() -> Result<()
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x06")),
                     )?);
                     let reverse = true;
@@ -6502,7 +6502,7 @@ fn no_subspace_inclusive_exclusive_two_forward_continuation_last() -> Result<(),
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x06")),
                     )?);
                     let reverse = false;
@@ -6579,7 +6579,7 @@ fn no_subspace_inclusive_exclusive_two_reverse_continuation_last() -> Result<(),
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = true;
@@ -7096,7 +7096,7 @@ fn no_subspace_inclusive_exclusive_three_forward_continuation_first() -> Result<
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x08"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = false;
@@ -7174,7 +7174,7 @@ fn no_subspace_inclusive_exclusive_three_reverse_continuation_first() -> Result<
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x08"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x07")),
                     )?);
                     let reverse = true;
@@ -7250,7 +7250,7 @@ fn no_subspace_inclusive_exclusive_three_forward_continuation_last() -> Result<(
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x08"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x07")),
                     )?);
                     let reverse = false;
@@ -7327,7 +7327,7 @@ fn no_subspace_inclusive_exclusive_three_reverse_continuation_last() -> Result<(
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x08"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = true;
@@ -7402,7 +7402,7 @@ fn no_subspace_inclusive_exclusive_three_forward_continuation_middle() -> Result
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x08"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x06")),
                     )?);
                     let reverse = false;
@@ -7480,7 +7480,7 @@ fn no_subspace_inclusive_exclusive_three_reverse_continuation_middle() -> Result
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x08"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x06")),
                     )?);
                     let reverse = true;
@@ -8435,7 +8435,7 @@ fn no_subspace_exclusive_inclusive_one_forward_continuation_first() -> Result<()
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = false;
@@ -8512,7 +8512,7 @@ fn no_subspace_exclusive_inclusive_one_reverse_continuation_first() -> Result<()
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = true;
@@ -9028,7 +9028,7 @@ fn no_subspace_exclusive_inclusive_two_forward_continuation_first() -> Result<()
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x06"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = false;
@@ -9106,7 +9106,7 @@ fn no_subspace_exclusive_inclusive_two_reverse_continuation_first() -> Result<()
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x06"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x06")),
                     )?);
                     let reverse = true;
@@ -9182,7 +9182,7 @@ fn no_subspace_exclusive_inclusive_two_forward_continuation_last() -> Result<(),
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x06"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x06")),
                     )?);
                     let reverse = false;
@@ -9259,7 +9259,7 @@ fn no_subspace_exclusive_inclusive_two_reverse_continuation_last() -> Result<(),
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x06"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = true;
@@ -9776,7 +9776,7 @@ fn no_subspace_exclusive_inclusive_three_forward_continuation_first() -> Result<
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = false;
@@ -9854,7 +9854,7 @@ fn no_subspace_exclusive_inclusive_three_reverse_continuation_first() -> Result<
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x07")),
                     )?);
                     let reverse = true;
@@ -9930,7 +9930,7 @@ fn no_subspace_exclusive_inclusive_three_forward_continuation_last() -> Result<(
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x07")),
                     )?);
                     let reverse = false;
@@ -10007,7 +10007,7 @@ fn no_subspace_exclusive_inclusive_three_reverse_continuation_last() -> Result<(
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = true;
@@ -10082,7 +10082,7 @@ fn no_subspace_exclusive_inclusive_three_forward_continuation_middle() -> Result
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x06")),
                     )?);
                     let reverse = false;
@@ -10160,7 +10160,7 @@ fn no_subspace_exclusive_inclusive_three_reverse_continuation_middle() -> Result
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x06")),
                     )?);
                     let reverse = true;
@@ -11120,7 +11120,7 @@ fn no_subspace_exclusive_exclusive_one_forward_continuation_first() -> Result<()
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x06"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = false;
@@ -11197,7 +11197,7 @@ fn no_subspace_exclusive_exclusive_one_reverse_continuation_first() -> Result<()
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x06"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = true;
@@ -11713,7 +11713,7 @@ fn no_subspace_exclusive_exclusive_two_forward_continuation_first() -> Result<()
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = false;
@@ -11791,7 +11791,7 @@ fn no_subspace_exclusive_exclusive_two_reverse_continuation_first() -> Result<()
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x06")),
                     )?);
                     let reverse = true;
@@ -11867,7 +11867,7 @@ fn no_subspace_exclusive_exclusive_two_forward_continuation_last() -> Result<(),
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x06")),
                     )?);
                     let reverse = false;
@@ -11944,7 +11944,7 @@ fn no_subspace_exclusive_exclusive_two_reverse_continuation_last() -> Result<(),
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = true;
@@ -12461,7 +12461,7 @@ fn no_subspace_exclusive_exclusive_three_forward_continuation_first() -> Result<
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x08"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = false;
@@ -12539,7 +12539,7 @@ fn no_subspace_exclusive_exclusive_three_reverse_continuation_first() -> Result<
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x08"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x07")),
                     )?);
                     let reverse = true;
@@ -12615,7 +12615,7 @@ fn no_subspace_exclusive_exclusive_three_forward_continuation_last() -> Result<(
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x08"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x07")),
                     )?);
                     let reverse = false;
@@ -12692,7 +12692,7 @@ fn no_subspace_exclusive_exclusive_three_reverse_continuation_last() -> Result<(
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x08"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = true;
@@ -12767,7 +12767,7 @@ fn no_subspace_exclusive_exclusive_three_forward_continuation_middle() -> Result
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x08"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x06")),
                     )?);
                     let reverse = false;
@@ -12845,7 +12845,7 @@ fn no_subspace_exclusive_exclusive_three_reverse_continuation_middle() -> Result
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x08"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x06")),
                     )?);
                     let reverse = true;
@@ -13621,7 +13621,7 @@ fn subspace_start_end_forward_continuation_first() -> Result<(), Failed> {
                     // *Note*: The first continuation here is empty
                     //         byte, which is different when compared
                     //         with no subspace case.
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::new()),
                     )?);
                     let reverse = false;
@@ -13710,7 +13710,7 @@ fn subspace_start_end_reverse_continuation_first() -> Result<(), Failed> {
                     let maybe_subspace = Some(Subspace::new(Bytes::from_static(b"subspace")));
 
                     let key_range = KeyRange::new(KeyLowEndpoint::Start, KeyHighEndpoint::End);
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x09")),
                     )?);
                     let reverse = true;
@@ -13795,7 +13795,7 @@ fn subspace_start_end_forward_continuation_last() -> Result<(), Failed> {
                 .read(|tr| async move {
                     let maybe_subspace = Some(Subspace::new(Bytes::from_static(b"subspace")));
                     let key_range = KeyRange::new(KeyLowEndpoint::Start, KeyHighEndpoint::End);
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x09")),
                     )?);
                     let reverse = false;
@@ -13878,7 +13878,7 @@ fn subspace_start_end_reverse_continuation_last() -> Result<(), Failed> {
                     let key_range = KeyRange::new(KeyLowEndpoint::Start, KeyHighEndpoint::End);
                     // *Note*: The last continuation here is empty
                     //         byte.
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::new()),
                     )?);
                     let reverse = true;
@@ -13938,7 +13938,7 @@ fn subspace_start_end_forward_continuation_middle() -> Result<(), Failed> {
                 .read(|tr| async move {
                     let maybe_subspace = Some(Subspace::new(Bytes::from_static(b"subspace")));
                     let key_range = KeyRange::new(KeyLowEndpoint::Start, KeyHighEndpoint::End);
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = false;
@@ -14029,7 +14029,7 @@ fn subspace_start_end_reverse_continuation_middle() -> Result<(), Failed> {
                 .read(|tr| async move {
                     let maybe_subspace = Some(Subspace::new(Bytes::from_static(b"subspace")));
                     let key_range = KeyRange::new(KeyLowEndpoint::Start, KeyHighEndpoint::End);
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = true;
@@ -15060,7 +15060,7 @@ fn subspace_inclusive_inclusive_one_forward_continuation_first() -> Result<(), F
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = false;
@@ -15140,7 +15140,7 @@ fn subspace_inclusive_inclusive_one_reverse_continuation_first() -> Result<(), F
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = true;
@@ -15691,7 +15691,7 @@ fn subspace_inclusive_inclusive_two_forward_continuation_first() -> Result<(), F
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x06"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = false;
@@ -15781,7 +15781,7 @@ fn subspace_inclusive_inclusive_two_reverse_continuation_first() -> Result<(), F
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x06"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x06")),
                     )?);
                     let reverse = true;
@@ -15866,7 +15866,7 @@ fn subspace_inclusive_inclusive_two_forward_continuation_last() -> Result<(), Fa
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x06"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x06")),
                     )?);
                     let reverse = false;
@@ -15946,7 +15946,7 @@ fn subspace_inclusive_inclusive_two_reverse_continuation_last() -> Result<(), Fa
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x06"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = true;
@@ -16499,7 +16499,7 @@ fn subspace_inclusive_inclusive_three_forward_continuation_first() -> Result<(),
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = false;
@@ -16589,7 +16589,7 @@ fn subspace_inclusive_inclusive_three_reverse_continuation_first() -> Result<(),
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x07")),
                     )?);
                     let reverse = true;
@@ -16674,7 +16674,7 @@ fn subspace_inclusive_inclusive_three_forward_continuation_last() -> Result<(), 
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x07")),
                     )?);
                     let reverse = false;
@@ -16754,7 +16754,7 @@ fn subspace_inclusive_inclusive_three_reverse_continuation_last() -> Result<(), 
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = true;
@@ -16829,7 +16829,7 @@ fn subspace_inclusive_inclusive_three_forward_continuation_middle() -> Result<()
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x06")),
                     )?);
                     let reverse = false;
@@ -16919,7 +16919,7 @@ fn subspace_inclusive_inclusive_three_reverse_continuation_middle() -> Result<()
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x06")),
                     )?);
                     let reverse = true;
@@ -17922,7 +17922,7 @@ fn subspace_inclusive_exclusive_one_forward_continuation_first() -> Result<(), F
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x06"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = false;
@@ -18002,7 +18002,7 @@ fn subspace_inclusive_exclusive_one_reverse_continuation_first() -> Result<(), F
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x06"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = true;
@@ -18553,7 +18553,7 @@ fn subspace_inclusive_exclusive_two_forward_continuation_first() -> Result<(), F
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = false;
@@ -18643,7 +18643,7 @@ fn subspace_inclusive_exclusive_two_reverse_continuation_first() -> Result<(), F
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x06")),
                     )?);
                     let reverse = true;
@@ -18728,7 +18728,7 @@ fn subspace_inclusive_exclusive_two_forward_continuation_last() -> Result<(), Fa
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x06")),
                     )?);
                     let reverse = false;
@@ -18808,7 +18808,7 @@ fn subspace_inclusive_exclusive_two_reverse_continuation_last() -> Result<(), Fa
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = true;
@@ -19361,7 +19361,7 @@ fn subspace_inclusive_exclusive_three_forward_continuation_first() -> Result<(),
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x08"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = false;
@@ -19451,7 +19451,7 @@ fn subspace_inclusive_exclusive_three_reverse_continuation_first() -> Result<(),
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x08"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x07")),
                     )?);
                     let reverse = true;
@@ -19536,7 +19536,7 @@ fn subspace_inclusive_exclusive_three_forward_continuation_last() -> Result<(), 
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x08"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x07")),
                     )?);
                     let reverse = false;
@@ -19616,7 +19616,7 @@ fn subspace_inclusive_exclusive_three_reverse_continuation_last() -> Result<(), 
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x08"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = true;
@@ -19691,7 +19691,7 @@ fn subspace_inclusive_exclusive_three_forward_continuation_middle() -> Result<()
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x08"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x06")),
                     )?);
                     let reverse = false;
@@ -19781,7 +19781,7 @@ fn subspace_inclusive_exclusive_three_reverse_continuation_middle() -> Result<()
                         KeyLowEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x08"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x06")),
                     )?);
                     let reverse = true;
@@ -20782,7 +20782,7 @@ fn subspace_exclusive_inclusive_one_forward_continuation_first() -> Result<(), F
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = false;
@@ -20862,7 +20862,7 @@ fn subspace_exclusive_inclusive_one_reverse_continuation_first() -> Result<(), F
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x05"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = true;
@@ -21413,7 +21413,7 @@ fn subspace_exclusive_inclusive_two_forward_continuation_first() -> Result<(), F
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x06"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = false;
@@ -21503,7 +21503,7 @@ fn subspace_exclusive_inclusive_two_reverse_continuation_first() -> Result<(), F
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x06"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x06")),
                     )?);
                     let reverse = true;
@@ -21588,7 +21588,7 @@ fn subspace_exclusive_inclusive_two_forward_continuation_last() -> Result<(), Fa
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x06"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x06")),
                     )?);
                     let reverse = false;
@@ -21668,7 +21668,7 @@ fn subspace_exclusive_inclusive_two_reverse_continuation_last() -> Result<(), Fa
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x06"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = true;
@@ -22221,7 +22221,7 @@ fn subspace_exclusive_inclusive_three_forward_continuation_first() -> Result<(),
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = false;
@@ -22311,7 +22311,7 @@ fn subspace_exclusive_inclusive_three_reverse_continuation_first() -> Result<(),
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x07")),
                     )?);
                     let reverse = true;
@@ -22396,7 +22396,7 @@ fn subspace_exclusive_inclusive_three_forward_continuation_last() -> Result<(), 
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x07")),
                     )?);
                     let reverse = false;
@@ -22476,7 +22476,7 @@ fn subspace_exclusive_inclusive_three_reverse_continuation_last() -> Result<(), 
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = true;
@@ -22551,7 +22551,7 @@ fn subspace_exclusive_inclusive_three_forward_continuation_middle() -> Result<()
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x06")),
                     )?);
                     let reverse = false;
@@ -22641,7 +22641,7 @@ fn subspace_exclusive_inclusive_three_reverse_continuation_middle() -> Result<()
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeInclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x06")),
                     )?);
                     let reverse = true;
@@ -23647,7 +23647,7 @@ fn subspace_exclusive_exclusive_one_forward_continuation_first() -> Result<(), F
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x06"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = false;
@@ -23727,7 +23727,7 @@ fn subspace_exclusive_exclusive_one_reverse_continuation_first() -> Result<(), F
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x06"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = true;
@@ -24279,7 +24279,7 @@ fn subspace_exclusive_exclusive_two_forward_continuation_first() -> Result<(), F
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = false;
@@ -24369,7 +24369,7 @@ fn subspace_exclusive_exclusive_two_reverse_continuation_first() -> Result<(), F
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x06")),
                     )?);
                     let reverse = true;
@@ -24454,7 +24454,7 @@ fn subspace_exclusive_exclusive_two_forward_continuation_last() -> Result<(), Fa
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x06")),
                     )?);
                     let reverse = false;
@@ -24534,7 +24534,7 @@ fn subspace_exclusive_exclusive_two_reverse_continuation_last() -> Result<(), Fa
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x07"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = true;
@@ -25087,7 +25087,7 @@ fn subspace_exclusive_exclusive_three_forward_continuation_first() -> Result<(),
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x08"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = false;
@@ -25177,7 +25177,7 @@ fn subspace_exclusive_exclusive_three_reverse_continuation_first() -> Result<(),
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x08"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x07")),
                     )?);
                     let reverse = true;
@@ -25262,7 +25262,7 @@ fn subspace_exclusive_exclusive_three_forward_continuation_last() -> Result<(), 
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x08"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x07")),
                     )?);
                     let reverse = false;
@@ -25342,7 +25342,7 @@ fn subspace_exclusive_exclusive_three_reverse_continuation_last() -> Result<(), 
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x08"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x05")),
                     )?);
                     let reverse = true;
@@ -25417,7 +25417,7 @@ fn subspace_exclusive_exclusive_three_forward_continuation_middle() -> Result<()
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x08"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x06")),
                     )?);
                     let reverse = false;
@@ -25507,7 +25507,7 @@ fn subspace_exclusive_exclusive_three_reverse_continuation_middle() -> Result<()
                         KeyLowEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x04"))),
                         KeyHighEndpoint::RangeExclusive(Key::from(Bytes::from_static(b"\x08"))),
                     );
-                    let continuation = Some(key_value_continuation_v1_continuation_bytes(
+                    let continuation = Some(key_value_continuation_v1_key_marker_bytes(
                         Key::from(Bytes::from_static(b"\x06")),
                     )?);
                     let reverse = true;

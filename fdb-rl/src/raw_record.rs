@@ -225,23 +225,29 @@ impl From<(RawRecordPrimaryKey, RecordVersion, Bytes)> for RawRecord {
 /// `TryFrom<RawRecordContinuationInternal> for Bytes` traits
 /// implemented so we can convert between `Bytes` and
 /// `KeyValueContinuationInternal`.
+///
+/// We do not implement `new_v1_begin_marker()`,
+/// `new_v1_key_marker(..)`, `new_v1_end_marker()` for
+/// [`RawRecordContinuationInternal`] because it is just a wrapper
+/// around [`pb::KeyValueContinuationInternalV1`].
+///
+/// Values of [`RawRecordContinuationInternal`] can be generated using
+/// `new_v1_begin_marker()`, `new_v1_key_marker(..)`,
+/// `new_v1_end_marker()` methods on [`KeyValueContinuationInternal`],
+/// extracting out [`pb::KeyValueContinuationInternalV1`] value and
+/// using the `From` trait.
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum RawRecordContinuationInternal {
     V1(pb::RawRecordContinuationInternalV1),
 }
 
-impl RawRecordContinuationInternal {
-    /// Create a `V1` end marker value.
-    pub(crate) fn new_v1_end_marker() -> RawRecordContinuationInternal {
-        let KeyValueContinuationInternal::V1(pb_keyvalue_continuation_internal_v1) =
-            KeyValueContinuationInternal::new_v1_end_marker();
-
-        let rawrecord_continuation_internal_v1 =
-            RawRecordContinuationInternal::V1(pb::RawRecordContinuationInternalV1 {
-                inner: pb_keyvalue_continuation_internal_v1,
-            });
-
-        rawrecord_continuation_internal_v1
+impl From<pb::KeyValueContinuationInternalV1> for RawRecordContinuationInternal {
+    fn from(
+        pb_keyvalue_continuation_internal_v1: pb::KeyValueContinuationInternalV1,
+    ) -> RawRecordContinuationInternal {
+        RawRecordContinuationInternal::V1(pb::RawRecordContinuationInternalV1 {
+            inner: pb_keyvalue_continuation_internal_v1,
+        })
     }
 }
 
@@ -858,10 +864,8 @@ impl RawRecordForwardScanStateMachine {
                                         // This is our new
                                         // continuation based on
                                         // `kv_continuation.
-                                        let continuation = RawRecordContinuationInternal::V1(
-                                            pb::RawRecordContinuationInternalV1 {
-                                                inner: pb_keyvalue_continuation_internal_v1,
-                                            },
+                                        let continuation = RawRecordContinuationInternal::from(
+                                            pb_keyvalue_continuation_internal_v1,
                                         );
 
                                         let raw_record = RawRecord::from((
@@ -1219,7 +1223,12 @@ impl RawRecordForwardScanStateMachine {
                 //
                 // We will be returning a `Some(...)` (a value of
                 // `CursorError`) in this state.
-                let continuation = RawRecordContinuationInternal::new_v1_end_marker();
+                let continuation = {
+                    let KeyValueContinuationInternal::V1(pb_keyvalue_continuation_internal_v1) =
+                        KeyValueContinuationInternal::new_v1_end_marker();
+
+                    RawRecordContinuationInternal::from(pb_keyvalue_continuation_internal_v1)
+                };
 
                 let cursor_result_continuation = Arc::new(continuation);
 
@@ -1999,11 +2008,9 @@ impl RawRecordReverseScanStateMachine {
                                                     // continuation based on
                                                     // `kv_continuation.
                                                     let continuation =
-							RawRecordContinuationInternal::V1(
-								pb::RawRecordContinuationInternalV1 {
-								    inner: pb_keyvalue_continuation_internal_v1,
-								},
-							);
+                                                        RawRecordContinuationInternal::from(
+                                                            pb_keyvalue_continuation_internal_v1,
+                                                        );
 
                                                     let raw_record = RawRecord::from((
                                                         primary_key,
@@ -2442,7 +2449,12 @@ impl RawRecordReverseScanStateMachine {
                 //
                 // We will be returning a `Some(...)` (a value of
                 // `CursorError`) in this state.
-                let continuation = RawRecordContinuationInternal::new_v1_end_marker();
+                let continuation = {
+                    let KeyValueContinuationInternal::V1(pb_keyvalue_continuation_internal_v1) =
+                        KeyValueContinuationInternal::new_v1_end_marker();
+
+                    RawRecordContinuationInternal::from(pb_keyvalue_continuation_internal_v1)
+                };
 
                 let cursor_result_continuation = Arc::new(continuation);
 
@@ -2770,7 +2782,7 @@ impl Cursor<RawRecord> for RawRecordCursor {
 
 #[cfg(test)]
 mod tests {
-    mod rawrecord_continuation_internal {
+    mod raw_record_continuation_internal {
         // TODO
     }
 
@@ -2987,5 +2999,84 @@ mod tests {
                 );
             }
         }
+    }
+
+    mod raw_record_forward_scan_state_machine {
+        use bytes::{BufMut, Bytes, BytesMut};
+
+        use fdb::tuple::{Tuple, TupleSchema, TupleSchemaElement, Versionstamp};
+
+        use std::convert::TryFrom;
+
+        use crate::cursor::KeyValueContinuationInternal;
+        use crate::RecordVersion;
+
+        use super::super::{
+            RawRecordContinuationInternal, RawRecordForwardScanStateMachine,
+            RawRecordForwardScanStateMachineEvent, RawRecordForwardScanStateMachineState,
+            RawRecordPrimaryKey, RawRecordPrimaryKeySchema,
+        };
+
+        #[test]
+        fn step_once_with_event() {
+            // InitiateRecordVersionRead
+            {
+                // Valid
+                {
+                    let raw_record_forward_scan_state_machine = RawRecordForwardScanStateMachine {
+                        state_machine_state:
+                            RawRecordForwardScanStateMachineState::InitiateRecordVersionRead,
+                        state_machine_data: None,
+                    };
+
+                    let event = RawRecordForwardScanStateMachineEvent::RecordVersionOk {
+                        data_splits: 1,
+                        record_version: RecordVersion::from(Versionstamp::complete(
+                            {
+                                let mut b = BytesMut::new();
+                                b.put_u64(1066);
+                                b.put_u16(1);
+                                Bytes::from(b)
+                            },
+                            10,
+                        )),
+                        primary_key: {
+                            let mut ts = TupleSchema::new();
+                            ts.push_back(TupleSchemaElement::Bytes);
+                            ts.push_back(TupleSchemaElement::String);
+                            ts.push_back(TupleSchemaElement::Integer);
+
+                            let schema = RawRecordPrimaryKeySchema::try_from(ts).unwrap();
+
+                            let mut key = Tuple::new();
+                            key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                            key.push_back::<String>("world".to_string());
+                            key.push_back::<i8>(0);
+                            RawRecordPrimaryKey { schema, key }
+                        },
+                        continuation: {
+                            let KeyValueContinuationInternal::V1(
+                                pb_keyvalue_continuation_internal_v1,
+                            ) = KeyValueContinuationInternal::new_v1_begin_marker();
+
+                            RawRecordContinuationInternal::from(
+                                pb_keyvalue_continuation_internal_v1,
+                            )
+                        },
+                        records_already_returned: 0,
+                    };
+
+                    // TODO: Continue from here.
+                }
+                // Invalid
+                {}
+            }
+        }
+    }
+
+    mod raw_record_reverse_scan_state_machine {
+        // todo
+        #[test]
+        fn step_once_with_event() {}
     }
 }

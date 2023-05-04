@@ -30,19 +30,19 @@ pub fn key_value_cursor_builder_build_range(
     )
 }
 
-/// Expose [`KeyValueContinuationEnumV1::Continuation`].
-pub fn key_value_continuation_v1_continuation_bytes(key: Key) -> FdbResult<Bytes> {
+/// Expose [`pb::ProtoKeyValueContinuationEnumV1::KeyMarker`].
+pub fn key_value_continuation_v1_key_marker_bytes(key: Key) -> FdbResult<Bytes> {
     KeyValueContinuationInternal::V1(pb::KeyValueContinuationInternalV1 {
-        key_value_continuation: pb::ProtoKeyValueContinuationEnumV1::Continuation(
-            pb::ProtoContinuationV1 {
-                continuation: Bytes::from(key),
+        key_value_continuation: pb::ProtoKeyValueContinuationEnumV1::KeyMarker(
+            pb::ProtoKeyMarkerV1 {
+                key_marker: Bytes::from(key),
             },
         ),
     })
     .try_into()
 }
 
-/// Expose [`KeyValueContinuationEnumV1::BeginMarker`].
+/// Expose [`pb::ProtoKeyValueContinuationEnumV1::BeginMarker`].
 pub fn key_value_continuation_v1_begin_marker_bytes() -> FdbResult<Bytes> {
     KeyValueContinuationInternal::V1(pb::KeyValueContinuationInternalV1 {
         key_value_continuation: pb::ProtoKeyValueContinuationEnumV1::BeginMarker(
@@ -52,7 +52,7 @@ pub fn key_value_continuation_v1_begin_marker_bytes() -> FdbResult<Bytes> {
     .try_into()
 }
 
-/// Expose [`KeyValueContinuationEnumV1::EndMarker`].
+/// Expose [`pb::ProtoKeyValueContinuationEnumV1::EndMarker`].
 pub fn key_value_continuation_v1_end_marker_bytes() -> FdbResult<Bytes> {
     KeyValueContinuationInternal::V1(pb::KeyValueContinuationInternalV1 {
         key_value_continuation: pb::ProtoKeyValueContinuationEnumV1::EndMarker(
