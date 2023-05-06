@@ -32,7 +32,7 @@ mod private {
 pub trait Continuation: private::Sealed + Any {
     /// Serialize this continuation to a [`Bytes`] value.
     // The reason why we need to return `FdbResult<Bytes>` is because
-    // Avro serialization can return an error.
+    // Protobuf serialization can return an error.
     fn to_bytes(&self) -> FdbResult<Bytes>;
 
     /// Return whether this continuation is at the *begin marker*
@@ -53,7 +53,7 @@ pub trait Continuation: private::Sealed + Any {
 impl Debug for (dyn Continuation + Send + Sync + 'static) {
     fn fmt<'a>(&self, f: &mut fmt::Formatter<'a>) -> fmt::Result {
         // *Note:* In the output you will see `Ok(b"...")` because of
-        // Avro serialization.
+        // Protobuf serialization.
         write!(f, "{:?}", self.to_bytes())
     }
 }
