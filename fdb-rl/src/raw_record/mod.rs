@@ -85,7 +85,7 @@ pub(crate) mod pb {
 
 /// A wrapper around all information that can be determined about a
 /// record before serializing and deserializing it.
-#[derive(Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub(crate) struct RawRecord {
     primary_key: RawRecordPrimaryKey,
     version: RecordVersion,
@@ -401,6 +401,6 @@ impl Cursor<RawRecord> for RawRecordCursor {
 #[cfg(test)]
 mod tests {
     mod raw_record_continuation_internal {
-        // TODO
+        // TODO write tests.
     }
 }
