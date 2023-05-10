@@ -2704,7 +2704,7 @@ mod tests {
                             )
                         },);
 
-                        let (continuation,) = event_data.clone();
+                        let (continuation,) = event_data;
 
                         let event =
                             RawRecordForwardScanStateMachineEvent::LimitReached { continuation };
@@ -3050,7 +3050,7 @@ mod tests {
                             )
                         },);
 
-                        let (continuation,) = event_data.clone();
+                        let (continuation,) = event_data;
 
                         let event =
                             RawRecordForwardScanStateMachineEvent::LimitReached { continuation };
@@ -3081,34 +3081,2678 @@ mod tests {
             // `RawRecordAvailable` state
             {
                 // Valid
-                {}
+                {
+                    // `RecordVersionOk` event
+                    {
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::RawRecordAvailable,
+                                state_machine_data: None,
+                            };
+
+                        let event_data = (
+                            1,
+                            RecordVersion::from(Versionstamp::complete(
+                                {
+                                    let mut b = BytesMut::new();
+                                    b.put_u64(1066);
+                                    b.put_u16(1);
+                                    Bytes::from(b)
+                                },
+                                10,
+                            )),
+                            {
+                                let mut ts = TupleSchema::new();
+                                ts.push_back(TupleSchemaElement::Bytes);
+                                ts.push_back(TupleSchemaElement::String);
+                                ts.push_back(TupleSchemaElement::Integer);
+
+                                let schema = RawRecordPrimaryKeySchema::try_from(ts).unwrap();
+
+                                let mut key = Tuple::new();
+                                key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                key.push_back::<String>("world".to_string());
+                                key.push_back::<i8>(0);
+
+                                RawRecordPrimaryKey::try_from((schema, key)).unwrap()
+                            },
+                            {
+                                let KeyValueContinuationInternal::V1(
+                                    pb_keyvalue_continuation_internal_v1,
+                                ) = KeyValueContinuationInternal::new_v1_begin_marker();
+
+                                RawRecordContinuationInternal::from(
+                                    pb_keyvalue_continuation_internal_v1,
+                                )
+                            },
+                            0,
+                        );
+
+                        let (
+                            data_splits,
+                            record_version,
+                            primary_key,
+                            continuation,
+                            records_already_returned,
+                        ) = event_data.clone();
+
+                        let event = RawRecordForwardScanStateMachineEvent::RecordVersionOk {
+                            data_splits,
+                            record_version,
+                            primary_key,
+                            continuation,
+                            records_already_returned,
+                        };
+
+                        raw_record_forward_scan_state_machine.step_once_with_event(event);
+
+                        assert_eq!(
+                            raw_record_forward_scan_state_machine.state_machine_state,
+                            RawRecordForwardScanStateMachineState::ReadRecordVersion
+                        );
+
+                        let (
+                            data_splits,
+                            record_version,
+                            primary_key,
+                            continuation,
+                            records_already_returned,
+                        ) = event_data;
+
+                        assert_eq!(
+                            raw_record_forward_scan_state_machine.state_machine_data,
+                            Some(
+                                RawRecordForwardScanStateMachineStateData::ReadRecordVersion {
+                                    data_splits,
+                                    record_version,
+                                    primary_key,
+                                    continuation,
+                                    records_already_returned,
+                                }
+                            )
+                        );
+                    }
+                    // `NextError` event
+                    {
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::RawRecordAvailable,
+                                state_machine_data: None,
+                            };
+
+                        let event_data = ({
+                            let KeyValueContinuationInternal::V1(
+                                pb_keyvalue_continuation_internal_v1,
+                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                let mut key = Tuple::new();
+                                key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                key.push_back::<String>("world".to_string());
+                                key.push_back::<i8>(0);
+
+                                key.pack()
+                            });
+
+                            RawRecordContinuationInternal::from(
+                                pb_keyvalue_continuation_internal_v1,
+                            )
+                        },);
+
+                        let (continuation,) = event_data.clone();
+
+                        let event =
+                            RawRecordForwardScanStateMachineEvent::NextError { continuation };
+
+                        raw_record_forward_scan_state_machine.step_once_with_event(event);
+
+                        assert_eq!(
+                            raw_record_forward_scan_state_machine.state_machine_state,
+                            RawRecordForwardScanStateMachineState::RawRecordNextError
+                        );
+
+                        let (continuation,) = event_data;
+
+                        assert_eq!(
+                            raw_record_forward_scan_state_machine.state_machine_data,
+                            Some(
+                                RawRecordForwardScanStateMachineStateData::RawRecordNextError {
+                                    continuation
+                                }
+                            )
+                        );
+                    }
+                    // `LimitReached` event
+                    {
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::RawRecordAvailable,
+                                state_machine_data: None,
+                            };
+
+                        let event_data = ({
+                            let KeyValueContinuationInternal::V1(
+                                pb_keyvalue_continuation_internal_v1,
+                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                let mut key = Tuple::new();
+                                key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                key.push_back::<String>("world".to_string());
+                                key.push_back::<i8>(0);
+
+                                key.pack()
+                            });
+
+                            RawRecordContinuationInternal::from(
+                                pb_keyvalue_continuation_internal_v1,
+                            )
+                        },);
+
+                        let (continuation,) = event_data.clone();
+
+                        let event =
+                            RawRecordForwardScanStateMachineEvent::LimitReached { continuation };
+
+                        raw_record_forward_scan_state_machine.step_once_with_event(event);
+
+                        assert_eq!(
+                            raw_record_forward_scan_state_machine.state_machine_state,
+                            RawRecordForwardScanStateMachineState::RawRecordLimitReached
+                        );
+
+                        let (continuation,) = event_data;
+
+                        assert_eq!(
+                            raw_record_forward_scan_state_machine.state_machine_data,
+                            Some(
+                                RawRecordForwardScanStateMachineStateData::RawRecordLimitReached {
+                                    continuation
+                                }
+                            )
+                        );
+                    }
+                    // `EndOfStream` event
+                    {
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::RawRecordAvailable,
+                                state_machine_data: None,
+                            };
+
+                        let event = RawRecordForwardScanStateMachineEvent::EndOfStream;
+
+                        raw_record_forward_scan_state_machine.step_once_with_event(event);
+
+                        assert_eq!(
+                            raw_record_forward_scan_state_machine.state_machine_state,
+                            RawRecordForwardScanStateMachineState::RawRecordEndOfStream
+                        );
+
+                        assert_eq!(
+                            raw_record_forward_scan_state_machine.state_machine_data,
+                            Some(RawRecordForwardScanStateMachineStateData::RawRecordEndOfStream)
+                        );
+                    }
+                    // `OutOfBandError` event
+                    {
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::RawRecordAvailable,
+                                state_machine_data: None,
+                            };
+
+                        let event_data = (LimitManagerStoppedReason::TimeLimitReached, {
+                            let KeyValueContinuationInternal::V1(
+                                pb_keyvalue_continuation_internal_v1,
+                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                let mut key = Tuple::new();
+                                key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                key.push_back::<String>("world".to_string());
+                                key.push_back::<i8>(0);
+
+                                key.pack()
+                            });
+
+                            RawRecordContinuationInternal::from(
+                                pb_keyvalue_continuation_internal_v1,
+                            )
+                        });
+
+                        let (out_of_band_error_type, continuation) = event_data.clone();
+
+                        let event = RawRecordForwardScanStateMachineEvent::OutOfBandError {
+                            out_of_band_error_type,
+                            continuation,
+                        };
+
+                        raw_record_forward_scan_state_machine.step_once_with_event(event);
+
+                        assert_eq!(
+                            raw_record_forward_scan_state_machine.state_machine_state,
+                            RawRecordForwardScanStateMachineState::OutOfBandError
+                        );
+
+                        let (out_of_band_error_type, continuation) = event_data;
+
+                        assert_eq!(
+                            raw_record_forward_scan_state_machine.state_machine_data,
+                            Some(RawRecordForwardScanStateMachineStateData::OutOfBandError {
+                                out_of_band_error_type,
+                                continuation,
+                            })
+                        );
+                    }
+                    // `FdbError` event
+                    {
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::RawRecordAvailable,
+                                state_machine_data: None,
+                            };
+
+                        let event_data = (
+                            {
+                                // `100` is an arbitrary number that we
+                                // are using. There is no specific reason
+                                // for using it.
+                                FdbError::new(100)
+                            },
+                            {
+                                let KeyValueContinuationInternal::V1(
+                                    pb_keyvalue_continuation_internal_v1,
+                                ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                    let mut key = Tuple::new();
+                                    key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                    key.push_back::<String>("world".to_string());
+                                    key.push_back::<i8>(0);
+
+                                    key.pack()
+                                });
+
+                                RawRecordContinuationInternal::from(
+                                    pb_keyvalue_continuation_internal_v1,
+                                )
+                            },
+                        );
+
+                        let (fdb_error, continuation) = event_data.clone();
+
+                        let event = RawRecordForwardScanStateMachineEvent::FdbError {
+                            fdb_error,
+                            continuation,
+                        };
+
+                        raw_record_forward_scan_state_machine.step_once_with_event(event);
+
+                        assert_eq!(
+                            raw_record_forward_scan_state_machine.state_machine_state,
+                            RawRecordForwardScanStateMachineState::FdbError,
+                        );
+
+                        let (fdb_error, continuation) = event_data.clone();
+
+                        assert_eq!(
+                            raw_record_forward_scan_state_machine.state_machine_data,
+                            Some(RawRecordForwardScanStateMachineStateData::FdbError {
+                                fdb_error,
+                                continuation,
+                            })
+                        );
+                    }
+                }
                 // Invalid
-                {}
+                {
+                    // `Available` event
+                    {
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::RawRecordAvailable,
+                                state_machine_data: None,
+                            };
+
+                        let event_data = (
+                            {
+                                let primary_key = {
+                                    let mut ts = TupleSchema::new();
+                                    ts.push_back(TupleSchemaElement::Bytes);
+                                    ts.push_back(TupleSchemaElement::String);
+                                    ts.push_back(TupleSchemaElement::Integer);
+
+                                    let schema = RawRecordPrimaryKeySchema::try_from(ts).unwrap();
+
+                                    let mut key = Tuple::new();
+                                    key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                    key.push_back::<String>("world".to_string());
+                                    key.push_back::<i8>(0);
+
+                                    RawRecordPrimaryKey::try_from((schema, key)).unwrap()
+                                };
+
+                                let version = RecordVersion::from(Versionstamp::complete(
+                                    {
+                                        let mut b = BytesMut::new();
+                                        b.put_u64(1066);
+                                        b.put_u16(1);
+                                        Bytes::from(b)
+                                    },
+                                    10,
+                                ));
+
+                                let record_bytes = Bytes::from_static(b"Hello world!");
+
+                                RawRecord::from((primary_key, version, record_bytes))
+                            },
+                            {
+                                let KeyValueContinuationInternal::V1(
+                                    pb_keyvalue_continuation_internal_v1,
+                                ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                    let mut key = Tuple::new();
+                                    key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                    key.push_back::<String>("world".to_string());
+                                    key.push_back::<i8>(0);
+
+                                    key.pack()
+                                });
+
+                                RawRecordContinuationInternal::from(
+                                    pb_keyvalue_continuation_internal_v1,
+                                )
+                            },
+                            1,
+                        );
+
+                        let (raw_record, continuation, records_already_returned) = event_data;
+
+                        let event = RawRecordForwardScanStateMachineEvent::Available {
+                            raw_record,
+                            continuation,
+                            records_already_returned,
+                        };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_forward_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                }
             }
             // `RawRecordNextError` state
             {
                 // Final state. All events would be invalid
-                {}
+                {
+                    // `RecordVersionOk` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::RawRecordNextError,
+                                state_machine_data: Some(
+                                    RawRecordForwardScanStateMachineStateData::RawRecordNextError {
+                                        continuation: {
+                                            let KeyValueContinuationInternal::V1(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                                let mut key = Tuple::new();
+                                                key.push_back::<Bytes>(Bytes::from_static(
+                                                    b"hello",
+                                                ));
+                                                key.push_back::<String>("world".to_string());
+                                                key.push_back::<i8>(0);
+
+                                                key.pack()
+                                            });
+
+                                            RawRecordContinuationInternal::from(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            )
+                                        },
+                                    },
+                                ),
+                            };
+
+                        let event_data = (
+                            1,
+                            RecordVersion::from(Versionstamp::complete(
+                                {
+                                    let mut b = BytesMut::new();
+                                    b.put_u64(1066);
+                                    b.put_u16(1);
+                                    Bytes::from(b)
+                                },
+                                10,
+                            )),
+                            {
+                                let mut ts = TupleSchema::new();
+                                ts.push_back(TupleSchemaElement::Bytes);
+                                ts.push_back(TupleSchemaElement::String);
+                                ts.push_back(TupleSchemaElement::Integer);
+
+                                let schema = RawRecordPrimaryKeySchema::try_from(ts).unwrap();
+
+                                let mut key = Tuple::new();
+                                key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                key.push_back::<String>("world".to_string());
+                                key.push_back::<i8>(0);
+
+                                RawRecordPrimaryKey::try_from((schema, key)).unwrap()
+                            },
+                            {
+                                let KeyValueContinuationInternal::V1(
+                                    pb_keyvalue_continuation_internal_v1,
+                                ) = KeyValueContinuationInternal::new_v1_begin_marker();
+
+                                RawRecordContinuationInternal::from(
+                                    pb_keyvalue_continuation_internal_v1,
+                                )
+                            },
+                            0,
+                        );
+
+                        let (
+                            data_splits,
+                            record_version,
+                            primary_key,
+                            continuation,
+                            records_already_returned,
+                        ) = event_data.clone();
+
+                        let event = RawRecordForwardScanStateMachineEvent::RecordVersionOk {
+                            data_splits,
+                            record_version,
+                            primary_key,
+                            continuation,
+                            records_already_returned,
+                        };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_forward_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `Available` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::RawRecordNextError,
+                                state_machine_data: Some(
+                                    RawRecordForwardScanStateMachineStateData::RawRecordNextError {
+                                        continuation: {
+                                            let KeyValueContinuationInternal::V1(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                                let mut key = Tuple::new();
+                                                key.push_back::<Bytes>(Bytes::from_static(
+                                                    b"hello",
+                                                ));
+                                                key.push_back::<String>("world".to_string());
+                                                key.push_back::<i8>(0);
+
+                                                key.pack()
+                                            });
+
+                                            RawRecordContinuationInternal::from(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            )
+                                        },
+                                    },
+                                ),
+                            };
+
+                        let event_data = (
+                            {
+                                let primary_key = {
+                                    let mut ts = TupleSchema::new();
+                                    ts.push_back(TupleSchemaElement::Bytes);
+                                    ts.push_back(TupleSchemaElement::String);
+                                    ts.push_back(TupleSchemaElement::Integer);
+
+                                    let schema = RawRecordPrimaryKeySchema::try_from(ts).unwrap();
+
+                                    let mut key = Tuple::new();
+                                    key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                    key.push_back::<String>("world".to_string());
+                                    key.push_back::<i8>(0);
+
+                                    RawRecordPrimaryKey::try_from((schema, key)).unwrap()
+                                };
+
+                                let version = RecordVersion::from(Versionstamp::complete(
+                                    {
+                                        let mut b = BytesMut::new();
+                                        b.put_u64(1066);
+                                        b.put_u16(1);
+                                        Bytes::from(b)
+                                    },
+                                    10,
+                                ));
+
+                                let record_bytes = Bytes::from_static(b"Hello world!");
+
+                                RawRecord::from((primary_key, version, record_bytes))
+                            },
+                            {
+                                let KeyValueContinuationInternal::V1(
+                                    pb_keyvalue_continuation_internal_v1,
+                                ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                    let mut key = Tuple::new();
+                                    key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                    key.push_back::<String>("world".to_string());
+                                    key.push_back::<i8>(0);
+
+                                    key.pack()
+                                });
+
+                                RawRecordContinuationInternal::from(
+                                    pb_keyvalue_continuation_internal_v1,
+                                )
+                            },
+                            1,
+                        );
+
+                        let (raw_record, continuation, records_already_returned) = event_data;
+
+                        let event = RawRecordForwardScanStateMachineEvent::Available {
+                            raw_record,
+                            continuation,
+                            records_already_returned,
+                        };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_forward_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `NextError` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::RawRecordNextError,
+                                state_machine_data: Some(
+                                    RawRecordForwardScanStateMachineStateData::RawRecordNextError {
+                                        continuation: {
+                                            let KeyValueContinuationInternal::V1(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                                let mut key = Tuple::new();
+                                                key.push_back::<Bytes>(Bytes::from_static(
+                                                    b"hello",
+                                                ));
+                                                key.push_back::<String>("world".to_string());
+                                                key.push_back::<i8>(0);
+
+                                                key.pack()
+                                            });
+
+                                            RawRecordContinuationInternal::from(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            )
+                                        },
+                                    },
+                                ),
+                            };
+
+                        let event_data = ({
+                            let KeyValueContinuationInternal::V1(
+                                pb_keyvalue_continuation_internal_v1,
+                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                let mut key = Tuple::new();
+                                key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                key.push_back::<String>("world".to_string());
+                                key.push_back::<i8>(0);
+
+                                key.pack()
+                            });
+
+                            RawRecordContinuationInternal::from(
+                                pb_keyvalue_continuation_internal_v1,
+                            )
+                        },);
+
+                        let (continuation,) = event_data;
+
+                        let event =
+                            RawRecordForwardScanStateMachineEvent::NextError { continuation };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_forward_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `LimitReached` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::RawRecordNextError,
+                                state_machine_data: Some(
+                                    RawRecordForwardScanStateMachineStateData::RawRecordNextError {
+                                        continuation: {
+                                            let KeyValueContinuationInternal::V1(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                                let mut key = Tuple::new();
+                                                key.push_back::<Bytes>(Bytes::from_static(
+                                                    b"hello",
+                                                ));
+                                                key.push_back::<String>("world".to_string());
+                                                key.push_back::<i8>(0);
+
+                                                key.pack()
+                                            });
+
+                                            RawRecordContinuationInternal::from(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            )
+                                        },
+                                    },
+                                ),
+                            };
+
+                        let event_data = ({
+                            let KeyValueContinuationInternal::V1(
+                                pb_keyvalue_continuation_internal_v1,
+                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                let mut key = Tuple::new();
+                                key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                key.push_back::<String>("world".to_string());
+                                key.push_back::<i8>(0);
+
+                                key.pack()
+                            });
+
+                            RawRecordContinuationInternal::from(
+                                pb_keyvalue_continuation_internal_v1,
+                            )
+                        },);
+
+                        let (continuation,) = event_data;
+
+                        let event =
+                            RawRecordForwardScanStateMachineEvent::LimitReached { continuation };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_forward_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `EndOfStream` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::RawRecordNextError,
+                                state_machine_data: Some(
+                                    RawRecordForwardScanStateMachineStateData::RawRecordNextError {
+                                        continuation: {
+                                            let KeyValueContinuationInternal::V1(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                                let mut key = Tuple::new();
+                                                key.push_back::<Bytes>(Bytes::from_static(
+                                                    b"hello",
+                                                ));
+                                                key.push_back::<String>("world".to_string());
+                                                key.push_back::<i8>(0);
+
+                                                key.pack()
+                                            });
+
+                                            RawRecordContinuationInternal::from(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            )
+                                        },
+                                    },
+                                ),
+                            };
+
+                        let event = RawRecordForwardScanStateMachineEvent::EndOfStream;
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_forward_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `OutOfBandError` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::RawRecordNextError,
+                                state_machine_data: Some(
+                                    RawRecordForwardScanStateMachineStateData::RawRecordNextError {
+                                        continuation: {
+                                            let KeyValueContinuationInternal::V1(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                                let mut key = Tuple::new();
+                                                key.push_back::<Bytes>(Bytes::from_static(
+                                                    b"hello",
+                                                ));
+                                                key.push_back::<String>("world".to_string());
+                                                key.push_back::<i8>(0);
+
+                                                key.pack()
+                                            });
+
+                                            RawRecordContinuationInternal::from(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            )
+                                        },
+                                    },
+                                ),
+                            };
+
+                        let event_data = (LimitManagerStoppedReason::TimeLimitReached, {
+                            let KeyValueContinuationInternal::V1(
+                                pb_keyvalue_continuation_internal_v1,
+                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                let mut key = Tuple::new();
+                                key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                key.push_back::<String>("world".to_string());
+                                key.push_back::<i8>(0);
+
+                                key.pack()
+                            });
+
+                            RawRecordContinuationInternal::from(
+                                pb_keyvalue_continuation_internal_v1,
+                            )
+                        });
+
+                        let (out_of_band_error_type, continuation) = event_data;
+
+                        let event = RawRecordForwardScanStateMachineEvent::OutOfBandError {
+                            out_of_band_error_type,
+                            continuation,
+                        };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_forward_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `FdbError` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::RawRecordNextError,
+                                state_machine_data: Some(
+                                    RawRecordForwardScanStateMachineStateData::RawRecordNextError {
+                                        continuation: {
+                                            let KeyValueContinuationInternal::V1(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                                let mut key = Tuple::new();
+                                                key.push_back::<Bytes>(Bytes::from_static(
+                                                    b"hello",
+                                                ));
+                                                key.push_back::<String>("world".to_string());
+                                                key.push_back::<i8>(0);
+
+                                                key.pack()
+                                            });
+
+                                            RawRecordContinuationInternal::from(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            )
+                                        },
+                                    },
+                                ),
+                            };
+
+                        let event_data = (
+                            {
+                                // `100` is an arbitrary number that we
+                                // are using. There is no specific reason
+                                // for using it.
+                                FdbError::new(100)
+                            },
+                            {
+                                let KeyValueContinuationInternal::V1(
+                                    pb_keyvalue_continuation_internal_v1,
+                                ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                    let mut key = Tuple::new();
+                                    key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                    key.push_back::<String>("world".to_string());
+                                    key.push_back::<i8>(0);
+
+                                    key.pack()
+                                });
+
+                                RawRecordContinuationInternal::from(
+                                    pb_keyvalue_continuation_internal_v1,
+                                )
+                            },
+                        );
+
+                        let (fdb_error, continuation) = event_data;
+
+                        let event = RawRecordForwardScanStateMachineEvent::FdbError {
+                            fdb_error,
+                            continuation,
+                        };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_forward_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                }
             }
             // `RawRecordLimitReached` state
             {
                 // Final state. All events would be invalid
-                {}
+                {
+                    // `RecordVersionOk` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::RawRecordLimitReached,
+                                state_machine_data: Some(
+                                    RawRecordForwardScanStateMachineStateData::RawRecordLimitReached {
+                                        continuation: {
+                                            let KeyValueContinuationInternal::V1(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                                let mut key = Tuple::new();
+                                                key.push_back::<Bytes>(Bytes::from_static(
+                                                    b"hello",
+                                                ));
+                                                key.push_back::<String>("world".to_string());
+                                                key.push_back::<i8>(0);
+
+                                                key.pack()
+                                            });
+
+                                            RawRecordContinuationInternal::from(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            )
+                                        },
+                                    },
+                                ),
+                            };
+
+                        let event_data = (
+                            1,
+                            RecordVersion::from(Versionstamp::complete(
+                                {
+                                    let mut b = BytesMut::new();
+                                    b.put_u64(1066);
+                                    b.put_u16(1);
+                                    Bytes::from(b)
+                                },
+                                10,
+                            )),
+                            {
+                                let mut ts = TupleSchema::new();
+                                ts.push_back(TupleSchemaElement::Bytes);
+                                ts.push_back(TupleSchemaElement::String);
+                                ts.push_back(TupleSchemaElement::Integer);
+
+                                let schema = RawRecordPrimaryKeySchema::try_from(ts).unwrap();
+
+                                let mut key = Tuple::new();
+                                key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                key.push_back::<String>("world".to_string());
+                                key.push_back::<i8>(0);
+
+                                RawRecordPrimaryKey::try_from((schema, key)).unwrap()
+                            },
+                            {
+                                let KeyValueContinuationInternal::V1(
+                                    pb_keyvalue_continuation_internal_v1,
+                                ) = KeyValueContinuationInternal::new_v1_begin_marker();
+
+                                RawRecordContinuationInternal::from(
+                                    pb_keyvalue_continuation_internal_v1,
+                                )
+                            },
+                            0,
+                        );
+
+                        let (
+                            data_splits,
+                            record_version,
+                            primary_key,
+                            continuation,
+                            records_already_returned,
+                        ) = event_data.clone();
+
+                        let event = RawRecordForwardScanStateMachineEvent::RecordVersionOk {
+                            data_splits,
+                            record_version,
+                            primary_key,
+                            continuation,
+                            records_already_returned,
+                        };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_forward_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `Available` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::RawRecordLimitReached,
+                                state_machine_data: Some(
+                                    RawRecordForwardScanStateMachineStateData::RawRecordLimitReached {
+                                        continuation: {
+                                            let KeyValueContinuationInternal::V1(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                                let mut key = Tuple::new();
+                                                key.push_back::<Bytes>(Bytes::from_static(
+                                                    b"hello",
+                                                ));
+                                                key.push_back::<String>("world".to_string());
+                                                key.push_back::<i8>(0);
+
+                                                key.pack()
+                                            });
+
+                                            RawRecordContinuationInternal::from(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            )
+                                        },
+                                    },
+                                ),
+                            };
+
+                        let event_data = (
+                            {
+                                let primary_key = {
+                                    let mut ts = TupleSchema::new();
+                                    ts.push_back(TupleSchemaElement::Bytes);
+                                    ts.push_back(TupleSchemaElement::String);
+                                    ts.push_back(TupleSchemaElement::Integer);
+
+                                    let schema = RawRecordPrimaryKeySchema::try_from(ts).unwrap();
+
+                                    let mut key = Tuple::new();
+                                    key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                    key.push_back::<String>("world".to_string());
+                                    key.push_back::<i8>(0);
+
+                                    RawRecordPrimaryKey::try_from((schema, key)).unwrap()
+                                };
+
+                                let version = RecordVersion::from(Versionstamp::complete(
+                                    {
+                                        let mut b = BytesMut::new();
+                                        b.put_u64(1066);
+                                        b.put_u16(1);
+                                        Bytes::from(b)
+                                    },
+                                    10,
+                                ));
+
+                                let record_bytes = Bytes::from_static(b"Hello world!");
+
+                                RawRecord::from((primary_key, version, record_bytes))
+                            },
+                            {
+                                let KeyValueContinuationInternal::V1(
+                                    pb_keyvalue_continuation_internal_v1,
+                                ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                    let mut key = Tuple::new();
+                                    key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                    key.push_back::<String>("world".to_string());
+                                    key.push_back::<i8>(0);
+
+                                    key.pack()
+                                });
+
+                                RawRecordContinuationInternal::from(
+                                    pb_keyvalue_continuation_internal_v1,
+                                )
+                            },
+                            1,
+                        );
+
+                        let (raw_record, continuation, records_already_returned) = event_data;
+
+                        let event = RawRecordForwardScanStateMachineEvent::Available {
+                            raw_record,
+                            continuation,
+                            records_already_returned,
+                        };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_forward_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `NextError` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::RawRecordLimitReached,
+                                state_machine_data: Some(
+                                    RawRecordForwardScanStateMachineStateData::RawRecordLimitReached {
+                                        continuation: {
+                                            let KeyValueContinuationInternal::V1(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                                let mut key = Tuple::new();
+                                                key.push_back::<Bytes>(Bytes::from_static(
+                                                    b"hello",
+                                                ));
+                                                key.push_back::<String>("world".to_string());
+                                                key.push_back::<i8>(0);
+
+                                                key.pack()
+                                            });
+
+                                            RawRecordContinuationInternal::from(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            )
+                                        },
+                                    },
+                                ),
+                            };
+
+                        let event_data = ({
+                            let KeyValueContinuationInternal::V1(
+                                pb_keyvalue_continuation_internal_v1,
+                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                let mut key = Tuple::new();
+                                key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                key.push_back::<String>("world".to_string());
+                                key.push_back::<i8>(0);
+
+                                key.pack()
+                            });
+
+                            RawRecordContinuationInternal::from(
+                                pb_keyvalue_continuation_internal_v1,
+                            )
+                        },);
+
+                        let (continuation,) = event_data;
+
+                        let event =
+                            RawRecordForwardScanStateMachineEvent::NextError { continuation };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_forward_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `LimitReached` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::RawRecordLimitReached,
+                                state_machine_data: Some(
+                                    RawRecordForwardScanStateMachineStateData::RawRecordLimitReached {
+                                        continuation: {
+                                            let KeyValueContinuationInternal::V1(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                                let mut key = Tuple::new();
+                                                key.push_back::<Bytes>(Bytes::from_static(
+                                                    b"hello",
+                                                ));
+                                                key.push_back::<String>("world".to_string());
+                                                key.push_back::<i8>(0);
+
+                                                key.pack()
+                                            });
+
+                                            RawRecordContinuationInternal::from(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            )
+                                        },
+                                    },
+                                ),
+                            };
+
+                        let event_data = ({
+                            let KeyValueContinuationInternal::V1(
+                                pb_keyvalue_continuation_internal_v1,
+                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                let mut key = Tuple::new();
+                                key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                key.push_back::<String>("world".to_string());
+                                key.push_back::<i8>(0);
+
+                                key.pack()
+                            });
+
+                            RawRecordContinuationInternal::from(
+                                pb_keyvalue_continuation_internal_v1,
+                            )
+                        },);
+
+                        let (continuation,) = event_data;
+
+                        let event =
+                            RawRecordForwardScanStateMachineEvent::LimitReached { continuation };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_forward_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `EndOfStream` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::RawRecordLimitReached,
+                                state_machine_data: Some(
+                                    RawRecordForwardScanStateMachineStateData::RawRecordLimitReached {
+                                        continuation: {
+                                            let KeyValueContinuationInternal::V1(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                                let mut key = Tuple::new();
+                                                key.push_back::<Bytes>(Bytes::from_static(
+                                                    b"hello",
+                                                ));
+                                                key.push_back::<String>("world".to_string());
+                                                key.push_back::<i8>(0);
+
+                                                key.pack()
+                                            });
+
+                                            RawRecordContinuationInternal::from(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            )
+                                        },
+                                    },
+                                ),
+                            };
+
+                        let event = RawRecordForwardScanStateMachineEvent::EndOfStream;
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_forward_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `OutOfBandError` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::RawRecordLimitReached,
+                                state_machine_data: Some(
+                                    RawRecordForwardScanStateMachineStateData::RawRecordLimitReached {
+                                        continuation: {
+                                            let KeyValueContinuationInternal::V1(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                                let mut key = Tuple::new();
+                                                key.push_back::<Bytes>(Bytes::from_static(
+                                                    b"hello",
+                                                ));
+                                                key.push_back::<String>("world".to_string());
+                                                key.push_back::<i8>(0);
+
+                                                key.pack()
+                                            });
+
+                                            RawRecordContinuationInternal::from(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            )
+                                        },
+                                    },
+                                ),
+                            };
+
+                        let event_data = (LimitManagerStoppedReason::TimeLimitReached, {
+                            let KeyValueContinuationInternal::V1(
+                                pb_keyvalue_continuation_internal_v1,
+                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                let mut key = Tuple::new();
+                                key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                key.push_back::<String>("world".to_string());
+                                key.push_back::<i8>(0);
+
+                                key.pack()
+                            });
+
+                            RawRecordContinuationInternal::from(
+                                pb_keyvalue_continuation_internal_v1,
+                            )
+                        });
+
+                        let (out_of_band_error_type, continuation) = event_data;
+
+                        let event = RawRecordForwardScanStateMachineEvent::OutOfBandError {
+                            out_of_band_error_type,
+                            continuation,
+                        };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_forward_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `FdbError` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::RawRecordLimitReached,
+                                state_machine_data: Some(
+                                    RawRecordForwardScanStateMachineStateData::RawRecordLimitReached {
+                                        continuation: {
+                                            let KeyValueContinuationInternal::V1(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                                let mut key = Tuple::new();
+                                                key.push_back::<Bytes>(Bytes::from_static(
+                                                    b"hello",
+                                                ));
+                                                key.push_back::<String>("world".to_string());
+                                                key.push_back::<i8>(0);
+
+                                                key.pack()
+                                            });
+
+                                            RawRecordContinuationInternal::from(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            )
+                                        },
+                                    },
+                                ),
+                            };
+
+                        let event_data = (
+                            {
+                                // `100` is an arbitrary number that we
+                                // are using. There is no specific reason
+                                // for using it.
+                                FdbError::new(100)
+                            },
+                            {
+                                let KeyValueContinuationInternal::V1(
+                                    pb_keyvalue_continuation_internal_v1,
+                                ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                    let mut key = Tuple::new();
+                                    key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                    key.push_back::<String>("world".to_string());
+                                    key.push_back::<i8>(0);
+
+                                    key.pack()
+                                });
+
+                                RawRecordContinuationInternal::from(
+                                    pb_keyvalue_continuation_internal_v1,
+                                )
+                            },
+                        );
+
+                        let (fdb_error, continuation) = event_data;
+
+                        let event = RawRecordForwardScanStateMachineEvent::FdbError {
+                            fdb_error,
+                            continuation,
+                        };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_forward_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                }
             }
             // `RawRecordEndOfStream` state
             {
                 // Final state. All events would be invalid
-                {}
+                {
+                    // `RecordVersionOk` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::RawRecordEndOfStream,
+                                state_machine_data: Some(
+                                    RawRecordForwardScanStateMachineStateData::RawRecordEndOfStream,
+                                ),
+                            };
+
+                        let event_data = (
+                            1,
+                            RecordVersion::from(Versionstamp::complete(
+                                {
+                                    let mut b = BytesMut::new();
+                                    b.put_u64(1066);
+                                    b.put_u16(1);
+                                    Bytes::from(b)
+                                },
+                                10,
+                            )),
+                            {
+                                let mut ts = TupleSchema::new();
+                                ts.push_back(TupleSchemaElement::Bytes);
+                                ts.push_back(TupleSchemaElement::String);
+                                ts.push_back(TupleSchemaElement::Integer);
+
+                                let schema = RawRecordPrimaryKeySchema::try_from(ts).unwrap();
+
+                                let mut key = Tuple::new();
+                                key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                key.push_back::<String>("world".to_string());
+                                key.push_back::<i8>(0);
+
+                                RawRecordPrimaryKey::try_from((schema, key)).unwrap()
+                            },
+                            {
+                                let KeyValueContinuationInternal::V1(
+                                    pb_keyvalue_continuation_internal_v1,
+                                ) = KeyValueContinuationInternal::new_v1_begin_marker();
+
+                                RawRecordContinuationInternal::from(
+                                    pb_keyvalue_continuation_internal_v1,
+                                )
+                            },
+                            0,
+                        );
+
+                        let (
+                            data_splits,
+                            record_version,
+                            primary_key,
+                            continuation,
+                            records_already_returned,
+                        ) = event_data.clone();
+
+                        let event = RawRecordForwardScanStateMachineEvent::RecordVersionOk {
+                            data_splits,
+                            record_version,
+                            primary_key,
+                            continuation,
+                            records_already_returned,
+                        };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_forward_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `Available` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::RawRecordEndOfStream,
+                                state_machine_data: Some(
+                                    RawRecordForwardScanStateMachineStateData::RawRecordEndOfStream,
+                                ),
+                            };
+
+                        let event_data = (
+                            {
+                                let primary_key = {
+                                    let mut ts = TupleSchema::new();
+                                    ts.push_back(TupleSchemaElement::Bytes);
+                                    ts.push_back(TupleSchemaElement::String);
+                                    ts.push_back(TupleSchemaElement::Integer);
+
+                                    let schema = RawRecordPrimaryKeySchema::try_from(ts).unwrap();
+
+                                    let mut key = Tuple::new();
+                                    key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                    key.push_back::<String>("world".to_string());
+                                    key.push_back::<i8>(0);
+
+                                    RawRecordPrimaryKey::try_from((schema, key)).unwrap()
+                                };
+
+                                let version = RecordVersion::from(Versionstamp::complete(
+                                    {
+                                        let mut b = BytesMut::new();
+                                        b.put_u64(1066);
+                                        b.put_u16(1);
+                                        Bytes::from(b)
+                                    },
+                                    10,
+                                ));
+
+                                let record_bytes = Bytes::from_static(b"Hello world!");
+
+                                RawRecord::from((primary_key, version, record_bytes))
+                            },
+                            {
+                                let KeyValueContinuationInternal::V1(
+                                    pb_keyvalue_continuation_internal_v1,
+                                ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                    let mut key = Tuple::new();
+                                    key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                    key.push_back::<String>("world".to_string());
+                                    key.push_back::<i8>(0);
+
+                                    key.pack()
+                                });
+
+                                RawRecordContinuationInternal::from(
+                                    pb_keyvalue_continuation_internal_v1,
+                                )
+                            },
+                            1,
+                        );
+
+                        let (raw_record, continuation, records_already_returned) = event_data;
+
+                        let event = RawRecordForwardScanStateMachineEvent::Available {
+                            raw_record,
+                            continuation,
+                            records_already_returned,
+                        };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_forward_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `NextError` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::RawRecordEndOfStream,
+                                state_machine_data: Some(
+                                    RawRecordForwardScanStateMachineStateData::RawRecordEndOfStream,
+                                ),
+                            };
+
+                        let event_data = ({
+                            let KeyValueContinuationInternal::V1(
+                                pb_keyvalue_continuation_internal_v1,
+                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                let mut key = Tuple::new();
+                                key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                key.push_back::<String>("world".to_string());
+                                key.push_back::<i8>(0);
+
+                                key.pack()
+                            });
+
+                            RawRecordContinuationInternal::from(
+                                pb_keyvalue_continuation_internal_v1,
+                            )
+                        },);
+
+                        let (continuation,) = event_data;
+
+                        let event =
+                            RawRecordForwardScanStateMachineEvent::NextError { continuation };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_forward_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `LimitReached` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::RawRecordEndOfStream,
+                                state_machine_data: Some(
+                                    RawRecordForwardScanStateMachineStateData::RawRecordEndOfStream,
+                                ),
+                            };
+
+                        let event_data = ({
+                            let KeyValueContinuationInternal::V1(
+                                pb_keyvalue_continuation_internal_v1,
+                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                let mut key = Tuple::new();
+                                key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                key.push_back::<String>("world".to_string());
+                                key.push_back::<i8>(0);
+
+                                key.pack()
+                            });
+
+                            RawRecordContinuationInternal::from(
+                                pb_keyvalue_continuation_internal_v1,
+                            )
+                        },);
+
+                        let (continuation,) = event_data;
+
+                        let event =
+                            RawRecordForwardScanStateMachineEvent::LimitReached { continuation };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_forward_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `EndOfStream` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::RawRecordEndOfStream,
+                                state_machine_data: Some(
+                                    RawRecordForwardScanStateMachineStateData::RawRecordEndOfStream,
+                                ),
+                            };
+
+                        let event = RawRecordForwardScanStateMachineEvent::EndOfStream;
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_forward_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `OutOfBandError` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::RawRecordEndOfStream,
+                                state_machine_data: Some(
+                                    RawRecordForwardScanStateMachineStateData::RawRecordEndOfStream,
+                                ),
+                            };
+
+                        let event_data = (LimitManagerStoppedReason::TimeLimitReached, {
+                            let KeyValueContinuationInternal::V1(
+                                pb_keyvalue_continuation_internal_v1,
+                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                let mut key = Tuple::new();
+                                key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                key.push_back::<String>("world".to_string());
+                                key.push_back::<i8>(0);
+
+                                key.pack()
+                            });
+
+                            RawRecordContinuationInternal::from(
+                                pb_keyvalue_continuation_internal_v1,
+                            )
+                        });
+
+                        let (out_of_band_error_type, continuation) = event_data;
+
+                        let event = RawRecordForwardScanStateMachineEvent::OutOfBandError {
+                            out_of_band_error_type,
+                            continuation,
+                        };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_forward_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `FdbError` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::RawRecordEndOfStream,
+                                state_machine_data: Some(
+                                    RawRecordForwardScanStateMachineStateData::RawRecordEndOfStream,
+                                ),
+                            };
+
+                        let event_data = (
+                            {
+                                // `100` is an arbitrary number that we
+                                // are using. There is no specific reason
+                                // for using it.
+                                FdbError::new(100)
+                            },
+                            {
+                                let KeyValueContinuationInternal::V1(
+                                    pb_keyvalue_continuation_internal_v1,
+                                ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                    let mut key = Tuple::new();
+                                    key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                    key.push_back::<String>("world".to_string());
+                                    key.push_back::<i8>(0);
+
+                                    key.pack()
+                                });
+
+                                RawRecordContinuationInternal::from(
+                                    pb_keyvalue_continuation_internal_v1,
+                                )
+                            },
+                        );
+
+                        let (fdb_error, continuation) = event_data;
+
+                        let event = RawRecordForwardScanStateMachineEvent::FdbError {
+                            fdb_error,
+                            continuation,
+                        };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_forward_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                }
             }
             // `OutOfBandError` state
             {
                 // Final state. All events would be invalid
-                {}
+                {
+                    // `RecordVersionOk` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::OutOfBandError,
+                                state_machine_data: Some(
+                                    RawRecordForwardScanStateMachineStateData::OutOfBandError {
+                                        out_of_band_error_type:
+                                            LimitManagerStoppedReason::TimeLimitReached,
+                                        continuation: {
+                                            let KeyValueContinuationInternal::V1(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                                let mut key = Tuple::new();
+                                                key.push_back::<Bytes>(Bytes::from_static(
+                                                    b"hello",
+                                                ));
+                                                key.push_back::<String>("world".to_string());
+                                                key.push_back::<i8>(0);
+
+                                                key.pack()
+                                            });
+
+                                            RawRecordContinuationInternal::from(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            )
+                                        },
+                                    },
+                                ),
+                            };
+
+                        let event_data = (
+                            1,
+                            RecordVersion::from(Versionstamp::complete(
+                                {
+                                    let mut b = BytesMut::new();
+                                    b.put_u64(1066);
+                                    b.put_u16(1);
+                                    Bytes::from(b)
+                                },
+                                10,
+                            )),
+                            {
+                                let mut ts = TupleSchema::new();
+                                ts.push_back(TupleSchemaElement::Bytes);
+                                ts.push_back(TupleSchemaElement::String);
+                                ts.push_back(TupleSchemaElement::Integer);
+
+                                let schema = RawRecordPrimaryKeySchema::try_from(ts).unwrap();
+
+                                let mut key = Tuple::new();
+                                key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                key.push_back::<String>("world".to_string());
+                                key.push_back::<i8>(0);
+
+                                RawRecordPrimaryKey::try_from((schema, key)).unwrap()
+                            },
+                            {
+                                let KeyValueContinuationInternal::V1(
+                                    pb_keyvalue_continuation_internal_v1,
+                                ) = KeyValueContinuationInternal::new_v1_begin_marker();
+
+                                RawRecordContinuationInternal::from(
+                                    pb_keyvalue_continuation_internal_v1,
+                                )
+                            },
+                            0,
+                        );
+
+                        let (
+                            data_splits,
+                            record_version,
+                            primary_key,
+                            continuation,
+                            records_already_returned,
+                        ) = event_data.clone();
+
+                        let event = RawRecordForwardScanStateMachineEvent::RecordVersionOk {
+                            data_splits,
+                            record_version,
+                            primary_key,
+                            continuation,
+                            records_already_returned,
+                        };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_forward_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `Available` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::OutOfBandError,
+                                state_machine_data: Some(
+                                    RawRecordForwardScanStateMachineStateData::OutOfBandError {
+                                        out_of_band_error_type:
+                                            LimitManagerStoppedReason::TimeLimitReached,
+                                        continuation: {
+                                            let KeyValueContinuationInternal::V1(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                                let mut key = Tuple::new();
+                                                key.push_back::<Bytes>(Bytes::from_static(
+                                                    b"hello",
+                                                ));
+                                                key.push_back::<String>("world".to_string());
+                                                key.push_back::<i8>(0);
+
+                                                key.pack()
+                                            });
+
+                                            RawRecordContinuationInternal::from(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            )
+                                        },
+                                    },
+                                ),
+                            };
+
+                        let event_data = (
+                            {
+                                let primary_key = {
+                                    let mut ts = TupleSchema::new();
+                                    ts.push_back(TupleSchemaElement::Bytes);
+                                    ts.push_back(TupleSchemaElement::String);
+                                    ts.push_back(TupleSchemaElement::Integer);
+
+                                    let schema = RawRecordPrimaryKeySchema::try_from(ts).unwrap();
+
+                                    let mut key = Tuple::new();
+                                    key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                    key.push_back::<String>("world".to_string());
+                                    key.push_back::<i8>(0);
+
+                                    RawRecordPrimaryKey::try_from((schema, key)).unwrap()
+                                };
+
+                                let version = RecordVersion::from(Versionstamp::complete(
+                                    {
+                                        let mut b = BytesMut::new();
+                                        b.put_u64(1066);
+                                        b.put_u16(1);
+                                        Bytes::from(b)
+                                    },
+                                    10,
+                                ));
+
+                                let record_bytes = Bytes::from_static(b"Hello world!");
+
+                                RawRecord::from((primary_key, version, record_bytes))
+                            },
+                            {
+                                let KeyValueContinuationInternal::V1(
+                                    pb_keyvalue_continuation_internal_v1,
+                                ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                    let mut key = Tuple::new();
+                                    key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                    key.push_back::<String>("world".to_string());
+                                    key.push_back::<i8>(0);
+
+                                    key.pack()
+                                });
+
+                                RawRecordContinuationInternal::from(
+                                    pb_keyvalue_continuation_internal_v1,
+                                )
+                            },
+                            1,
+                        );
+
+                        let (raw_record, continuation, records_already_returned) = event_data;
+
+                        let event = RawRecordForwardScanStateMachineEvent::Available {
+                            raw_record,
+                            continuation,
+                            records_already_returned,
+                        };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_forward_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `NextError` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::OutOfBandError,
+                                state_machine_data: Some(
+                                    RawRecordForwardScanStateMachineStateData::OutOfBandError {
+                                        out_of_band_error_type:
+                                            LimitManagerStoppedReason::TimeLimitReached,
+                                        continuation: {
+                                            let KeyValueContinuationInternal::V1(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                                let mut key = Tuple::new();
+                                                key.push_back::<Bytes>(Bytes::from_static(
+                                                    b"hello",
+                                                ));
+                                                key.push_back::<String>("world".to_string());
+                                                key.push_back::<i8>(0);
+
+                                                key.pack()
+                                            });
+
+                                            RawRecordContinuationInternal::from(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            )
+                                        },
+                                    },
+                                ),
+                            };
+
+                        let event_data = ({
+                            let KeyValueContinuationInternal::V1(
+                                pb_keyvalue_continuation_internal_v1,
+                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                let mut key = Tuple::new();
+                                key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                key.push_back::<String>("world".to_string());
+                                key.push_back::<i8>(0);
+
+                                key.pack()
+                            });
+
+                            RawRecordContinuationInternal::from(
+                                pb_keyvalue_continuation_internal_v1,
+                            )
+                        },);
+
+                        let (continuation,) = event_data;
+
+                        let event =
+                            RawRecordForwardScanStateMachineEvent::NextError { continuation };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_forward_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `LimitReached` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::OutOfBandError,
+                                state_machine_data: Some(
+                                    RawRecordForwardScanStateMachineStateData::OutOfBandError {
+                                        out_of_band_error_type:
+                                            LimitManagerStoppedReason::TimeLimitReached,
+                                        continuation: {
+                                            let KeyValueContinuationInternal::V1(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                                let mut key = Tuple::new();
+                                                key.push_back::<Bytes>(Bytes::from_static(
+                                                    b"hello",
+                                                ));
+                                                key.push_back::<String>("world".to_string());
+                                                key.push_back::<i8>(0);
+
+                                                key.pack()
+                                            });
+
+                                            RawRecordContinuationInternal::from(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            )
+                                        },
+                                    },
+                                ),
+                            };
+
+                        let event_data = ({
+                            let KeyValueContinuationInternal::V1(
+                                pb_keyvalue_continuation_internal_v1,
+                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                let mut key = Tuple::new();
+                                key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                key.push_back::<String>("world".to_string());
+                                key.push_back::<i8>(0);
+
+                                key.pack()
+                            });
+
+                            RawRecordContinuationInternal::from(
+                                pb_keyvalue_continuation_internal_v1,
+                            )
+                        },);
+
+                        let (continuation,) = event_data;
+
+                        let event =
+                            RawRecordForwardScanStateMachineEvent::LimitReached { continuation };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_forward_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `EndOfStream` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::OutOfBandError,
+                                state_machine_data: Some(
+                                    RawRecordForwardScanStateMachineStateData::OutOfBandError {
+                                        out_of_band_error_type:
+                                            LimitManagerStoppedReason::TimeLimitReached,
+                                        continuation: {
+                                            let KeyValueContinuationInternal::V1(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                                let mut key = Tuple::new();
+                                                key.push_back::<Bytes>(Bytes::from_static(
+                                                    b"hello",
+                                                ));
+                                                key.push_back::<String>("world".to_string());
+                                                key.push_back::<i8>(0);
+
+                                                key.pack()
+                                            });
+
+                                            RawRecordContinuationInternal::from(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            )
+                                        },
+                                    },
+                                ),
+                            };
+
+                        let event = RawRecordForwardScanStateMachineEvent::EndOfStream;
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_forward_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `OutOfBandError` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::OutOfBandError,
+                                state_machine_data: Some(
+                                    RawRecordForwardScanStateMachineStateData::OutOfBandError {
+                                        out_of_band_error_type:
+                                            LimitManagerStoppedReason::TimeLimitReached,
+                                        continuation: {
+                                            let KeyValueContinuationInternal::V1(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                                let mut key = Tuple::new();
+                                                key.push_back::<Bytes>(Bytes::from_static(
+                                                    b"hello",
+                                                ));
+                                                key.push_back::<String>("world".to_string());
+                                                key.push_back::<i8>(0);
+
+                                                key.pack()
+                                            });
+
+                                            RawRecordContinuationInternal::from(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            )
+                                        },
+                                    },
+                                ),
+                            };
+
+                        let event_data = (LimitManagerStoppedReason::TimeLimitReached, {
+                            let KeyValueContinuationInternal::V1(
+                                pb_keyvalue_continuation_internal_v1,
+                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                let mut key = Tuple::new();
+                                key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                key.push_back::<String>("world".to_string());
+                                key.push_back::<i8>(0);
+
+                                key.pack()
+                            });
+
+                            RawRecordContinuationInternal::from(
+                                pb_keyvalue_continuation_internal_v1,
+                            )
+                        });
+
+                        let (out_of_band_error_type, continuation) = event_data;
+
+                        let event = RawRecordForwardScanStateMachineEvent::OutOfBandError {
+                            out_of_band_error_type,
+                            continuation,
+                        };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_forward_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `FdbError` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::OutOfBandError,
+                                state_machine_data: Some(
+                                    RawRecordForwardScanStateMachineStateData::OutOfBandError {
+                                        out_of_band_error_type:
+                                            LimitManagerStoppedReason::TimeLimitReached,
+                                        continuation: {
+                                            let KeyValueContinuationInternal::V1(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                                let mut key = Tuple::new();
+                                                key.push_back::<Bytes>(Bytes::from_static(
+                                                    b"hello",
+                                                ));
+                                                key.push_back::<String>("world".to_string());
+                                                key.push_back::<i8>(0);
+
+                                                key.pack()
+                                            });
+
+                                            RawRecordContinuationInternal::from(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            )
+                                        },
+                                    },
+                                ),
+                            };
+
+                        let event_data = (
+                            {
+                                // `100` is an arbitrary number that we
+                                // are using. There is no specific reason
+                                // for using it.
+                                FdbError::new(100)
+                            },
+                            {
+                                let KeyValueContinuationInternal::V1(
+                                    pb_keyvalue_continuation_internal_v1,
+                                ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                    let mut key = Tuple::new();
+                                    key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                    key.push_back::<String>("world".to_string());
+                                    key.push_back::<i8>(0);
+
+                                    key.pack()
+                                });
+
+                                RawRecordContinuationInternal::from(
+                                    pb_keyvalue_continuation_internal_v1,
+                                )
+                            },
+                        );
+
+                        let (fdb_error, continuation) = event_data;
+
+                        let event = RawRecordForwardScanStateMachineEvent::FdbError {
+                            fdb_error,
+                            continuation,
+                        };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_forward_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                }
             }
             // `FdbError` state
             {
                 // Final state. All events would be invalid
-                {}
+                {
+                    // `RecordVersionOk` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::FdbError,
+                                state_machine_data: Some(
+                                    RawRecordForwardScanStateMachineStateData::FdbError {
+                                        // `100` is an arbitrary number that we
+                                        // are using. There is no specific reason
+                                        // for using it.
+                                        fdb_error: FdbError::new(100),
+                                        continuation: {
+                                            let KeyValueContinuationInternal::V1(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                                let mut key = Tuple::new();
+                                                key.push_back::<Bytes>(Bytes::from_static(
+                                                    b"hello",
+                                                ));
+                                                key.push_back::<String>("world".to_string());
+                                                key.push_back::<i8>(0);
+
+                                                key.pack()
+                                            });
+
+                                            RawRecordContinuationInternal::from(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            )
+                                        },
+                                    },
+                                ),
+                            };
+
+                        let event_data = (
+                            1,
+                            RecordVersion::from(Versionstamp::complete(
+                                {
+                                    let mut b = BytesMut::new();
+                                    b.put_u64(1066);
+                                    b.put_u16(1);
+                                    Bytes::from(b)
+                                },
+                                10,
+                            )),
+                            {
+                                let mut ts = TupleSchema::new();
+                                ts.push_back(TupleSchemaElement::Bytes);
+                                ts.push_back(TupleSchemaElement::String);
+                                ts.push_back(TupleSchemaElement::Integer);
+
+                                let schema = RawRecordPrimaryKeySchema::try_from(ts).unwrap();
+
+                                let mut key = Tuple::new();
+                                key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                key.push_back::<String>("world".to_string());
+                                key.push_back::<i8>(0);
+
+                                RawRecordPrimaryKey::try_from((schema, key)).unwrap()
+                            },
+                            {
+                                let KeyValueContinuationInternal::V1(
+                                    pb_keyvalue_continuation_internal_v1,
+                                ) = KeyValueContinuationInternal::new_v1_begin_marker();
+
+                                RawRecordContinuationInternal::from(
+                                    pb_keyvalue_continuation_internal_v1,
+                                )
+                            },
+                            0,
+                        );
+
+                        let (
+                            data_splits,
+                            record_version,
+                            primary_key,
+                            continuation,
+                            records_already_returned,
+                        ) = event_data.clone();
+
+                        let event = RawRecordForwardScanStateMachineEvent::RecordVersionOk {
+                            data_splits,
+                            record_version,
+                            primary_key,
+                            continuation,
+                            records_already_returned,
+                        };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_forward_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `Available` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::FdbError,
+                                state_machine_data: Some(
+                                    RawRecordForwardScanStateMachineStateData::FdbError {
+                                        // `100` is an arbitrary number that we
+                                        // are using. There is no specific reason
+                                        // for using it.
+                                        fdb_error: FdbError::new(100),
+                                        continuation: {
+                                            let KeyValueContinuationInternal::V1(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                                let mut key = Tuple::new();
+                                                key.push_back::<Bytes>(Bytes::from_static(
+                                                    b"hello",
+                                                ));
+                                                key.push_back::<String>("world".to_string());
+                                                key.push_back::<i8>(0);
+
+                                                key.pack()
+                                            });
+
+                                            RawRecordContinuationInternal::from(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            )
+                                        },
+                                    },
+                                ),
+                            };
+
+                        let event_data = (
+                            {
+                                let primary_key = {
+                                    let mut ts = TupleSchema::new();
+                                    ts.push_back(TupleSchemaElement::Bytes);
+                                    ts.push_back(TupleSchemaElement::String);
+                                    ts.push_back(TupleSchemaElement::Integer);
+
+                                    let schema = RawRecordPrimaryKeySchema::try_from(ts).unwrap();
+
+                                    let mut key = Tuple::new();
+                                    key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                    key.push_back::<String>("world".to_string());
+                                    key.push_back::<i8>(0);
+
+                                    RawRecordPrimaryKey::try_from((schema, key)).unwrap()
+                                };
+
+                                let version = RecordVersion::from(Versionstamp::complete(
+                                    {
+                                        let mut b = BytesMut::new();
+                                        b.put_u64(1066);
+                                        b.put_u16(1);
+                                        Bytes::from(b)
+                                    },
+                                    10,
+                                ));
+
+                                let record_bytes = Bytes::from_static(b"Hello world!");
+
+                                RawRecord::from((primary_key, version, record_bytes))
+                            },
+                            {
+                                let KeyValueContinuationInternal::V1(
+                                    pb_keyvalue_continuation_internal_v1,
+                                ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                    let mut key = Tuple::new();
+                                    key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                    key.push_back::<String>("world".to_string());
+                                    key.push_back::<i8>(0);
+
+                                    key.pack()
+                                });
+
+                                RawRecordContinuationInternal::from(
+                                    pb_keyvalue_continuation_internal_v1,
+                                )
+                            },
+                            1,
+                        );
+
+                        let (raw_record, continuation, records_already_returned) = event_data;
+
+                        let event = RawRecordForwardScanStateMachineEvent::Available {
+                            raw_record,
+                            continuation,
+                            records_already_returned,
+                        };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_forward_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `NextError` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::FdbError,
+                                state_machine_data: Some(
+                                    RawRecordForwardScanStateMachineStateData::FdbError {
+                                        // `100` is an arbitrary number that we
+                                        // are using. There is no specific reason
+                                        // for using it.
+                                        fdb_error: FdbError::new(100),
+                                        continuation: {
+                                            let KeyValueContinuationInternal::V1(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                                let mut key = Tuple::new();
+                                                key.push_back::<Bytes>(Bytes::from_static(
+                                                    b"hello",
+                                                ));
+                                                key.push_back::<String>("world".to_string());
+                                                key.push_back::<i8>(0);
+
+                                                key.pack()
+                                            });
+
+                                            RawRecordContinuationInternal::from(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            )
+                                        },
+                                    },
+                                ),
+                            };
+
+                        let event_data = ({
+                            let KeyValueContinuationInternal::V1(
+                                pb_keyvalue_continuation_internal_v1,
+                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                let mut key = Tuple::new();
+                                key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                key.push_back::<String>("world".to_string());
+                                key.push_back::<i8>(0);
+
+                                key.pack()
+                            });
+
+                            RawRecordContinuationInternal::from(
+                                pb_keyvalue_continuation_internal_v1,
+                            )
+                        },);
+
+                        let (continuation,) = event_data;
+
+                        let event =
+                            RawRecordForwardScanStateMachineEvent::NextError { continuation };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_forward_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `LimitReached` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::FdbError,
+                                state_machine_data: Some(
+                                    RawRecordForwardScanStateMachineStateData::FdbError {
+                                        // `100` is an arbitrary number that we
+                                        // are using. There is no specific reason
+                                        // for using it.
+                                        fdb_error: FdbError::new(100),
+                                        continuation: {
+                                            let KeyValueContinuationInternal::V1(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                                let mut key = Tuple::new();
+                                                key.push_back::<Bytes>(Bytes::from_static(
+                                                    b"hello",
+                                                ));
+                                                key.push_back::<String>("world".to_string());
+                                                key.push_back::<i8>(0);
+
+                                                key.pack()
+                                            });
+
+                                            RawRecordContinuationInternal::from(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            )
+                                        },
+                                    },
+                                ),
+                            };
+
+                        let event_data = ({
+                            let KeyValueContinuationInternal::V1(
+                                pb_keyvalue_continuation_internal_v1,
+                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                let mut key = Tuple::new();
+                                key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                key.push_back::<String>("world".to_string());
+                                key.push_back::<i8>(0);
+
+                                key.pack()
+                            });
+
+                            RawRecordContinuationInternal::from(
+                                pb_keyvalue_continuation_internal_v1,
+                            )
+                        },);
+
+                        let (continuation,) = event_data;
+
+                        let event =
+                            RawRecordForwardScanStateMachineEvent::LimitReached { continuation };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_forward_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `EndOfStream` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::FdbError,
+                                state_machine_data: Some(
+                                    RawRecordForwardScanStateMachineStateData::FdbError {
+                                        // `100` is an arbitrary number that we
+                                        // are using. There is no specific reason
+                                        // for using it.
+                                        fdb_error: FdbError::new(100),
+                                        continuation: {
+                                            let KeyValueContinuationInternal::V1(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                                let mut key = Tuple::new();
+                                                key.push_back::<Bytes>(Bytes::from_static(
+                                                    b"hello",
+                                                ));
+                                                key.push_back::<String>("world".to_string());
+                                                key.push_back::<i8>(0);
+
+                                                key.pack()
+                                            });
+
+                                            RawRecordContinuationInternal::from(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            )
+                                        },
+                                    },
+                                ),
+                            };
+
+                        let event = RawRecordForwardScanStateMachineEvent::EndOfStream;
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_forward_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `OutOfBandError` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::FdbError,
+                                state_machine_data: Some(
+                                    RawRecordForwardScanStateMachineStateData::FdbError {
+                                        // `100` is an arbitrary number that we
+                                        // are using. There is no specific reason
+                                        // for using it.
+                                        fdb_error: FdbError::new(100),
+                                        continuation: {
+                                            let KeyValueContinuationInternal::V1(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                                let mut key = Tuple::new();
+                                                key.push_back::<Bytes>(Bytes::from_static(
+                                                    b"hello",
+                                                ));
+                                                key.push_back::<String>("world".to_string());
+                                                key.push_back::<i8>(0);
+
+                                                key.pack()
+                                            });
+
+                                            RawRecordContinuationInternal::from(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            )
+                                        },
+                                    },
+                                ),
+                            };
+
+                        let event_data = (LimitManagerStoppedReason::TimeLimitReached, {
+                            let KeyValueContinuationInternal::V1(
+                                pb_keyvalue_continuation_internal_v1,
+                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                let mut key = Tuple::new();
+                                key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                key.push_back::<String>("world".to_string());
+                                key.push_back::<i8>(0);
+
+                                key.pack()
+                            });
+
+                            RawRecordContinuationInternal::from(
+                                pb_keyvalue_continuation_internal_v1,
+                            )
+                        });
+
+                        let (out_of_band_error_type, continuation) = event_data;
+
+                        let event = RawRecordForwardScanStateMachineEvent::OutOfBandError {
+                            out_of_band_error_type,
+                            continuation,
+                        };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_forward_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `FdbError` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_forward_scan_state_machine =
+                            RawRecordForwardScanStateMachine {
+                                state_machine_state:
+                                    RawRecordForwardScanStateMachineState::FdbError,
+                                state_machine_data: Some(
+                                    RawRecordForwardScanStateMachineStateData::FdbError {
+                                        // `100` is an arbitrary number that we
+                                        // are using. There is no specific reason
+                                        // for using it.
+                                        fdb_error: FdbError::new(100),
+                                        continuation: {
+                                            let KeyValueContinuationInternal::V1(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                                let mut key = Tuple::new();
+                                                key.push_back::<Bytes>(Bytes::from_static(
+                                                    b"hello",
+                                                ));
+                                                key.push_back::<String>("world".to_string());
+                                                key.push_back::<i8>(0);
+
+                                                key.pack()
+                                            });
+
+                                            RawRecordContinuationInternal::from(
+                                                pb_keyvalue_continuation_internal_v1,
+                                            )
+                                        },
+                                    },
+                                ),
+                            };
+
+                        let event_data = (
+                            {
+                                // `100` is an arbitrary number that we
+                                // are using. There is no specific reason
+                                // for using it.
+                                FdbError::new(100)
+                            },
+                            {
+                                let KeyValueContinuationInternal::V1(
+                                    pb_keyvalue_continuation_internal_v1,
+                                ) = KeyValueContinuationInternal::new_v1_key_marker({
+                                    let mut key = Tuple::new();
+                                    key.push_back::<Bytes>(Bytes::from_static(b"hello"));
+                                    key.push_back::<String>("world".to_string());
+                                    key.push_back::<i8>(0);
+
+                                    key.pack()
+                                });
+
+                                RawRecordContinuationInternal::from(
+                                    pb_keyvalue_continuation_internal_v1,
+                                )
+                            },
+                        );
+
+                        let (fdb_error, continuation) = event_data;
+
+                        let event = RawRecordForwardScanStateMachineEvent::FdbError {
+                            fdb_error,
+                            continuation,
+                        };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_forward_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                }
             }
         }
     }
