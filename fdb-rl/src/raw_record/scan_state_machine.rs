@@ -884,7 +884,6 @@ impl RawRecordForwardScanStateMachine {
         }
     }
 
-    // TODO: This can be easily unit tested.
     fn step_once_with_event(&mut self, event: RawRecordForwardScanStateMachineEvent) {
         self.state_machine_state = match self.state_machine_state {
             RawRecordForwardScanStateMachineState::InitiateRecordVersionRead => match event {
@@ -2113,7 +2112,6 @@ impl RawRecordReverseScanStateMachine {
         }
     }
 
-    // TODO: This can be easily unit tested.
     fn step_once_with_event(&mut self, event: RawRecordReverseScanStateMachineEvent) {
         self.state_machine_state = match self.state_machine_state {
             RawRecordReverseScanStateMachineState::InitiateLastSplitRead => match event {
@@ -5542,18 +5540,650 @@ mod tests {
             {
                 // Final state. All events would be invalid
                 {
-                    // TODO: Continue from here.
+                    // `LastSplitOk` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_reverse_scan_state_machine =
+                            RawRecordReverseScanStateMachine {
+                                state_machine_state:
+                                    RawRecordReverseScanStateMachineState::RawRecordLimitReached,
+                                state_machine_data: Some(
+                                    RawRecordReverseScanStateMachineStateData::RawRecordEndOfStream,
+                                ),
+                            };
+
+                        let event_data = (
+                            data_splits!(),
+                            primary_key!(),
+                            last_split_value!(),
+                            continuation_begin_marker!(),
+                            records_already_returned!(0),
+                        );
+
+                        let (
+                            data_splits,
+                            primary_key,
+                            last_split_value,
+                            continuation,
+                            records_already_returned,
+                        ) = event_data;
+
+                        let event = RawRecordReverseScanStateMachineEvent::LastSplitOk {
+                            data_splits,
+                            primary_key,
+                            last_split_value,
+                            continuation,
+                            records_already_returned,
+                        };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_reverse_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `Available` event`
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_reverse_scan_state_machine =
+                            RawRecordReverseScanStateMachine {
+                                state_machine_state:
+                                    RawRecordReverseScanStateMachineState::RawRecordLimitReached,
+                                state_machine_data: Some(
+                                    RawRecordReverseScanStateMachineStateData::RawRecordEndOfStream,
+                                ),
+                            };
+
+                        let event_data = (
+                            raw_record!(),
+                            continuation_key_marker!(),
+                            records_already_returned!(1),
+                        );
+
+                        let (raw_record, continuation, records_already_returned) = event_data;
+
+                        let event = RawRecordReverseScanStateMachineEvent::Available {
+                            raw_record,
+                            continuation,
+                            records_already_returned,
+                        };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_reverse_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `NextError` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_reverse_scan_state_machine =
+                            RawRecordReverseScanStateMachine {
+                                state_machine_state:
+                                    RawRecordReverseScanStateMachineState::RawRecordLimitReached,
+                                state_machine_data: Some(
+                                    RawRecordReverseScanStateMachineStateData::RawRecordEndOfStream,
+                                ),
+                            };
+
+                        let event_data = (continuation_key_marker!(),);
+
+                        let (continuation,) = event_data;
+
+                        let event =
+                            RawRecordReverseScanStateMachineEvent::NextError { continuation };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_reverse_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `LimitReached` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_reverse_scan_state_machine =
+                            RawRecordReverseScanStateMachine {
+                                state_machine_state:
+                                    RawRecordReverseScanStateMachineState::RawRecordLimitReached,
+                                state_machine_data: Some(
+                                    RawRecordReverseScanStateMachineStateData::RawRecordEndOfStream,
+                                ),
+                            };
+
+                        let event_data = (continuation_key_marker!(),);
+
+                        let (continuation,) = event_data;
+
+                        let event =
+                            RawRecordReverseScanStateMachineEvent::LimitReached { continuation };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_reverse_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `EndOfStream` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_reverse_scan_state_machine =
+                            RawRecordReverseScanStateMachine {
+                                state_machine_state:
+                                    RawRecordReverseScanStateMachineState::RawRecordLimitReached,
+                                state_machine_data: Some(
+                                    RawRecordReverseScanStateMachineStateData::RawRecordEndOfStream,
+                                ),
+                            };
+
+                        let event = RawRecordReverseScanStateMachineEvent::EndOfStream;
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_reverse_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `OutOfBandError` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_reverse_scan_state_machine =
+                            RawRecordReverseScanStateMachine {
+                                state_machine_state:
+                                    RawRecordReverseScanStateMachineState::RawRecordLimitReached,
+                                state_machine_data: Some(
+                                    RawRecordReverseScanStateMachineStateData::RawRecordEndOfStream,
+                                ),
+                            };
+
+                        let event_data = (
+                            LimitManagerStoppedReason::TimeLimitReached,
+                            continuation_key_marker!(),
+                        );
+
+                        let (out_of_band_error_type, continuation) = event_data;
+
+                        let event = RawRecordReverseScanStateMachineEvent::OutOfBandError {
+                            out_of_band_error_type,
+                            continuation,
+                        };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_reverse_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `FdbError` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_reverse_scan_state_machine =
+                            RawRecordReverseScanStateMachine {
+                                state_machine_state:
+                                    RawRecordReverseScanStateMachineState::RawRecordLimitReached,
+                                state_machine_data: Some(
+                                    RawRecordReverseScanStateMachineStateData::RawRecordEndOfStream,
+                                ),
+                            };
+
+                        let event_data = (fdb_error!(), continuation_key_marker!());
+
+                        let (fdb_error, continuation) = event_data;
+
+                        let event = RawRecordReverseScanStateMachineEvent::FdbError {
+                            fdb_error,
+                            continuation,
+                        };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_reverse_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
                 }
             }
             // `OutOfBandError` state
             {
                 // Final state. All events would be invalid
-                {}
+                {
+                    // `LastSplitOk` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_reverse_scan_state_machine =
+                            RawRecordReverseScanStateMachine {
+                                state_machine_state:
+                                    RawRecordReverseScanStateMachineState::RawRecordLimitReached,
+                                state_machine_data: Some(
+                                    RawRecordReverseScanStateMachineStateData::OutOfBandError {
+                                        out_of_band_error_type:
+                                            LimitManagerStoppedReason::TimeLimitReached,
+                                        continuation: continuation_key_marker!(),
+                                    },
+                                ),
+                            };
+
+                        let event_data = (
+                            data_splits!(),
+                            primary_key!(),
+                            last_split_value!(),
+                            continuation_begin_marker!(),
+                            records_already_returned!(0),
+                        );
+
+                        let (
+                            data_splits,
+                            primary_key,
+                            last_split_value,
+                            continuation,
+                            records_already_returned,
+                        ) = event_data;
+
+                        let event = RawRecordReverseScanStateMachineEvent::LastSplitOk {
+                            data_splits,
+                            primary_key,
+                            last_split_value,
+                            continuation,
+                            records_already_returned,
+                        };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_reverse_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `Available` event`
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_reverse_scan_state_machine =
+                            RawRecordReverseScanStateMachine {
+                                state_machine_state:
+                                    RawRecordReverseScanStateMachineState::RawRecordLimitReached,
+                                state_machine_data: Some(
+                                    RawRecordReverseScanStateMachineStateData::OutOfBandError {
+                                        out_of_band_error_type:
+                                            LimitManagerStoppedReason::TimeLimitReached,
+                                        continuation: continuation_key_marker!(),
+                                    },
+                                ),
+                            };
+
+                        let event_data = (
+                            raw_record!(),
+                            continuation_key_marker!(),
+                            records_already_returned!(1),
+                        );
+
+                        let (raw_record, continuation, records_already_returned) = event_data;
+
+                        let event = RawRecordReverseScanStateMachineEvent::Available {
+                            raw_record,
+                            continuation,
+                            records_already_returned,
+                        };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_reverse_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `NextError` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_reverse_scan_state_machine =
+                            RawRecordReverseScanStateMachine {
+                                state_machine_state:
+                                    RawRecordReverseScanStateMachineState::RawRecordLimitReached,
+                                state_machine_data: Some(
+                                    RawRecordReverseScanStateMachineStateData::OutOfBandError {
+                                        out_of_band_error_type:
+                                            LimitManagerStoppedReason::TimeLimitReached,
+                                        continuation: continuation_key_marker!(),
+                                    },
+                                ),
+                            };
+
+                        let event_data = (continuation_key_marker!(),);
+
+                        let (continuation,) = event_data;
+
+                        let event =
+                            RawRecordReverseScanStateMachineEvent::NextError { continuation };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_reverse_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `LimitReached` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_reverse_scan_state_machine =
+                            RawRecordReverseScanStateMachine {
+                                state_machine_state:
+                                    RawRecordReverseScanStateMachineState::RawRecordLimitReached,
+                                state_machine_data: Some(
+                                    RawRecordReverseScanStateMachineStateData::OutOfBandError {
+                                        out_of_band_error_type:
+                                            LimitManagerStoppedReason::TimeLimitReached,
+                                        continuation: continuation_key_marker!(),
+                                    },
+                                ),
+                            };
+
+                        let event_data = (continuation_key_marker!(),);
+
+                        let (continuation,) = event_data;
+
+                        let event =
+                            RawRecordReverseScanStateMachineEvent::LimitReached { continuation };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_reverse_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `EndOfStream` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_reverse_scan_state_machine =
+                            RawRecordReverseScanStateMachine {
+                                state_machine_state:
+                                    RawRecordReverseScanStateMachineState::RawRecordLimitReached,
+                                state_machine_data: Some(
+                                    RawRecordReverseScanStateMachineStateData::OutOfBandError {
+                                        out_of_band_error_type:
+                                            LimitManagerStoppedReason::TimeLimitReached,
+                                        continuation: continuation_key_marker!(),
+                                    },
+                                ),
+                            };
+
+                        let event = RawRecordReverseScanStateMachineEvent::EndOfStream;
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_reverse_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `OutOfBandError` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_reverse_scan_state_machine =
+                            RawRecordReverseScanStateMachine {
+                                state_machine_state:
+                                    RawRecordReverseScanStateMachineState::RawRecordLimitReached,
+                                state_machine_data: Some(
+                                    RawRecordReverseScanStateMachineStateData::OutOfBandError {
+                                        out_of_band_error_type:
+                                            LimitManagerStoppedReason::TimeLimitReached,
+                                        continuation: continuation_key_marker!(),
+                                    },
+                                ),
+                            };
+
+                        let event_data = (
+                            LimitManagerStoppedReason::TimeLimitReached,
+                            continuation_key_marker!(),
+                        );
+
+                        let (out_of_band_error_type, continuation) = event_data;
+
+                        let event = RawRecordReverseScanStateMachineEvent::OutOfBandError {
+                            out_of_band_error_type,
+                            continuation,
+                        };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_reverse_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `FdbError` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_reverse_scan_state_machine =
+                            RawRecordReverseScanStateMachine {
+                                state_machine_state:
+                                    RawRecordReverseScanStateMachineState::RawRecordLimitReached,
+                                state_machine_data: Some(
+                                    RawRecordReverseScanStateMachineStateData::OutOfBandError {
+                                        out_of_band_error_type:
+                                            LimitManagerStoppedReason::TimeLimitReached,
+                                        continuation: continuation_key_marker!(),
+                                    },
+                                ),
+                            };
+
+                        let event_data = (fdb_error!(), continuation_key_marker!());
+
+                        let (fdb_error, continuation) = event_data;
+
+                        let event = RawRecordReverseScanStateMachineEvent::FdbError {
+                            fdb_error,
+                            continuation,
+                        };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_reverse_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                }
             }
             // `FdbError` state
             {
                 // Final state. All events would be invalid
-                {}
+                {
+                    // `LastSplitOk` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_reverse_scan_state_machine =
+                            RawRecordReverseScanStateMachine {
+                                state_machine_state:
+                                    RawRecordReverseScanStateMachineState::RawRecordLimitReached,
+                                state_machine_data: Some(
+                                    RawRecordReverseScanStateMachineStateData::FdbError {
+                                        fdb_error: fdb_error!(),
+                                        continuation: continuation_key_marker!(),
+                                    },
+                                ),
+                            };
+
+                        let event_data = (
+                            data_splits!(),
+                            primary_key!(),
+                            last_split_value!(),
+                            continuation_begin_marker!(),
+                            records_already_returned!(0),
+                        );
+
+                        let (
+                            data_splits,
+                            primary_key,
+                            last_split_value,
+                            continuation,
+                            records_already_returned,
+                        ) = event_data;
+
+                        let event = RawRecordReverseScanStateMachineEvent::LastSplitOk {
+                            data_splits,
+                            primary_key,
+                            last_split_value,
+                            continuation,
+                            records_already_returned,
+                        };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_reverse_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `Available` event`
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_reverse_scan_state_machine =
+                            RawRecordReverseScanStateMachine {
+                                state_machine_state:
+                                    RawRecordReverseScanStateMachineState::RawRecordLimitReached,
+                                state_machine_data: Some(
+                                    RawRecordReverseScanStateMachineStateData::FdbError {
+                                        fdb_error: fdb_error!(),
+                                        continuation: continuation_key_marker!(),
+                                    },
+                                ),
+                            };
+
+                        let event_data = (
+                            raw_record!(),
+                            continuation_key_marker!(),
+                            records_already_returned!(1),
+                        );
+
+                        let (raw_record, continuation, records_already_returned) = event_data;
+
+                        let event = RawRecordReverseScanStateMachineEvent::Available {
+                            raw_record,
+                            continuation,
+                            records_already_returned,
+                        };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_reverse_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `NextError` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_reverse_scan_state_machine =
+                            RawRecordReverseScanStateMachine {
+                                state_machine_state:
+                                    RawRecordReverseScanStateMachineState::RawRecordLimitReached,
+                                state_machine_data: Some(
+                                    RawRecordReverseScanStateMachineStateData::FdbError {
+                                        fdb_error: fdb_error!(),
+                                        continuation: continuation_key_marker!(),
+                                    },
+                                ),
+                            };
+
+                        let event_data = (continuation_key_marker!(),);
+
+                        let (continuation,) = event_data;
+
+                        let event =
+                            RawRecordReverseScanStateMachineEvent::NextError { continuation };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_reverse_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `LimitReached` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_reverse_scan_state_machine =
+                            RawRecordReverseScanStateMachine {
+                                state_machine_state:
+                                    RawRecordReverseScanStateMachineState::RawRecordLimitReached,
+                                state_machine_data: Some(
+                                    RawRecordReverseScanStateMachineStateData::FdbError {
+                                        fdb_error: fdb_error!(),
+                                        continuation: continuation_key_marker!(),
+                                    },
+                                ),
+                            };
+
+                        let event_data = (continuation_key_marker!(),);
+
+                        let (continuation,) = event_data;
+
+                        let event =
+                            RawRecordReverseScanStateMachineEvent::LimitReached { continuation };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_reverse_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `EndOfStream` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_reverse_scan_state_machine =
+                            RawRecordReverseScanStateMachine {
+                                state_machine_state:
+                                    RawRecordReverseScanStateMachineState::RawRecordLimitReached,
+                                state_machine_data: Some(
+                                    RawRecordReverseScanStateMachineStateData::FdbError {
+                                        fdb_error: fdb_error!(),
+                                        continuation: continuation_key_marker!(),
+                                    },
+                                ),
+                            };
+
+                        let event = RawRecordReverseScanStateMachineEvent::EndOfStream;
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_reverse_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `OutOfBandError` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_reverse_scan_state_machine =
+                            RawRecordReverseScanStateMachine {
+                                state_machine_state:
+                                    RawRecordReverseScanStateMachineState::RawRecordLimitReached,
+                                state_machine_data: Some(
+                                    RawRecordReverseScanStateMachineStateData::FdbError {
+                                        fdb_error: fdb_error!(),
+                                        continuation: continuation_key_marker!(),
+                                    },
+                                ),
+                            };
+
+                        let event_data = (
+                            LimitManagerStoppedReason::TimeLimitReached,
+                            continuation_key_marker!(),
+                        );
+
+                        let (out_of_band_error_type, continuation) = event_data;
+
+                        let event = RawRecordReverseScanStateMachineEvent::OutOfBandError {
+                            out_of_band_error_type,
+                            continuation,
+                        };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_reverse_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                    // `FdbError` event
+                    {
+                        // `state_machine_data` is `Some(...)` for final state.
+                        let mut raw_record_reverse_scan_state_machine =
+                            RawRecordReverseScanStateMachine {
+                                state_machine_state:
+                                    RawRecordReverseScanStateMachineState::RawRecordLimitReached,
+                                state_machine_data: Some(
+                                    RawRecordReverseScanStateMachineStateData::FdbError {
+                                        fdb_error: fdb_error!(),
+                                        continuation: continuation_key_marker!(),
+                                    },
+                                ),
+                            };
+
+                        let event_data = (fdb_error!(), continuation_key_marker!());
+
+                        let (fdb_error, continuation) = event_data;
+
+                        let event = RawRecordReverseScanStateMachineEvent::FdbError {
+                            fdb_error,
+                            continuation,
+                        };
+
+                        assert!(panic::catch_unwind(AssertUnwindSafe(|| {
+                            raw_record_reverse_scan_state_machine.step_once_with_event(event);
+                        }))
+                        .is_err());
+                    }
+                }
             }
         }
     }
