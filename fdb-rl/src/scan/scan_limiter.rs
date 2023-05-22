@@ -412,7 +412,7 @@ impl ScanLimiter {
 
 #[cfg(test)]
 mod tests {
-    mod keyvalue_scan_limiter {
+    mod key_value_scan_limiter {
         use super::super::KeyValueScanLimiter;
 
         #[test]

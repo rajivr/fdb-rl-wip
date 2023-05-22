@@ -757,7 +757,7 @@ impl Cursor<KeyValue> for KeyValueCursor {
 
 #[cfg(test)]
 mod tests {
-    mod keyvalue_continuation_internal {
+    mod key_value_continuation_internal {
         use bytes::Bytes;
 
         use fdb::error::FdbError;
@@ -820,6 +820,17 @@ mod tests {
         }
 
         #[test]
+        fn continuation_is_end_marker() {
+            assert!(KeyValueContinuationInternal::is_end_marker(
+                &KeyValueContinuationInternal::new_v1_end_marker()
+            ));
+
+            assert!(!KeyValueContinuationInternal::is_end_marker(
+                &KeyValueContinuationInternal::new_v1_begin_marker()
+            ));
+        }
+
+        #[test]
         fn try_from_bytes_try_from() {
             {
                 let res = <KeyValueContinuationInternal as TryFrom<Bytes>>::try_from(
@@ -859,7 +870,7 @@ mod tests {
         }
 
         #[test]
-        fn try_from_keyvalue_continuation_internal_try_from() {
+        fn try_from_key_value_continuation_internal_try_from() {
             // We do not a have a way to generate Protobuf message
             // `encode` error. So, we can only test valid cases.
             //
@@ -908,7 +919,7 @@ mod tests {
         }
     }
 
-    mod keyvalue_cursor_builder {
+    mod key_value_cursor_builder {
         use bytes::Bytes;
 
         use fdb::subspace::Subspace;
@@ -995,10 +1006,10 @@ mod tests {
         }
     }
 
-    mod keyvalue_cursor {
-        // There are not unit tests for `KeyValueCursor` as the
-        // primary use of this type is to implement the `Cursor`
-        // trait. There are integration tests that checks the
-        // behaviour of the methods in the `Cursor` trait.
+    mod key_value_cursor {
+        // There are no unit tests for `KeyValueCursor` as the primary
+        // use of this type is to implement the `Cursor` trait. There
+        // are integration tests that checks the behaviour of the
+        // methods in the `Cursor` trait.
     }
 }

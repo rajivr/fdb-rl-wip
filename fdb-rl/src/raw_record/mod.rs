@@ -401,6 +401,162 @@ impl Cursor<RawRecord> for RawRecordCursor {
 #[cfg(test)]
 mod tests {
     mod raw_record_continuation_internal {
-        // TODO write tests.
+        use bytes::Bytes;
+
+        use fdb::error::FdbError;
+        use fdb::tuple::Tuple;
+
+        use std::convert::TryFrom;
+
+        use crate::cursor::{Continuation, KeyValueContinuationInternal};
+        use crate::error::CURSOR_INVALID_CONTINUATION;
+
+        use super::super::RawRecordContinuationInternal;
+
+        #[test]
+        fn continuation_to_bytes() {
+            assert_eq!(
+                {
+                    let KeyValueContinuationInternal::V1(pb_keyvalue_continuation_internal_v1) =
+                        KeyValueContinuationInternal::new_v1_begin_marker();
+
+                    RawRecordContinuationInternal::from(pb_keyvalue_continuation_internal_v1)
+                },
+                RawRecordContinuationInternal::try_from(
+                    RawRecordContinuationInternal::to_bytes(&{
+                        let KeyValueContinuationInternal::V1(pb_keyvalue_continuation_internal_v1) =
+                            KeyValueContinuationInternal::new_v1_begin_marker();
+
+                        RawRecordContinuationInternal::from(pb_keyvalue_continuation_internal_v1)
+                    })
+                    .unwrap(),
+                )
+                .unwrap()
+            );
+
+            assert_eq!(
+                {
+                    let KeyValueContinuationInternal::V1(pb_keyvalue_continuation_internal_v1) =
+                        KeyValueContinuationInternal::new_v1_key_marker(Bytes::from_static(
+                            b"hello_world",
+                        ));
+
+                    RawRecordContinuationInternal::from(pb_keyvalue_continuation_internal_v1)
+                },
+                RawRecordContinuationInternal::try_from(
+                    RawRecordContinuationInternal::to_bytes(&{
+                        let KeyValueContinuationInternal::V1(pb_keyvalue_continuation_internal_v1) =
+                            KeyValueContinuationInternal::new_v1_key_marker(Bytes::from_static(
+                                b"hello_world",
+                            ));
+
+                        RawRecordContinuationInternal::from(pb_keyvalue_continuation_internal_v1)
+                    })
+                    .unwrap(),
+                )
+                .unwrap()
+            );
+
+            assert_eq!(
+                {
+                    let KeyValueContinuationInternal::V1(pb_keyvalue_continuation_internal_v1) =
+                        KeyValueContinuationInternal::new_v1_end_marker();
+
+                    RawRecordContinuationInternal::from(pb_keyvalue_continuation_internal_v1)
+                },
+                RawRecordContinuationInternal::try_from(
+                    RawRecordContinuationInternal::to_bytes(&{
+                        let KeyValueContinuationInternal::V1(pb_keyvalue_continuation_internal_v1) =
+                            KeyValueContinuationInternal::new_v1_end_marker();
+
+                        RawRecordContinuationInternal::from(pb_keyvalue_continuation_internal_v1)
+                    })
+                    .unwrap(),
+                )
+                .unwrap()
+            );
+        }
+
+        #[test]
+        fn continuation_is_begin_marker() {
+            assert!(RawRecordContinuationInternal::is_begin_marker(&{
+                let KeyValueContinuationInternal::V1(pb_keyvalue_continuation_internal_v1) =
+                    KeyValueContinuationInternal::new_v1_begin_marker();
+
+                RawRecordContinuationInternal::from(pb_keyvalue_continuation_internal_v1)
+            }));
+
+            assert!(!RawRecordContinuationInternal::is_begin_marker(&{
+                let KeyValueContinuationInternal::V1(pb_keyvalue_continuation_internal_v1) =
+                    KeyValueContinuationInternal::new_v1_end_marker();
+
+                RawRecordContinuationInternal::from(pb_keyvalue_continuation_internal_v1)
+            }));
+        }
+
+        #[test]
+        fn continuation_is_end_marker() {
+            assert!(RawRecordContinuationInternal::is_end_marker(&{
+                let KeyValueContinuationInternal::V1(pb_keyvalue_continuation_internal_v1) =
+                    KeyValueContinuationInternal::new_v1_end_marker();
+
+                RawRecordContinuationInternal::from(pb_keyvalue_continuation_internal_v1)
+            }));
+
+            assert!(!RawRecordContinuationInternal::is_end_marker(&{
+                let KeyValueContinuationInternal::V1(pb_keyvalue_continuation_internal_v1) =
+                    KeyValueContinuationInternal::new_v1_begin_marker();
+
+                RawRecordContinuationInternal::from(pb_keyvalue_continuation_internal_v1)
+            }));
+        }
+
+        #[test]
+        fn try_from_bytes_try_from() {
+            {
+                let res = <RawRecordContinuationInternal as TryFrom<Bytes>>::try_from(
+                    Bytes::from_static(b"some_garbage"),
+                );
+                assert_eq!(Err(FdbError::new(CURSOR_INVALID_CONTINUATION)), res);
+            }
+
+            {
+                let continuation_bytes = {
+                    let continuation_tup: (i8, Bytes) = (1, Bytes::from_static(b"some_garbage"));
+                    let mut tup = Tuple::new();
+
+                    tup.push_back::<i8>(continuation_tup.0);
+                    tup.push_back::<Bytes>(continuation_tup.1);
+
+                    tup
+                }
+                .pack();
+                let res =
+                    <RawRecordContinuationInternal as TryFrom<Bytes>>::try_from(continuation_bytes);
+                assert_eq!(Err(FdbError::new(CURSOR_INVALID_CONTINUATION)), res);
+            }
+
+            // valid case
+            {
+                let raw_record_continuation_internal = {
+                    let KeyValueContinuationInternal::V1(pb_keyvalue_continuation_internal_v1) =
+                        KeyValueContinuationInternal::new_v1_key_marker(Bytes::from_static(
+                            b"hello_world",
+                        ));
+
+                    RawRecordContinuationInternal::from(pb_keyvalue_continuation_internal_v1)
+                };
+
+                let continuation_bytes = raw_record_continuation_internal.to_bytes().unwrap();
+                let res =
+                    <RawRecordContinuationInternal as TryFrom<Bytes>>::try_from(continuation_bytes);
+                assert_eq!(Ok(raw_record_continuation_internal), res);
+            }
+        }
+
+        #[test]
+        fn try_from_raw_record_continuation_internal_try_from() {
+            // TODO
+        }
     }
 }
