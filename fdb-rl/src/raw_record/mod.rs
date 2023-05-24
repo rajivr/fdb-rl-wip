@@ -19,6 +19,7 @@ use crate::cursor::{
     Continuation, Cursor, CursorResult, KeyValueContinuationInternal, KeyValueCursor,
 };
 use crate::error::CURSOR_INVALID_CONTINUATION;
+use crate::scan::ScanLimiter;
 use crate::RecordVersion;
 
 pub(crate) use primary_key::{RawRecordPrimaryKey, RawRecordPrimaryKeySchema};
@@ -240,11 +241,36 @@ impl Continuation for RawRecordContinuationInternal {
 /// ```ignore
 /// TODO
 /// ```
-
-// TODO: You need to take care of issues around limit. Limit *cannot* be zero.
+//
+// TODO: You need to take care of issues around limit. Limit *cannot*
+// be zero.
+//
+// The `KeyValueCursorBuilder` takes a value of `ScanProperties`. We
+// *cannot* directly expose `ScanProperties` to the user of
+// `RawRecordCursorBuilder` because that would allow the user to do
+// weird things like setting `RangeOptions` limit value and cause a
+// in-band `NoNextReason::ReturnLimitReached` error on the inner
+// `KeyValueCursor`.
+//
+// Getting a in-band `NoNextReason::ReturnLimitReached` for the inner
+// `KeyValueCursor` does not make any sense in the context of
+// `RawRecordCursor`.
+//
+// In the context of `RawRecordCursor` we would need to return
+// `NoNextReason::ReturnLimitReached` *only* when we have returned
+// `limit` number of records. That is in no way connected to getting a
+// `NoNextReason::ReturnLimitReached` from the underlying
+// `KeyValueCursor`. Infact we should *never* get
+// ``NoNextReason::ReturnLimitReached` from the underlying
+// `KeyValueCursor`.
+//
+// To prevent such condition from happening, we take in a
+// `ScanLimiter` and `StreamingMode` and create the `ScanProperties`
+// value.
 pub(crate) struct RawRecordCursorBuilder {
     primary_key_schema: Option<RawRecordPrimaryKeySchema>,
     subspace: Option<Subspace>,
+    scan_limiter: Option<ScanLimiter>,
     streaming_mode: Option<StreamingMode>,
     limit: Option<usize>,
     reverse: Option<bool>,
@@ -257,6 +283,7 @@ impl RawRecordCursorBuilder {
         RawRecordCursorBuilder {
             primary_key_schema: None,
             subspace: None,
+            scan_limiter: None,
             streaming_mode: None,
             continuation: None,
             limit: None,
@@ -287,6 +314,15 @@ impl RawRecordCursorBuilder {
         self
     }
 
+    /// Sets the [`ScanLimiter`]
+    pub(crate) fn scan_limiter(
+        &mut self,
+        scan_limiter: ScanLimiter,
+    ) -> &mut RawRecordCursorBuilder {
+        self.scan_limiter = Some(scan_limiter);
+        self
+    }
+
     /// Sets the [`StreamingMode`]
     ///
     /// **Note:** If you intend to set a continuation, then you *must*
@@ -307,6 +343,11 @@ impl RawRecordCursorBuilder {
     /// You **cannot** set the the limit to `0`. If you intend to set
     /// a continuation, then you *must* adjust the limit parameter
     /// based on already returned number of [`RawRecord`]s.
+    //
+    // This limit is in *no way* connected to limit on the inner
+    // `KeyValueCursor`. Infact, the inner `KeyValueCursor` cannot
+    // have in-band limit. Since the two limits are orthogonal, we can
+    // safely use a value of type `usize` for `RawRecordCursor` limit.
     pub(crate) fn limit(&mut self, limit: usize) -> &mut RawRecordCursorBuilder {
         self.limit = Some(limit);
         self
@@ -336,6 +377,18 @@ impl RawRecordCursorBuilder {
     where
         Tr: ReadTransaction,
     {
+        let RawRecordCursorBuilder {
+            primary_key_schema,
+            subspace,
+            scan_limiter,
+            streaming_mode,
+            continuation,
+            limit,
+            reverse,
+        } = self;
+
+        // TODO: Continue from here.
+
         todo!();
     }
 }
