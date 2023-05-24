@@ -893,14 +893,14 @@ mod tests {
 
             {
                 let keyvalue_continuation_internal =
-                    KeyValueContinuationInternal::new_v1_key_marker(Bytes::from_static(
-                        b"hello_world",
-                    ));
+                    KeyValueContinuationInternal::new_v1_begin_marker();
 
                 let continuation_bytes = keyvalue_continuation_internal.to_bytes();
+
                 let res = <Bytes as TryFrom<KeyValueContinuationInternal>>::try_from(
                     keyvalue_continuation_internal,
                 );
+
                 assert_eq!(continuation_bytes, res);
             }
 

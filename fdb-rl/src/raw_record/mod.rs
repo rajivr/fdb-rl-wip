@@ -556,7 +556,63 @@ mod tests {
 
         #[test]
         fn try_from_raw_record_continuation_internal_try_from() {
-            // TODO
+            // We do not a have a way to generate Protobuf message
+            // `encode` error. So, we can only test valid cases.
+            //
+            // *Note:*: `to_bytes` and `try_from` uses the same code
+            // path.
+            {
+                let raw_record_continuation_internal = {
+                    let KeyValueContinuationInternal::V1(pb_keyvalue_continuation_internal_v1) =
+                        KeyValueContinuationInternal::new_v1_key_marker(Bytes::from_static(
+                            b"hello_world",
+                        ));
+
+                    RawRecordContinuationInternal::from(pb_keyvalue_continuation_internal_v1)
+                };
+
+                let continuation_bytes = raw_record_continuation_internal.to_bytes();
+
+                let res = <Bytes as TryFrom<RawRecordContinuationInternal>>::try_from(
+                    raw_record_continuation_internal,
+                );
+
+                assert_eq!(continuation_bytes, res);
+            }
+
+            {
+                let raw_record_continuation_internal = {
+                    let KeyValueContinuationInternal::V1(pb_keyvalue_continuation_internal_v1) =
+                        KeyValueContinuationInternal::new_v1_begin_marker();
+
+                    RawRecordContinuationInternal::from(pb_keyvalue_continuation_internal_v1)
+                };
+
+                let continuation_bytes = raw_record_continuation_internal.to_bytes();
+
+                let res = <Bytes as TryFrom<RawRecordContinuationInternal>>::try_from(
+                    raw_record_continuation_internal,
+                );
+
+                assert_eq!(continuation_bytes, res);
+            }
+
+            {
+                let raw_record_continuation_internal = {
+                    let KeyValueContinuationInternal::V1(pb_keyvalue_continuation_internal_v1) =
+                        KeyValueContinuationInternal::new_v1_end_marker();
+
+                    RawRecordContinuationInternal::from(pb_keyvalue_continuation_internal_v1)
+                };
+
+                let continuation_bytes = raw_record_continuation_internal.to_bytes();
+
+                let res = <Bytes as TryFrom<RawRecordContinuationInternal>>::try_from(
+                    raw_record_continuation_internal,
+                );
+
+                assert_eq!(continuation_bytes, res);
+            }
         }
     }
 }
