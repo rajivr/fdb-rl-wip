@@ -17,9 +17,11 @@ use std::convert::{TryFrom, TryInto};
 
 use crate::cursor::{
     Continuation, Cursor, CursorResult, KeyValueContinuationInternal, KeyValueCursor,
+    KeyValueCursorBuilder,
 };
-use crate::error::CURSOR_INVALID_CONTINUATION;
-use crate::scan::ScanLimiter;
+use crate::error::{CURSOR_INVALID_CONTINUATION, RAW_RECORD_CURSOR_BUILDER_ERROR};
+use crate::range::TupleRange;
+use crate::scan::{ScanLimiter, ScanPropertiesBuilder};
 use crate::RecordVersion;
 
 pub(crate) use primary_key::{RawRecordPrimaryKey, RawRecordPrimaryKeySchema};
@@ -377,19 +379,123 @@ impl RawRecordCursorBuilder {
     where
         Tr: ReadTransaction,
     {
-        let RawRecordCursorBuilder {
+        let primary_key_schema = self
+            .primary_key_schema
+            .ok_or_else(|| FdbError::new(RAW_RECORD_CURSOR_BUILDER_ERROR))?;
+
+        let values_limit = match self.limit {
+            Some(x) => {
+                if x == 0 {
+                    return Err(FdbError::new(RAW_RECORD_CURSOR_BUILDER_ERROR));
+                } else {
+                    x
+                }
+            }
+            None => {
+                // Be my guest! An out-of-band limit will get
+                // triggered way before `usize::MAX` number of records
+                // can get returned!
+                usize::MAX
+            }
+        };
+
+        let maybe_raw_record_continuation_internal = match self.continuation {
+            Some(b) => Some(
+                RawRecordContinuationInternal::try_from(b)
+                    .map_err(|_| FdbError::new(RAW_RECORD_CURSOR_BUILDER_ERROR))?,
+            ),
+            None => None,
+        };
+
+        let raw_record_state_machine = {
+            let continuation = maybe_raw_record_continuation_internal
+                .clone()
+                .unwrap_or_else(|| {
+                    let KeyValueContinuationInternal::V1(pb_keyvalue_continuation_internal_v1) =
+                        KeyValueContinuationInternal::new_v1_begin_marker();
+
+                    RawRecordContinuationInternal::from(pb_keyvalue_continuation_internal_v1)
+                });
+
+            // `None` means forward scan.
+            if self.reverse.unwrap_or_else(|| false) {
+                RawRecordStateMachine::new_reverse_scan_state_machine(continuation)
+            } else {
+                RawRecordStateMachine::new_forward_scan_state_machine(continuation)
+            }
+        };
+
+        let maybe_key_value_continuation_bytes = match maybe_raw_record_continuation_internal {
+            Some(raw_record_continuation_internal) => {
+                let RawRecordContinuationInternal::V1(pb_raw_record_continuation_internal_v1) =
+                    raw_record_continuation_internal;
+
+                let pb_key_value_continunation_internal_v1 =
+                    pb_raw_record_continuation_internal_v1.inner;
+
+                let key_value_continuation_internal_v1 =
+                    KeyValueContinuationInternal::V1(pb_key_value_continunation_internal_v1);
+
+                Some(
+                    Bytes::try_from(key_value_continuation_internal_v1)
+                        .map_err(|_| FdbError::new(RAW_RECORD_CURSOR_BUILDER_ERROR))?,
+                )
+            }
+            None => None,
+        };
+
+        let scan_properties = {
+            let mut scan_properties_builder = ScanPropertiesBuilder::default();
+
+            if let Some(scan_limiter) = self.scan_limiter {
+                scan_properties_builder.set_scan_limiter(scan_limiter);
+            }
+
+            let maybe_streaming_mode = self.streaming_mode;
+            let maybe_reverse = self.reverse;
+
+            unsafe {
+                scan_properties_builder.set_range_options(|range_options| {
+                    if let Some(streaming_mode) = maybe_streaming_mode {
+                        range_options.set_mode(streaming_mode);
+                    }
+
+                    // `None` means forward scan.
+                    if let Some(reverse) = maybe_reverse {
+                        range_options.set_reverse(reverse);
+                    }
+                });
+            }
+
+            scan_properties_builder.build()
+        };
+
+        let key_range = TupleRange::all().into_key_range(&None);
+
+        let mut key_value_cursor_builder = KeyValueCursorBuilder::new();
+
+        if let Some(subspace) = self.subspace {
+            key_value_cursor_builder.subspace(subspace);
+        }
+
+        if let Some(continuation) = maybe_key_value_continuation_bytes {
+            key_value_cursor_builder.continuation(continuation);
+        }
+
+        key_value_cursor_builder
+            .scan_properties(scan_properties)
+            .key_range(key_range);
+
+        let key_value_cursor = key_value_cursor_builder
+            .build(read_transaction)
+            .map_err(|_| FdbError::new(RAW_RECORD_CURSOR_BUILDER_ERROR))?;
+
+        Ok(RawRecordCursor::new(
             primary_key_schema,
-            subspace,
-            scan_limiter,
-            streaming_mode,
-            continuation,
-            limit,
-            reverse,
-        } = self;
-
-        // TODO: Continue from here.
-
-        todo!();
+            values_limit,
+            key_value_cursor,
+            raw_record_state_machine,
+        ))
     }
 }
 
@@ -403,6 +509,23 @@ pub(crate) struct RawRecordCursor {
     values_limit: usize,
     key_value_cursor: KeyValueCursor,
     raw_record_state_machine: RawRecordStateMachine,
+}
+
+impl RawRecordCursor {
+    /// Create a new [`RawRecordCursor`]
+    fn new(
+        primary_key_schema: RawRecordPrimaryKeySchema,
+        values_limit: usize,
+        key_value_cursor: KeyValueCursor,
+        raw_record_state_machine: RawRecordStateMachine,
+    ) -> RawRecordCursor {
+        RawRecordCursor {
+            primary_key_schema,
+            values_limit,
+            key_value_cursor,
+            raw_record_state_machine,
+        }
+    }
 }
 
 impl Cursor<RawRecord> for RawRecordCursor {

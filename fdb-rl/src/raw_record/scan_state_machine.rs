@@ -2299,6 +2299,34 @@ pub(super) enum RawRecordStateMachine {
     ReverseScan(RawRecordReverseScanStateMachine),
 }
 
+impl RawRecordStateMachine {
+    /// Return initial forward scan state machine
+    pub(super) fn new_forward_scan_state_machine(
+        continuation: RawRecordContinuationInternal,
+    ) -> RawRecordStateMachine {
+        RawRecordStateMachine::ForwardScan(RawRecordForwardScanStateMachine {
+            state_machine_state: RawRecordForwardScanStateMachineState::InitiateRecordVersionRead,
+            state_machine_data: Some(
+                RawRecordForwardScanStateMachineStateData::InitiateRecordVersionRead {
+                    continuation,
+                },
+            ),
+        })
+    }
+
+    /// Return initial reverse scan state machine
+    pub(super) fn new_reverse_scan_state_machine(
+        continuation: RawRecordContinuationInternal,
+    ) -> RawRecordStateMachine {
+        RawRecordStateMachine::ReverseScan(RawRecordReverseScanStateMachine {
+            state_machine_state: RawRecordReverseScanStateMachineState::InitiateLastSplitRead,
+            state_machine_data: Some(
+                RawRecordReverseScanStateMachineStateData::InitiateLastSplitRead { continuation },
+            ),
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     mod raw_record_forward_scan_state_machine {
