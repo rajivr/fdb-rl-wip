@@ -76,8 +76,13 @@ fn walk_tuple_schema_element(
 /// It consists of a [`TupleSchema`]. When we have a value of
 /// [`RawRecordPrimaryKeySchema`], that means that the [`TupleSchema`]
 /// satisfies the constraints to be a primary key schema.
+///
+/// <p style="background:rgba(255,181,77,0.16);padding:0.75em;">
+/// <strong>Warning:</strong> This type is <strong>not</strong> meant
+/// to be public. We need to make this type public to support
+/// integration tests. Do not use this type in your code.</p>
 #[derive(Debug, Clone, PartialEq)]
-pub(crate) struct RawRecordPrimaryKeySchema {
+pub struct RawRecordPrimaryKeySchema {
     inner: TupleSchema,
 }
 

@@ -11,3 +11,4 @@
 //! the crate module structure.
 
 pub mod cursor;
+pub mod raw_record;

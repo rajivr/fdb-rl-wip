@@ -499,12 +499,55 @@ impl RawRecordCursorBuilder {
     }
 }
 
+impl
+    From<(
+        Option<RawRecordPrimaryKeySchema>,
+        Option<Subspace>,
+        Option<ScanLimiter>,
+        Option<StreamingMode>,
+        Option<usize>,
+        Option<bool>,
+        Option<Bytes>,
+    )> for RawRecordCursorBuilder
+{
+    fn from(
+        (primary_key_schema,
+	     subspace, scan_limiter,
+	     streaming_mode,
+	     limit,
+	     reverse,
+	     continuation): (
+	Option<RawRecordPrimaryKeySchema>,
+	Option<Subspace>,
+	Option<ScanLimiter>,
+	Option<StreamingMode>,
+	Option<usize>,
+	Option<bool>,
+	Option<Bytes>),
+    ) -> RawRecordCursorBuilder {
+        RawRecordCursorBuilder {
+            primary_key_schema,
+            subspace,
+            scan_limiter,
+            streaming_mode,
+            limit,
+            reverse,
+            continuation,
+        }
+    }
+}
+
 /// A cursor that returns [`RawRecord`]s from the FDB database.
+///
+/// <p style="background:rgba(255,181,77,0.16);padding:0.75em;">
+/// <strong>Warning:</strong> This type is <strong>not</strong> meant
+/// to be public. We need to make this type public to support
+/// integration tests. Do not use this type in your code.</p>
 //
 // TODO: `NoNextReason::ReturnLimitReached` would be specific number
 // of `RawRecord`.
 #[derive(Debug)]
-pub(crate) struct RawRecordCursor {
+pub struct RawRecordCursor {
     primary_key_schema: RawRecordPrimaryKeySchema,
     values_limit: usize,
     key_value_cursor: KeyValueCursor,
