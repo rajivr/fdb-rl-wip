@@ -88,8 +88,13 @@ pub(crate) mod pb {
 
 /// A wrapper around all information that can be determined about a
 /// record before serializing and deserializing it.
+///
+/// <p style="background:rgba(255,181,77,0.16);padding:0.75em;">
+/// <strong>Warning:</strong> This type is <strong>not</strong> meant
+/// to be public. We need to make this type public to support
+/// integration tests. Do not use this type in your code.</p>
 #[derive(Clone, Debug, PartialEq)]
-pub(crate) struct RawRecord {
+pub struct RawRecord {
     primary_key: RawRecordPrimaryKey,
     version: RecordVersion,
     record_bytes: Bytes,

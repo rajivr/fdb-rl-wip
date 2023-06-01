@@ -53,7 +53,5 @@ pub mod split_helper;
 #[doc(hidden)]
 pub mod test;
 
-pub(crate) use crate::raw_record::RawRecord;
-
 pub use crate::record_context::RecordContext;
 pub use crate::record_version::RecordVersion;

@@ -112,9 +112,14 @@ impl TryFrom<TupleSchema> for RawRecordPrimaryKeySchema {
 /// When we have a value of [`RawRecordPrimaryKey`], that means that
 /// it conforms to [`RawRecordPrimaryKeySchema`].
 ///
+/// <p style="background:rgba(255,181,77,0.16);padding:0.75em;">
+/// <strong>Warning:</strong> This type is <strong>not</strong> meant
+/// to be public. We need to make this type public to support
+/// integration tests. Do not use this type in your code.</p>
+///
 /// [`RawRecord`]: self::RawRecord
 #[derive(Debug, Clone, PartialEq)]
-pub(crate) struct RawRecordPrimaryKey {
+pub struct RawRecordPrimaryKey {
     schema: RawRecordPrimaryKeySchema,
     key: Tuple,
 }

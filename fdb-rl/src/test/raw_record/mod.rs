@@ -5,8 +5,12 @@ use fdb::range::StreamingMode;
 use fdb::subspace::Subspace;
 use fdb::transaction::ReadTransaction;
 
-use crate::raw_record::{RawRecordCursor, RawRecordCursorBuilder, RawRecordPrimaryKeySchema};
+use crate::raw_record::{
+    RawRecord, RawRecordCursor, RawRecordCursorBuilder, RawRecordPrimaryKey,
+    RawRecordPrimaryKeySchema,
+};
 use crate::scan::ScanLimiter;
+use crate::RecordVersion;
 
 /// Expose [`RawRecordCursorBuilder::build`] method.
 pub fn raw_record_cursor_builder_build<Tr>(
@@ -32,4 +36,13 @@ where
         continuation,
     ));
     raw_record_cursor_builder.build(read_transaction)
+}
+
+/// Expose [`RawRecord::from`] method.
+pub fn raw_record_from(
+    primary_key: RawRecordPrimaryKey,
+    version: RecordVersion,
+    record_bytes: Bytes,
+) -> RawRecord {
+    RawRecord::from((primary_key, version, record_bytes))
 }
