@@ -44,11 +44,12 @@ mod raw_record;
 mod record_context;
 mod record_version;
 
+pub(crate) mod split_helper;
+
 pub mod cursor;
 pub mod error;
 pub mod range;
 pub mod scan;
-pub mod split_helper;
 
 #[doc(hidden)]
 pub mod test;

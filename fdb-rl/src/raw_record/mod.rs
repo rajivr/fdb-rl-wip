@@ -1,6 +1,6 @@
 //! Provides [`RawRecord`] type and associated items.
 
-mod primary_key;
+pub(crate) mod primary_key;
 mod scan_state_machine;
 
 use bytes::{Bytes, BytesMut};
@@ -24,8 +24,7 @@ use crate::range::TupleRange;
 use crate::scan::{ScanLimiter, ScanPropertiesBuilder};
 use crate::RecordVersion;
 
-pub(crate) use primary_key::{RawRecordPrimaryKey, RawRecordPrimaryKeySchema};
-
+use primary_key::{RawRecordPrimaryKey, RawRecordPrimaryKeySchema};
 use scan_state_machine::RawRecordStateMachine;
 
 /// Protobuf types.
@@ -98,6 +97,20 @@ pub struct RawRecord {
     primary_key: RawRecordPrimaryKey,
     version: RecordVersion,
     record_bytes: Bytes,
+}
+
+impl RawRecord {
+    /// Extract primary key, record version and record bytes from
+    /// [`RawRecord`].
+    pub fn into_parts(self) -> (RawRecordPrimaryKey, RecordVersion, Bytes) {
+        let RawRecord {
+            primary_key,
+            version,
+            record_bytes,
+        } = self;
+
+        (primary_key, version, record_bytes)
+    }
 }
 
 // No tests for this because we are just constructing a [`RawRecord`].

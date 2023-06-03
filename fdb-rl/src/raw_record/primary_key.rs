@@ -128,6 +128,13 @@ impl RawRecordPrimaryKey {
     pub(crate) fn key_ref(&self) -> &Tuple {
         &self.key
     }
+
+    /// Extract primary key schema and primary key tuple from
+    /// [`RawRecordPrimaryKey`].
+    pub fn into_parts(self) -> (RawRecordPrimaryKeySchema, Tuple) {
+        let RawRecordPrimaryKey { schema, key } = self;
+        (schema, key)
+    }
 }
 
 impl TryFrom<(RawRecordPrimaryKeySchema, Tuple)> for RawRecordPrimaryKey {

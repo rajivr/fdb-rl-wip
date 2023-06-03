@@ -4,17 +4,21 @@
 use bytes::{BufMut, Bytes, BytesMut};
 
 use fdb::database::FdbDatabase;
+use fdb::error::FdbResult;
 use fdb::range::Range;
 use fdb::subspace::Subspace;
 use fdb::transaction::Transaction;
-use fdb::tuple::{Tuple, Versionstamp};
+use fdb::tuple::{Tuple, TupleSchema, TupleSchemaElement, Versionstamp};
 
+use fdb_rl::test::raw_record::{RawRecord, RawRecordPrimaryKey, RawRecordPrimaryKeySchema};
+use fdb_rl::test::split_helper;
 use fdb_rl::RecordVersion;
 
 use libtest_mimic::Arguments;
 
 use tokio::runtime::Builder;
 
+use std::convert::TryFrom;
 use std::env;
 use std::error::Error;
 use std::ops::Deref;
@@ -102,6 +106,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     setup_subspace_normal()?;
 
+    // TODO: Continue from here...
+
     let tests = vec![];
 
     let _ = libtest_mimic::run(&args, tests);
@@ -117,7 +123,28 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-// TODO
+async fn save_raw_record<Tr>(
+    tr: &Tr,
+    maybe_subspace: &Option<Subspace>,
+    raw_record: RawRecord,
+) -> FdbResult<()>
+where
+    Tr: Transaction,
+{
+    let (raw_record_primary_key, record_version, record_bytes) = raw_record.into_parts();
+    let (_, primary_key_tuple) = raw_record_primary_key.into_parts();
+
+    split_helper::save(
+        tr,
+        &None,
+        maybe_subspace,
+        &primary_key_tuple,
+        record_bytes,
+        record_version,
+    )
+    .await
+}
+
 fn setup_no_subspace_normal() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
@@ -145,19 +172,37 @@ fn setup_subspace_normal() -> Result<(), Box<dyn Error>> {
                         t
                     });
 
-                    for (pk, local_version, value_bytes) in [
+                    let maybe_subspace = &Some(subspace);
+
+                    for (pk, local_version, record_bytes) in [
                         ("short", 0, SHORT_STRING.deref().clone()),
                         ("medium", 1, MEDIUM_STRING.deref().clone()),
                         ("long", 2, LONG_STRING.deref().clone()),
                         ("very_long", 3, VERY_LONG_STRING.deref().clone()),
                     ] {
-                        let record_version = RecordVersion::from(Versionstamp::complete(
+                        let version = RecordVersion::from(Versionstamp::complete(
                             Bytes::from_static(b"\xAA\xBB\xCC\xDD\xEE\xFF\x00\x01\x02\x03"),
                             local_version,
                         ));
-                    }
 
-		    // TODO: Continue from here...
+                        let primary_key = RawRecordPrimaryKey::try_from((
+                            RawRecordPrimaryKeySchema::try_from({
+                                let mut tuple_schema = TupleSchema::new();
+                                tuple_schema.push_front(TupleSchemaElement::String);
+                                tuple_schema
+                            })?,
+                            {
+                                let tup: (&str,) = (pk,);
+
+                                let mut t = Tuple::new();
+                                t.push_back::<String>(tup.0.to_string());
+                                t
+                            },
+                        ))?;
+
+                        let raw_record = RawRecord::from((primary_key, version, record_bytes));
+                        save_raw_record(&tr, maybe_subspace, raw_record).await?;
+                    }
 
                     Ok(())
                 })

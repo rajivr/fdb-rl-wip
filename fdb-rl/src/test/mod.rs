@@ -12,3 +12,4 @@
 
 pub mod cursor;
 pub mod raw_record;
+pub mod split_helper;

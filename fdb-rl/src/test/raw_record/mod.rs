@@ -5,12 +5,13 @@ use fdb::range::StreamingMode;
 use fdb::subspace::Subspace;
 use fdb::transaction::ReadTransaction;
 
-use crate::raw_record::{
-    RawRecord, RawRecordCursor, RawRecordCursorBuilder, RawRecordPrimaryKey,
-    RawRecordPrimaryKeySchema,
-};
+use crate::raw_record::{RawRecordCursor, RawRecordCursorBuilder};
+
 use crate::scan::ScanLimiter;
 use crate::RecordVersion;
+
+pub use crate::raw_record::primary_key::{RawRecordPrimaryKey, RawRecordPrimaryKeySchema};
+pub use crate::raw_record::RawRecord;
 
 /// Expose [`RawRecordCursorBuilder::build`] method.
 pub fn raw_record_cursor_builder_build<Tr>(
