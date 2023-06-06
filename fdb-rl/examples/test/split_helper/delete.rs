@@ -8,7 +8,7 @@ use fdb::transaction::Transaction;
 use fdb::tuple::{Tuple, Versionstamp};
 
 use fdb_rl::error::SPLIT_HELPER_INVALID_PRIMARY_KEY;
-use fdb_rl::split_helper;
+use fdb_rl::test::split_helper;
 use fdb_rl::RecordVersion;
 
 use libtest_mimic::{Arguments, Failed, Trial};

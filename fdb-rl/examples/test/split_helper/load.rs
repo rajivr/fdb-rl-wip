@@ -15,7 +15,7 @@ use fdb_rl::error::{
     SPLIT_HELPER_LOAD_INVALID_SERIALIZED_BYTES, SPLIT_HELPER_SCAN_LIMIT_REACHED,
 };
 use fdb_rl::scan::{KeyValueScanLimiter, ScanLimiter};
-use fdb_rl::split_helper;
+use fdb_rl::test::split_helper;
 use fdb_rl::RecordVersion;
 
 use libtest_mimic::{Arguments, Failed, Trial};
