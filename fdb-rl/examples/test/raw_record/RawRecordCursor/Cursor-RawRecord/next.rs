@@ -103,7 +103,16 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     setup_no_subspace_normal()?;
 
-    let tests = vec![];
+    let tests = vec![
+        Trial::test(
+            "cursor_no_subspace_normal_all_forward",
+            cursor_no_subspace_normal_all_forward,
+        ),
+        Trial::test(
+            "cursor_no_subspace_normal_all_reverse",
+            cursor_no_subspace_normal_all_reverse,
+        ),
+    ];
 
     let _ = libtest_mimic::run(&args, tests);
 
@@ -156,6 +165,58 @@ where
 }
 
 fn setup_no_subspace_normal() -> Result<(), Box<dyn Error>> {
+    let rt = Builder::new_current_thread().build()?;
+
+    let fdb_database_ref = unsafe { FDB_DATABASE.as_ref().unwrap() };
+
+    rt.block_on({
+        let fdb_database = fdb_database_ref.clone();
+        async move {
+            fdb_database
+                .run(|tr| async move {
+                    // Clear the database.
+                    tr.clear_range(Range::new(Bytes::new(), Bytes::from_static(b"\xFF")));
+
+                    let maybe_subspace = &None;
+
+                    for (pk, local_version, record_bytes) in [
+                        // This is the lexicographic order.
+                        ("long", 0, LONG_STRING.deref().clone()),
+                        ("medium", 1, MEDIUM_STRING.deref().clone()),
+                        ("short", 2, SHORT_STRING.deref().clone()),
+                        ("very_long", 3, VERY_LONG_STRING.deref().clone()),
+                    ] {
+                        let version = RecordVersion::from(Versionstamp::complete(
+                            Bytes::from_static(b"\xAA\xBB\xCC\xDD\xEE\xFF\x00\x01\x02\x03"),
+                            local_version,
+                        ));
+
+                        let primary_key = RawRecordPrimaryKey::try_from((
+                            RawRecordPrimaryKeySchema::try_from({
+                                let mut tuple_schema = TupleSchema::new();
+                                tuple_schema.push_front(TupleSchemaElement::String);
+                                tuple_schema
+                            })?,
+                            {
+                                let tup: (&str,) = (pk,);
+
+                                let mut t = Tuple::new();
+                                t.push_back::<String>(tup.0.to_string());
+                                t
+                            },
+                        ))?;
+
+                        let raw_record = RawRecord::from((primary_key, version, record_bytes));
+                        save_raw_record(&tr, maybe_subspace, raw_record).await?;
+                    }
+
+                    Ok(())
+                })
+                .await?;
+            Result::<(), Box<dyn Error>>::Ok(())
+        }
+    })?;
+
     Ok(())
 }
 
@@ -226,6 +287,198 @@ fn setup_subspace_normal() -> Result<(), Box<dyn Error>> {
 }
 
 // Tests
+
+fn cursor_no_subspace_normal_all_forward() -> Result<(), Failed> {
+    let rt = Builder::new_current_thread().build()?;
+
+    let fdb_database_ref = unsafe { FDB_DATABASE.as_ref().unwrap() };
+
+    rt.block_on({
+        let fdb_database = fdb_database_ref.clone();
+        async move {
+            fdb_database
+                .read(|tr| async move {
+                    let mut raw_record_cursor = {
+                        let primary_key_schema = RawRecordPrimaryKeySchema::try_from({
+                            let mut tuple_schema = TupleSchema::new();
+                            tuple_schema.push_front(TupleSchemaElement::String);
+                            tuple_schema
+                        })?;
+
+                        raw_record_cursor_builder_build(
+                            Some(primary_key_schema),
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                            &tr,
+                        )?
+                    };
+
+                    for (pk, local_version, record_bytes) in [
+                        // This is the lexicographic order.
+                        ("long", 0, LONG_STRING.deref().clone()),
+                        ("medium", 1, MEDIUM_STRING.deref().clone()),
+                        ("short", 2, SHORT_STRING.deref().clone()),
+                        ("very_long", 3, VERY_LONG_STRING.deref().clone()),
+                    ] {
+                        let version = RecordVersion::from(Versionstamp::complete(
+                            Bytes::from_static(b"\xAA\xBB\xCC\xDD\xEE\xFF\x00\x01\x02\x03"),
+                            local_version,
+                        ));
+
+                        let primary_key = RawRecordPrimaryKey::try_from((
+                            RawRecordPrimaryKeySchema::try_from({
+                                let mut tuple_schema = TupleSchema::new();
+                                tuple_schema.push_front(TupleSchemaElement::String);
+                                tuple_schema
+                            })?,
+                            {
+                                let tup: (&str,) = (pk,);
+
+                                let mut t = Tuple::new();
+                                t.push_back::<String>(tup.0.to_string());
+                                t
+                            },
+                        ))?;
+
+                        let raw_record = RawRecord::from((primary_key, version, record_bytes));
+
+                        // We expect `CursorSuccess<RawRecord>`.
+                        let (res, continuation) =
+                            raw_record_cursor.next().await.unwrap().into_parts();
+
+                        assert_eq!(raw_record, res);
+
+                        assert!(!continuation.is_begin_marker());
+                        assert!(!continuation.is_end_marker());
+                    }
+
+                    let res = raw_record_cursor.next().await;
+
+                    assert!(matches!(
+                        res,
+                        Err(CursorError::NoNextReason(NoNextReason::SourceExhausted(_)))
+                    ));
+
+                    if let Err(CursorError::NoNextReason(NoNextReason::SourceExhausted(
+                        continuation,
+                    ))) = res
+                    {
+                        assert!(continuation.is_end_marker());
+                    }
+
+                    Ok(())
+                })
+                .await?;
+
+            Result::<(), Box<dyn Error>>::Ok(())
+        }
+    })?;
+
+    Ok(())
+}
+
+fn cursor_no_subspace_normal_all_reverse() -> Result<(), Failed> {
+    let rt = Builder::new_current_thread().build()?;
+
+    let fdb_database_ref = unsafe { FDB_DATABASE.as_ref().unwrap() };
+
+    rt.block_on({
+        let fdb_database = fdb_database_ref.clone();
+        async move {
+            fdb_database
+                .read(|tr| async move {
+                    let mut raw_record_cursor = {
+                        let primary_key_schema = RawRecordPrimaryKeySchema::try_from({
+                            let mut tuple_schema = TupleSchema::new();
+                            tuple_schema.push_front(TupleSchemaElement::String);
+                            tuple_schema
+                        })?;
+
+                        let reverse = true;
+
+                        raw_record_cursor_builder_build(
+                            Some(primary_key_schema),
+                            None,
+                            None,
+                            None,
+                            None,
+                            Some(reverse),
+                            None,
+                            &tr,
+                        )?
+                    };
+
+                    for (pk, local_version, record_bytes) in [
+                        // This is the lexicographic order.
+                        ("long", 0, LONG_STRING.deref().clone()),
+                        ("medium", 1, MEDIUM_STRING.deref().clone()),
+                        ("short", 2, SHORT_STRING.deref().clone()),
+                        ("very_long", 3, VERY_LONG_STRING.deref().clone()),
+                    ]
+                    .iter()
+                    .rev()
+                    {
+                        let version = RecordVersion::from(Versionstamp::complete(
+                            Bytes::from_static(b"\xAA\xBB\xCC\xDD\xEE\xFF\x00\x01\x02\x03"),
+                            *local_version,
+                        ));
+
+                        let primary_key = RawRecordPrimaryKey::try_from((
+                            RawRecordPrimaryKeySchema::try_from({
+                                let mut tuple_schema = TupleSchema::new();
+                                tuple_schema.push_front(TupleSchemaElement::String);
+                                tuple_schema
+                            })?,
+                            {
+                                let tup: (&str,) = (pk,);
+
+                                let mut t = Tuple::new();
+                                t.push_back::<String>(tup.0.to_string());
+                                t
+                            },
+                        ))?;
+
+                        let raw_record =
+                            RawRecord::from((primary_key, version, record_bytes.clone()));
+
+                        // We expect `CursorSuccess<RawRecord>`.
+                        let (res, continuation) =
+                            raw_record_cursor.next().await.unwrap().into_parts();
+
+                        assert_eq!(raw_record, res);
+
+                        assert!(!continuation.is_begin_marker());
+                        assert!(!continuation.is_end_marker());
+                    }
+
+                    let res = raw_record_cursor.next().await;
+
+                    assert!(matches!(
+                        res,
+                        Err(CursorError::NoNextReason(NoNextReason::SourceExhausted(_)))
+                    ));
+
+                    if let Err(CursorError::NoNextReason(NoNextReason::SourceExhausted(
+                        continuation,
+                    ))) = res
+                    {
+                        assert!(continuation.is_end_marker());
+                    }
+
+                    Ok(())
+                })
+                .await?;
+
+            Result::<(), Box<dyn Error>>::Ok(())
+        }
+    })?;
+
+    Ok(())
+}
 
 fn cursor_subspace_normal_all_forward() -> Result<(), Failed> {
     let rt = Builder::new_current_thread().build()?;
