@@ -1,4 +1,4 @@
-#![feature(once_cell)]
+#![feature(lazy_cell)]
 
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 
