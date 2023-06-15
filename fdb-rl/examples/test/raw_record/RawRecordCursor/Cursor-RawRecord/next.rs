@@ -137,8 +137,12 @@ fn main() -> Result<(), Box<dyn Error>> {
             cursor_subspace_normal_empty_reverse,
         ),
         Trial::test(
-            "cursor_subspace_normal_limit_forward",
-            cursor_subspace_normal_limit_forward,
+            "cursor_subspace_normal_in_band_limit_forward",
+            cursor_subspace_normal_in_band_limit_forward,
+        ),
+        Trial::test(
+            "cursor_subspace_normal_in_band_limit_reverse",
+            cursor_subspace_normal_in_band_limit_reverse,
         ),
     ];
 
@@ -835,7 +839,7 @@ fn cursor_subspace_normal_empty_reverse() -> Result<(), Failed> {
     Ok(())
 }
 
-fn cursor_subspace_normal_limit_forward() -> Result<(), Failed> {
+fn cursor_subspace_normal_in_band_limit_forward() -> Result<(), Failed> {
     let rt = Builder::new_current_thread().build()?;
 
     let fdb_database_ref = unsafe { FDB_DATABASE.as_ref().unwrap() };
@@ -1163,6 +1167,369 @@ fn cursor_subspace_normal_limit_forward() -> Result<(), Failed> {
                             None,
                             None,
                             None,
+			    // We expect `Ok(bytes)`.
+                            Some(continuation.to_bytes().unwrap()),
+                            &tr,
+                        )?
+                    };
+
+                    // We expect `CursorError`.
+                    let res = raw_record_cursor.next().await.unwrap_err();
+
+                    assert!(matches!(
+                        res,
+                        CursorError::NoNextReason(NoNextReason::SourceExhausted(_))
+                    ));
+
+		    if let CursorError::NoNextReason(NoNextReason::SourceExhausted(
+                        continuation,
+                    )) = res
+                    {
+                        assert!(!continuation.is_begin_marker());
+                        assert!(continuation.is_end_marker());
+                    }
+
+                    Ok(())
+                })
+                .await?;
+
+            Result::<(), Box<dyn Error>>::Ok(())
+        }
+    })?;
+
+    Ok(())
+}
+
+fn cursor_subspace_normal_in_band_limit_reverse() -> Result<(), Failed> {
+    let rt = Builder::new_current_thread().build()?;
+
+    let fdb_database_ref = unsafe { FDB_DATABASE.as_ref().unwrap() };
+
+    rt.block_on({
+        let fdb_database = fdb_database_ref.clone();
+        async move {
+            fdb_database
+                .read(|tr| async move {
+                    let raw_record_cursor = {
+                        let subspace = Subspace::new(Bytes::new()).subspace(&{
+                            let tup: (&str, &str, &str) = ("sub", "space", "normal");
+
+                            let mut t = Tuple::new();
+                            t.push_back::<String>(tup.0.to_string());
+                            t.push_back::<String>(tup.1.to_string());
+                            t.push_back::<String>(tup.2.to_string());
+                            t
+                        });
+
+                        let primary_key_schema = RawRecordPrimaryKeySchema::try_from({
+                            let mut tuple_schema = TupleSchema::new();
+                            tuple_schema.push_front(TupleSchemaElement::String);
+                            tuple_schema
+                        })?;
+
+                        raw_record_cursor_builder_build(
+                            Some(primary_key_schema),
+                            Some(subspace),
+                            None,
+                            None,
+                            Some(0),
+                            Some(true),
+                            None,
+                            &tr,
+                        )
+                    };
+
+                    assert!(matches!(raw_record_cursor, Err(_),));
+
+                    if let Err(err) = raw_record_cursor {
+                        assert_eq!(err, FdbError::new(RAW_RECORD_CURSOR_BUILDER_ERROR));
+                    }
+
+                    let mut raw_record_cursor = {
+                        let subspace = Subspace::new(Bytes::new()).subspace(&{
+                            let tup: (&str, &str, &str) = ("sub", "space", "normal");
+
+                            let mut t = Tuple::new();
+                            t.push_back::<String>(tup.0.to_string());
+                            t.push_back::<String>(tup.1.to_string());
+                            t.push_back::<String>(tup.2.to_string());
+                            t
+                        });
+
+                        let primary_key_schema = RawRecordPrimaryKeySchema::try_from({
+                            let mut tuple_schema = TupleSchema::new();
+                            tuple_schema.push_front(TupleSchemaElement::String);
+                            tuple_schema
+                        })?;
+
+                        raw_record_cursor_builder_build(
+                            Some(primary_key_schema),
+                            Some(subspace),
+                            None,
+                            None,
+                            Some(1),
+                            Some(true),
+                            None,
+                            &tr,
+                        )?
+                    };
+
+                    // We expect `CursorSuccess<RawRecord>`.
+                    let (res, continuation) = raw_record_cursor.next().await.unwrap().into_parts();
+
+                    let raw_record = {
+                        let (pk, local_version, record_bytes) = ("very_long", 3, VERY_LONG_STRING.deref().clone());
+
+                        let version = RecordVersion::from(Versionstamp::complete(
+                            Bytes::from_static(b"\xAA\xBB\xCC\xDD\xEE\xFF\x00\x01\x02\x03"),
+                            local_version,
+                        ));
+
+                        let primary_key = RawRecordPrimaryKey::try_from((
+                            RawRecordPrimaryKeySchema::try_from({
+                                let mut tuple_schema = TupleSchema::new();
+                                tuple_schema.push_front(TupleSchemaElement::String);
+                                tuple_schema
+                            })?,
+                            {
+                                let tup: (&str,) = (pk,);
+
+                                let mut t = Tuple::new();
+                                t.push_back::<String>(tup.0.to_string());
+                                t
+                            },
+                        ))?;
+
+                        RawRecord::from((primary_key, version, record_bytes))
+                    };
+
+                    assert_eq!(raw_record, res);
+
+                    assert!(!continuation.is_begin_marker());
+                    assert!(!continuation.is_end_marker());
+
+                    let continuation_prev = continuation;
+
+                    // We expect `CursorError`.
+                    let res = raw_record_cursor.next().await.unwrap_err();
+
+                    assert!(matches!(
+                        res,
+                        CursorError::NoNextReason(NoNextReason::ReturnLimitReached(_))
+                    ));
+
+                    let continuation = if let CursorError::NoNextReason(NoNextReason::ReturnLimitReached(
+                        continuation,
+                    )) = res
+                    {
+                        assert!(!continuation.is_begin_marker());
+                        assert!(!continuation.is_end_marker());
+			continuation
+                    } else {
+			panic!("CursorError::NoNextReason(NoNextReason::ReturnLimitReached(_)) expected");
+		    };
+
+		    assert_eq!(continuation_prev.to_bytes(), continuation.to_bytes());
+
+                    let mut raw_record_cursor = {
+                        let subspace = Subspace::new(Bytes::new()).subspace(&{
+                            let tup: (&str, &str, &str) = ("sub", "space", "normal");
+
+                            let mut t = Tuple::new();
+                            t.push_back::<String>(tup.0.to_string());
+                            t.push_back::<String>(tup.1.to_string());
+                            t.push_back::<String>(tup.2.to_string());
+                            t
+                        });
+
+                        let primary_key_schema = RawRecordPrimaryKeySchema::try_from({
+                            let mut tuple_schema = TupleSchema::new();
+                            tuple_schema.push_front(TupleSchemaElement::String);
+                            tuple_schema
+                        })?;
+
+                        raw_record_cursor_builder_build(
+                            Some(primary_key_schema),
+                            Some(subspace),
+                            None,
+                            None,
+                            Some(2),
+                            Some(true),
+			    // We expect `Ok(bytes)`.
+                            Some(continuation.to_bytes().unwrap()),
+                            &tr,
+                        )?
+                    };
+
+                    for (pk, local_version, record_bytes) in [
+                        // This is the lexicographic order.
+                        ("medium", 1, MEDIUM_STRING.deref().clone()),
+                        ("short", 2, SHORT_STRING.deref().clone()),
+                    ].iter()
+		    .rev() {
+                        let version = RecordVersion::from(Versionstamp::complete(
+                            Bytes::from_static(b"\xAA\xBB\xCC\xDD\xEE\xFF\x00\x01\x02\x03"),
+                            *local_version,
+                        ));
+
+                        let primary_key = RawRecordPrimaryKey::try_from((
+                            RawRecordPrimaryKeySchema::try_from({
+                                let mut tuple_schema = TupleSchema::new();
+                                tuple_schema.push_front(TupleSchemaElement::String);
+                                tuple_schema
+                            })?,
+                            {
+                                let tup: (&str,) = (pk,);
+
+                                let mut t = Tuple::new();
+                                t.push_back::<String>(tup.0.to_string());
+                                t
+                            },
+                        ))?;
+
+                        let raw_record =
+                            RawRecord::from((primary_key, version, record_bytes.clone()));
+
+                        // We expect `CursorSuccess<RawRecord>`.
+                        let (res, continuation) =
+                            raw_record_cursor.next().await.unwrap().into_parts();
+
+                        assert_eq!(raw_record, res);
+
+                        assert!(!continuation.is_begin_marker());
+                        assert!(!continuation.is_end_marker());
+		    }
+
+                    // We expect `CursorError`.
+                    let res = raw_record_cursor.next().await.unwrap_err();
+
+                    assert!(matches!(
+                        res,
+                        CursorError::NoNextReason(NoNextReason::ReturnLimitReached(_))
+                    ));
+
+                    let continuation = if let CursorError::NoNextReason(NoNextReason::ReturnLimitReached(
+                        continuation,
+                    )) = res
+                    {
+                        assert!(!continuation.is_begin_marker());
+                        assert!(!continuation.is_end_marker());
+			continuation
+                    } else {
+			panic!("CursorError::NoNextReason(NoNextReason::ReturnLimitReached(_)) expected");
+		    };
+
+                    let mut raw_record_cursor = {
+                        let subspace = Subspace::new(Bytes::new()).subspace(&{
+                            let tup: (&str, &str, &str) = ("sub", "space", "normal");
+
+                            let mut t = Tuple::new();
+                            t.push_back::<String>(tup.0.to_string());
+                            t.push_back::<String>(tup.1.to_string());
+                            t.push_back::<String>(tup.2.to_string());
+                            t
+                        });
+
+                        let primary_key_schema = RawRecordPrimaryKeySchema::try_from({
+                            let mut tuple_schema = TupleSchema::new();
+                            tuple_schema.push_front(TupleSchemaElement::String);
+                            tuple_schema
+                        })?;
+
+                        raw_record_cursor_builder_build(
+                            Some(primary_key_schema),
+                            Some(subspace),
+                            None,
+                            None,
+                            Some(1),
+                            Some(true),
+			    // We expect `Ok(bytes)`.
+                            Some(continuation.to_bytes().unwrap()),
+                            &tr,
+                        )?
+                    };
+
+                    // We expect `CursorSuccess<RawRecord>`.
+                    let (res, continuation) = raw_record_cursor.next().await.unwrap().into_parts();
+
+                    let raw_record = {
+                        let (pk, local_version, record_bytes) = ("long", 0, LONG_STRING.deref().clone());
+
+                        let version = RecordVersion::from(Versionstamp::complete(
+                            Bytes::from_static(b"\xAA\xBB\xCC\xDD\xEE\xFF\x00\x01\x02\x03"),
+                            local_version,
+                        ));
+
+                        let primary_key = RawRecordPrimaryKey::try_from((
+                            RawRecordPrimaryKeySchema::try_from({
+                                let mut tuple_schema = TupleSchema::new();
+                                tuple_schema.push_front(TupleSchemaElement::String);
+                                tuple_schema
+                            })?,
+                            {
+                                let tup: (&str,) = (pk,);
+
+                                let mut t = Tuple::new();
+                                t.push_back::<String>(tup.0.to_string());
+                                t
+                            },
+                        ))?;
+
+                        RawRecord::from((primary_key, version, record_bytes))
+                    };
+
+                    assert_eq!(raw_record, res);
+
+                    assert!(!continuation.is_begin_marker());
+                    assert!(!continuation.is_end_marker());
+
+                    let continuation_prev = continuation;
+
+                    // We expect `CursorError`.
+                    let res = raw_record_cursor.next().await.unwrap_err();
+
+                    assert!(matches!(
+                        res,
+                        CursorError::NoNextReason(NoNextReason::ReturnLimitReached(_))
+                    ));
+
+                    let continuation = if let CursorError::NoNextReason(NoNextReason::ReturnLimitReached(
+                        continuation,
+                    )) = res
+                    {
+                        assert!(!continuation.is_begin_marker());
+                        assert!(!continuation.is_end_marker());
+			continuation
+                    } else {
+			panic!("CursorError::NoNextReason(NoNextReason::ReturnLimitReached(_)) expected");
+		    };
+
+		    assert_eq!(continuation_prev.to_bytes(), continuation.to_bytes());
+
+                    let mut raw_record_cursor = {
+                        let subspace = Subspace::new(Bytes::new()).subspace(&{
+                            let tup: (&str, &str, &str) = ("sub", "space", "normal");
+
+                            let mut t = Tuple::new();
+                            t.push_back::<String>(tup.0.to_string());
+                            t.push_back::<String>(tup.1.to_string());
+                            t.push_back::<String>(tup.2.to_string());
+                            t
+                        });
+
+                        let primary_key_schema = RawRecordPrimaryKeySchema::try_from({
+                            let mut tuple_schema = TupleSchema::new();
+                            tuple_schema.push_front(TupleSchemaElement::String);
+                            tuple_schema
+                        })?;
+
+                        raw_record_cursor_builder_build(
+                            Some(primary_key_schema),
+                            Some(subspace),
+                            None,
+                            None,
+                            None,
+                            Some(true),
 			    // We expect `Ok(bytes)`.
                             Some(continuation.to_bytes().unwrap()),
                             &tr,
