@@ -252,7 +252,12 @@ impl Continuation for KeyValueContinuationInternal {
 ///
 /// **Note:** Please make sure you read about the limitation mentioned
 /// in the documentation for
-/// [`KeyValueCursorBuilder::scan_properties`].
+/// [`KeyValueCursorBuilder::scan_properties`]. As a heads-up, setting
+/// in-band limit is unsafe only for [`KeyValueCursor`]. This
+/// limitation does not exist for other cursors because it does not
+/// directly use [`RangeOptions`] API.
+///
+/// [`RangeOptions`]: fdb::range::RangeOptions
 //
 //
 // It is *not* possible for `KeyValueCursorBuilder` to safely derive
