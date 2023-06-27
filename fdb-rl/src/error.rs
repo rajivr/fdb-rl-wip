@@ -7,7 +7,7 @@
 // 200 - `cursor` module
 // 210 - `split_helper` module
 // 220 - `RecordContext` type
-// 230 - `raw_record` module
+// 230 - `raw_record` module (private, see `raw_record/error.rs`)
 
 /// Continuation is invalid.
 ///
@@ -72,18 +72,3 @@ pub const RECORD_CONTEXT_INVALID_TRANSACTION_AGE: i32 = 221;
 ///
 /// [`RecordContext`]: crate::RecordContext
 pub const RECORD_CONTEXT_INCARNATION_VERSION_ALREADY_SET: i32 = 222;
-
-/// The [`TupleSchema`] used to create a primary key is invalid.
-pub const RAW_RECORD_INVALID_PRIMARY_KEY_SCHEMA: i32 = 230;
-
-/// The [`Tuple`] used for primary key does not match its schema.
-pub const RAW_RECORD_PRIMARY_KEY_TUPLE_SCHEMA_MISMATCH: i32 = 231;
-
-/// TODO
-pub const RAW_RECORD_CURSOR_BUILDER_ERROR: i32 = 232;
-
-/// TODO (Error occured when parsing the key or value)
-pub const RAW_RECORD_CURSOR_NEXT_ERROR: i32 = 233;
-
-/// TODO (The cursor entered an invalid state)
-pub const RAW_RECORD_CURSOR_STATE_ERROR: i32 = 234;

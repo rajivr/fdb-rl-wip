@@ -10,6 +10,7 @@ use crate::raw_record::{RawRecordCursor, RawRecordCursorBuilder};
 use crate::scan::ScanLimiter;
 use crate::RecordVersion;
 
+pub use crate::raw_record::error::{RAW_RECORD_CURSOR_BUILDER_ERROR, RAW_RECORD_CURSOR_NEXT_ERROR};
 pub use crate::raw_record::primary_key::{RawRecordPrimaryKey, RawRecordPrimaryKeySchema};
 pub use crate::raw_record::RawRecord;
 

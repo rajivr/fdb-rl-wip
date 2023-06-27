@@ -1,6 +1,8 @@
 //! Provides [`RawRecord`] type and associated items.
 
+pub(crate) mod error;
 pub(crate) mod primary_key;
+
 mod scan_state_machine;
 
 use bytes::{Bytes, BytesMut};
@@ -19,11 +21,12 @@ use crate::cursor::{
     Continuation, Cursor, CursorResult, KeyValueContinuationInternal, KeyValueCursor,
     KeyValueCursorBuilder,
 };
-use crate::error::{CURSOR_INVALID_CONTINUATION, RAW_RECORD_CURSOR_BUILDER_ERROR};
+use crate::error::CURSOR_INVALID_CONTINUATION;
 use crate::range::TupleRange;
 use crate::scan::{ScanLimiter, ScanPropertiesBuilder};
 use crate::RecordVersion;
 
+use error::RAW_RECORD_CURSOR_BUILDER_ERROR;
 use primary_key::{RawRecordPrimaryKey, RawRecordPrimaryKeySchema};
 use scan_state_machine::RawRecordStateMachine;
 

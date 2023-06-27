@@ -6,7 +6,7 @@ use fdb::error::{FdbError, FdbResult};
 
 use std::convert::TryFrom;
 
-use crate::error::{
+use super::error::{
     RAW_RECORD_INVALID_PRIMARY_KEY_SCHEMA, RAW_RECORD_PRIMARY_KEY_TUPLE_SCHEMA_MISMATCH,
 };
 
@@ -159,8 +159,7 @@ mod tests {
 
         use std::convert::TryFrom;
 
-        use crate::error::RAW_RECORD_INVALID_PRIMARY_KEY_SCHEMA;
-
+        use super::super::super::error::RAW_RECORD_INVALID_PRIMARY_KEY_SCHEMA;
         use super::super::RawRecordPrimaryKeySchema;
 
         #[test]
@@ -320,8 +319,7 @@ mod tests {
 
         use std::convert::TryFrom;
 
-        use crate::error::RAW_RECORD_PRIMARY_KEY_TUPLE_SCHEMA_MISMATCH;
-
+        use super::super::super::error::RAW_RECORD_PRIMARY_KEY_TUPLE_SCHEMA_MISMATCH;
         use super::super::{RawRecordPrimaryKey, RawRecordPrimaryKeySchema};
 
         #[test]

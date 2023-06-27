@@ -15,10 +15,10 @@ use crate::cursor::{
     Cursor, CursorError, CursorResult, CursorSuccess, KeyValueContinuationInternal, KeyValueCursor,
     LimitManagerStoppedReason, NoNextReason,
 };
-use crate::error::{RAW_RECORD_CURSOR_NEXT_ERROR, RAW_RECORD_CURSOR_STATE_ERROR};
 use crate::split_helper::RecordHeaderV0;
 use crate::RecordVersion;
 
+use super::error::{RAW_RECORD_CURSOR_NEXT_ERROR, RAW_RECORD_CURSOR_STATE_ERROR};
 use super::{
     RawRecord, RawRecordContinuationInternal, RawRecordPrimaryKey, RawRecordPrimaryKeySchema,
 };
