@@ -169,6 +169,10 @@ fn main() -> Result<(), Box<dyn Error>> {
             "cursor_subspace_abnormal_reverse_state_initiate_last_split_read",
             cursor_subspace_abnormal_reverse_state_initiate_last_split_read,
         ),
+        Trial::test(
+            "cursor_subspace_abnormal_forward_state_read_record_version",
+            cursor_subspace_abnormal_forward_state_read_record_version,
+        ),
     ];
 
     let _ = libtest_mimic::run(&args, tests);
@@ -484,6 +488,181 @@ fn setup_subspace_abnormal() -> Result<(), Box<dyn Error>> {
                             let value = Value::from(Bytes::from_static(b"invalid record content"));
 
                             tr.set(key, value);
+                        }
+                    }
+
+                    // For
+                    // `cursor_subspace_abnormal_forward_state_read_record_version`
+                    // test.
+                    {
+                        // Create a record with a missing key-value
+                        //
+                        // ```
+                        // ("sub", "space", "abnormal", "05", "long", -1)
+                        // ("sub", "space", "abnormal", "05", "long",  0) missing
+                        // ("sub", "space", "abnormal", "05", "long",  1)
+                        // ```
+                        {
+                            let subspace = Subspace::new(Bytes::new()).subspace(&{
+                                let tup: (&str, &str, &str, &str) =
+                                    ("sub", "space", "abnormal", "05");
+
+                                let mut t = Tuple::new();
+                                t.push_back::<String>(tup.0.to_string());
+                                t.push_back::<String>(tup.1.to_string());
+                                t.push_back::<String>(tup.2.to_string());
+                                t.push_back::<String>(tup.3.to_string());
+                                t
+                            });
+
+                            let maybe_subspace = &Some(subspace);
+
+                            let (pk, local_version, record_bytes) =
+                                ("long", 0, LONG_STRING.deref().clone());
+
+                            let version = RecordVersion::from(Versionstamp::complete(
+                                Bytes::from_static(b"\xAA\xBB\xCC\xDD\xEE\xFF\x00\x01\x02\x03"),
+                                local_version,
+                            ));
+
+                            let primary_key = RawRecordPrimaryKey::try_from((
+                                RawRecordPrimaryKeySchema::try_from({
+                                    let mut tuple_schema = TupleSchema::new();
+                                    tuple_schema.push_front(TupleSchemaElement::String);
+                                    tuple_schema
+                                })?,
+                                {
+                                    let tup: (&str,) = (pk,);
+
+                                    let mut t = Tuple::new();
+                                    t.push_back::<String>(tup.0.to_string());
+                                    t
+                                },
+                            ))?;
+
+                            let raw_record = RawRecord::from((primary_key, version, record_bytes));
+                            save_raw_record(&tr, maybe_subspace, raw_record).await?;
+
+                            // Clear the key `("sub", "space",
+                            // "abnormal", "05", "long", 0)`.
+                            let full_primary_key_tuple = {
+                                let tup: (&str, &str, &str, &str, &str) =
+                                    ("sub", "space", "abnormal", "05", "long");
+
+                                let mut t = Tuple::new();
+                                t.push_back::<String>(tup.0.to_string());
+                                t.push_back::<String>(tup.1.to_string());
+                                t.push_back::<String>(tup.2.to_string());
+                                t.push_back::<String>(tup.3.to_string());
+                                t.push_back::<String>(tup.4.to_string());
+                                t
+                            };
+
+                            let key = Key::from(
+                                {
+                                    let tup: (i8,) = (0,);
+
+                                    let mut t = full_primary_key_tuple.clone();
+                                    t.push_back::<i8>(tup.0);
+                                    t
+                                }
+                                .pack(),
+                            );
+
+                            tr.clear(key);
+                        }
+
+                        // Record with a correct sequence but invalid
+                        // primary key.
+                        //
+                        // ```
+                        // ("sub", "space", "abnormal", "06", "medium", -1)
+                        // ("sub", "space", "abnormal", "06", "medium",  0) missing
+                        // ("sub", "space", "abnormal", "06", "short",  -1) missing
+                        // ("sub", "space", "abnormal", "06", "short",   0)
+                        // ```
+                        {
+                            let subspace = Subspace::new(Bytes::new()).subspace(&{
+                                let tup: (&str, &str, &str, &str) =
+                                    ("sub", "space", "abnormal", "06");
+
+                                let mut t = Tuple::new();
+                                t.push_back::<String>(tup.0.to_string());
+                                t.push_back::<String>(tup.1.to_string());
+                                t.push_back::<String>(tup.2.to_string());
+                                t.push_back::<String>(tup.3.to_string());
+                                t
+                            });
+
+                            let maybe_subspace = &Some(subspace);
+
+                            for (pk, local_version, record_bytes) in [
+                                // This is the lexicographic order.
+                                ("medium", 1, MEDIUM_STRING.deref().clone()),
+                                ("short", 2, SHORT_STRING.deref().clone()),
+                            ] {
+                                let version = RecordVersion::from(Versionstamp::complete(
+                                    Bytes::from_static(b"\xAA\xBB\xCC\xDD\xEE\xFF\x00\x01\x02\x03"),
+                                    local_version,
+                                ));
+
+                                let primary_key = RawRecordPrimaryKey::try_from((
+                                    RawRecordPrimaryKeySchema::try_from({
+                                        let mut tuple_schema = TupleSchema::new();
+                                        tuple_schema.push_front(TupleSchemaElement::String);
+                                        tuple_schema
+                                    })?,
+                                    {
+                                        let tup: (&str,) = (pk,);
+
+                                        let mut t = Tuple::new();
+                                        t.push_back::<String>(tup.0.to_string());
+                                        t
+                                    },
+                                ))?;
+
+                                let raw_record =
+                                    RawRecord::from((primary_key, version, record_bytes));
+                                save_raw_record(&tr, maybe_subspace, raw_record).await?;
+
+                                // Clear the key `("sub", "space",
+                                // "abnormal", "06", "medium", 0)`.
+                                tr.clear(Key::from(
+                                    {
+                                        let tup: (&str, &str, &str, &str, &str, i8) =
+                                            ("sub", "space", "abnormal", "06", "medium", 0);
+
+                                        let mut t = Tuple::new();
+                                        t.push_back::<String>(tup.0.to_string());
+                                        t.push_back::<String>(tup.1.to_string());
+                                        t.push_back::<String>(tup.2.to_string());
+                                        t.push_back::<String>(tup.3.to_string());
+                                        t.push_back::<String>(tup.4.to_string());
+                                        t.push_back::<i8>(tup.5);
+                                        t
+                                    }
+                                    .pack(),
+                                ));
+
+                                // Clear the key `("sub", "space",
+                                // "abnormal", "06", "short", -1)`.
+                                tr.clear(Key::from(
+                                    {
+                                        let tup: (&str, &str, &str, &str, &str, i8) =
+                                            ("sub", "space", "abnormal", "06", "short", -1);
+
+                                        let mut t = Tuple::new();
+                                        t.push_back::<String>(tup.0.to_string());
+                                        t.push_back::<String>(tup.1.to_string());
+                                        t.push_back::<String>(tup.2.to_string());
+                                        t.push_back::<String>(tup.3.to_string());
+                                        t.push_back::<String>(tup.4.to_string());
+                                        t.push_back::<i8>(tup.5);
+                                        t
+                                    }
+                                    .pack(),
+                                ));
+                            }
                         }
                     }
 
@@ -2831,6 +3010,129 @@ fn cursor_subspace_abnormal_reverse_state_initiate_last_split_read() -> Result<(
                                 None,
                                 None,
                                 Some(true),
+                                None,
+                                &tr,
+                            )?
+                        };
+
+                        // We expect `CursorError`.
+                        let res = raw_record_cursor.next().await.unwrap_err();
+
+                        assert!(matches!(res, CursorError::FdbError(_, _)));
+
+                        if let CursorError::FdbError(fdb_error, continuation) = res {
+                            assert_eq!(fdb_error, FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR));
+                            assert!(continuation.is_begin_marker());
+                        }
+                    }
+
+                    Ok(())
+                })
+                .await?;
+
+            Result::<(), Box<dyn Error>>::Ok(())
+        }
+    })?;
+
+    Ok(())
+}
+
+fn cursor_subspace_abnormal_forward_state_read_record_version() -> Result<(), Failed> {
+    let rt = Builder::new_current_thread().build()?;
+
+    let fdb_database_ref = unsafe { FDB_DATABASE.as_ref().unwrap() };
+
+    rt.block_on({
+        let fdb_database = fdb_database_ref.clone();
+        async move {
+            fdb_database
+                .read(|tr| async move {
+                    // Record with a missing key-value
+                    //
+                    // ```
+                    // ("sub", "space", "abnormal", "05", "long", -1)
+                    // ("sub", "space", "abnormal", "05", "long",  0) missing
+                    // ("sub", "space", "abnormal", "05", "long",  1)
+                    // ```
+                    {
+                        let mut raw_record_cursor = {
+                            let subspace = Subspace::new(Bytes::new()).subspace(&{
+                                let tup: (&str, &str, &str, &str) =
+                                    ("sub", "space", "abnormal", "05");
+
+                                let mut t = Tuple::new();
+                                t.push_back::<String>(tup.0.to_string());
+                                t.push_back::<String>(tup.1.to_string());
+                                t.push_back::<String>(tup.2.to_string());
+                                t.push_back::<String>(tup.3.to_string());
+                                t
+                            });
+
+                            let primary_key_schema = RawRecordPrimaryKeySchema::try_from({
+                                let mut tuple_schema = TupleSchema::new();
+                                tuple_schema.push_front(TupleSchemaElement::String);
+                                tuple_schema
+                            })?;
+
+                            raw_record_cursor_builder_build(
+                                Some(primary_key_schema),
+                                Some(subspace),
+                                None,
+                                None,
+                                None,
+                                None,
+                                None,
+                                &tr,
+                            )?
+                        };
+
+                        // We expect `CursorError`.
+                        let res = raw_record_cursor.next().await.unwrap_err();
+
+                        assert!(matches!(res, CursorError::FdbError(_, _)));
+
+                        if let CursorError::FdbError(fdb_error, continuation) = res {
+                            assert_eq!(fdb_error, FdbError::new(RAW_RECORD_CURSOR_NEXT_ERROR));
+                            assert!(continuation.is_begin_marker());
+                        }
+                    }
+
+                    // Record with a correct sequence but invalid
+                    // primary key.
+                    //
+                    // ```
+                    // ("sub", "space", "abnormal", "06", "medium", -1)
+                    // ("sub", "space", "abnormal", "06", "medium",  0) missing
+                    // ("sub", "space", "abnormal", "06", "short",  -1) missing
+                    // ("sub", "space", "abnormal", "06", "short",   0)
+                    // ```
+                    {
+                        let mut raw_record_cursor = {
+                            let subspace = Subspace::new(Bytes::new()).subspace(&{
+                                let tup: (&str, &str, &str, &str) =
+                                    ("sub", "space", "abnormal", "06");
+
+                                let mut t = Tuple::new();
+                                t.push_back::<String>(tup.0.to_string());
+                                t.push_back::<String>(tup.1.to_string());
+                                t.push_back::<String>(tup.2.to_string());
+                                t.push_back::<String>(tup.3.to_string());
+                                t
+                            });
+
+                            let primary_key_schema = RawRecordPrimaryKeySchema::try_from({
+                                let mut tuple_schema = TupleSchema::new();
+                                tuple_schema.push_front(TupleSchemaElement::String);
+                                tuple_schema
+                            })?;
+
+                            raw_record_cursor_builder_build(
+                                Some(primary_key_schema),
+                                Some(subspace),
+                                None,
+                                None,
+                                None,
+                                None,
                                 None,
                                 &tr,
                             )?
