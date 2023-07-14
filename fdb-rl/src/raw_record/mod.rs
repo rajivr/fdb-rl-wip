@@ -262,11 +262,31 @@ impl Continuation for RawRecordContinuationInternal {
 /// can be built as shown below.
 ///
 /// ```ignore
-/// TODO
+/// let raw_record_cursor = {
+///     let primary_key_schema = RawRecordPrimaryKeySchema::try_from({
+///         let mut tuple_schema = TupleSchema::new();
+///         tuple_schema.push_front(TupleSchemaElement::String);
+///         tuple_schema
+///     })?;
+///
+///     let mut raw_record_cursor_builder = RawRecordCursorBuilder::new();
+///
+///     raw_record_cursor_builder
+///         .subspace(Subspace::new(Bytes::new()).subspace(&{
+///             let tup: (&str, &str, &str) = ("prefix", "subspace", "record");
+///
+///             let mut t = Tuple::new();
+///             t.push_back::<String>(tup.0.to_string());
+///             t.push_back::<String>(tup.1.to_string());
+///             t.push_back::<String>(tup.2.to_string());
+///             t
+///         }))
+///         .primary_key_schema(primary_key_schema)
+/// 	    .continuation(continuation_bytes);
+///
+/// 	raw_record_cursor_builder.build(&tr)
+/// };
 /// ```
-//
-// TODO: You need to take care of issues around limit. Limit *cannot*
-// be zero.
 //
 // The `KeyValueCursorBuilder` takes a value of `ScanProperties`. We
 // *cannot* directly expose `ScanProperties` to the user of
@@ -564,9 +584,6 @@ impl
 /// <strong>Warning:</strong> This type is <strong>not</strong> meant
 /// to be public. We need to make this type public to support
 /// integration tests. Do not use this type in your code.</p>
-//
-// TODO: `NoNextReason::ReturnLimitReached` would be specific number
-// of `RawRecord`.
 #[derive(Debug)]
 pub struct RawRecordCursor {
     primary_key_schema: RawRecordPrimaryKeySchema,

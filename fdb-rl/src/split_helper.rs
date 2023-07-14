@@ -47,6 +47,11 @@
 //! * The `versionstamp` contains information about
 //! [`RecordVersion`]'s global version and local version.
 //!
+//! There is *no* tuple encoding for the data, that is *100KB chunk or
+//! less* value is stored in the raw format. This is because tuple
+//! encoding would introduce escape sequences which depending on the
+//! data might exceed the 100KB limit.
+//!
 //! **Note:** In the key that gets generated, we flatten the primary
 //! key tuple when suffix is appended to it. The primary key is not a
 //! *nested* tuple.
