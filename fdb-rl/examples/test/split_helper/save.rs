@@ -9,8 +9,7 @@ use fdb::subspace::Subspace;
 use fdb::transaction::Transaction;
 use fdb::tuple::{Tuple, Versionstamp};
 
-use fdb_rl::error::SPLIT_HELPER_SAVE_INVALID_SERIALIZED_BYTES_SIZE;
-use fdb_rl::test::split_helper;
+use fdb_rl::test::split_helper::{self, SPLIT_HELPER_SAVE_INVALID_SERIALIZED_BYTES_SIZE};
 use fdb_rl::RecordVersion;
 
 use libtest_mimic::{Arguments, Failed, Trial};

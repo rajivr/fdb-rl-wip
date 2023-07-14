@@ -29,8 +29,11 @@ use fdb::tuple::Versionstamp;
 /// [`RecordContext`]: crate::RecordContext
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
 pub struct RecordVersion {
-    // *Note:*: This ordering is based on `Versionstamp`.
     incarnation_version: Option<u64>,
+    // *Note:*: The ordering of `global_version`, `local_version` and
+    //          `complete` is based on `Versionstamp` type's
+    //          `tr_version`, `user_version` and `complete`. Do not
+    //          change this ordering.
     /// Corresponds to `tr_version` field in the [`Versionstamp`]
     /// struct. In RecordLayer `FDBRecordVersion` class, this field is
     /// known as `versionBytes`.

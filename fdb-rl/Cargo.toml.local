@@ -46,10 +46,6 @@ name = "test-cursor-KeyValueCursor-Cursor-KeyValue-collect_filter_map"
 path = "examples/test/cursor/KeyValueCursor/Cursor-KeyValue/collect_filter_map.rs"
 
 [[example]]
-name = "test-raw_record-RawRecordCursor-Cursor-RawRecord-next"
-path = "examples/test/raw_record/RawRecordCursor/Cursor-RawRecord/next.rs"
-
-[[example]]
 name = "test-split_helper-delete"
 path = "examples/test/split_helper/delete.rs"
 

@@ -77,6 +77,8 @@
 // easily determine the number of key-values to read before expecting
 // an record header.
 
+pub(crate) mod error;
+
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 
 use num_bigint::BigInt;
@@ -92,15 +94,18 @@ use std::convert::{TryFrom, TryInto};
 use std::ops::ControlFlow;
 
 use crate::cursor::{CursorError, KeyValueCursorBuilder, NoNextReason};
-use crate::error::{
-    SPLIT_HELPER_INVALID_PRIMARY_KEY, SPLIT_HELPER_LOAD_INVALID_RECORD_HEADER,
-    SPLIT_HELPER_LOAD_INVALID_SERIALIZED_BYTES, SPLIT_HELPER_SAVE_INVALID_SERIALIZED_BYTES_SIZE,
-    SPLIT_HELPER_SCAN_LIMIT_REACHED,
-};
 use crate::range::TupleRange;
 use crate::scan::{ScanLimiter, ScanPropertiesBuilder};
 use crate::RecordVersion;
 
+use error::{
+    SPLIT_HELPER_INVALID_PRIMARY_KEY, SPLIT_HELPER_LOAD_INVALID_RECORD_HEADER,
+    SPLIT_HELPER_LOAD_INVALID_SERIALIZED_BYTES, SPLIT_HELPER_SAVE_INVALID_SERIALIZED_BYTES_SIZE,
+    SPLIT_HELPER_SCAN_LIMIT_REACHED,
+};
+
+/// If a record is greater than this size (in bytes) it will be split
+/// into multiple key-value pairs.
 const SPLIT_RECORD_SIZE: usize = 100_000;
 
 /// Record header version `0`.
@@ -314,6 +319,12 @@ where
 }
 
 /// Delete the serialized representation of a record.
+///
+/// <p style="background:rgba(255,181,77,0.16);padding:0.75em;">
+/// <strong>Warning:</strong> This function is <strong>not</strong>
+/// meant to be public. We need to make this function public to
+/// support integration tests. Do not use this function in your
+/// code.</p>
 pub async fn delete<Tr>(
     tr: &Tr,
     maybe_scan_limiter: &Option<ScanLimiter>,
@@ -370,6 +381,12 @@ where
 ///
 /// If you want to have the data in the event of an error, you must
 /// [`load`] it, before calling [`save`].
+///
+/// <p style="background:rgba(255,181,77,0.16);padding:0.75em;">
+/// <strong>Warning:</strong> This function is <strong>not</strong>
+/// meant to be public. We need to make this function public to
+/// support integration tests. Do not use this function in your
+/// code.</p>
 pub async fn save<Tr>(
     tr: &Tr,
     maybe_scan_limiter: &Option<ScanLimiter>,
@@ -487,6 +504,12 @@ where
 /// is a serialized byte array associated with the `primary_key`, then
 /// we would return `Ok(Some((record_version, seralized_bytes)))`
 /// value. Otherwise, an `Err` value is returned.
+///
+/// <p style="background:rgba(255,181,77,0.16);padding:0.75em;">
+/// <strong>Warning:</strong> This function is <strong>not</strong>
+/// meant to be public. We need to make this function public to
+/// support integration tests. Do not use this function in your
+/// code.</p>
 pub async fn load<Tr>(
     tr: &Tr,
     maybe_scan_limiter: &Option<ScanLimiter>,
@@ -644,9 +667,7 @@ mod tests {
 
         use std::convert::TryFrom;
 
-        use crate::error::SPLIT_HELPER_LOAD_INVALID_RECORD_HEADER;
-
-        use super::super::RecordHeaderV0;
+        use super::super::{error::SPLIT_HELPER_LOAD_INVALID_RECORD_HEADER, RecordHeaderV0};
 
         #[test]
         fn try_from_value_try_from() {
