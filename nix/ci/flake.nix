@@ -1,7 +1,7 @@
 {
   description = "CI Nix flakes";
 
-  inputs.nixpkgs.url = "nixpkgs/nixos-22.11";
+  inputs.nixpkgs.url = "nixpkgs/nixos-23.05";
 
   inputs.rust-overlay.url = "github:oxalica/rust-overlay";
 
@@ -122,7 +122,7 @@
           llvmPackages.libcxxClang
           openssl
           pkgconfig
-          (rust-bin.nightly."2023-01-21".default.override {
+          (rust-bin.nightly."2023-07-18".default.override {
             extensions = [
               "llvm-tools-preview"
             ];
