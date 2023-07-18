@@ -91,10 +91,54 @@ pub(crate) mod pb {
 /// A wrapper around all information that can be determined about a
 /// record before serializing and deserializing it.
 ///
+/// ### Primary key schema constraint
+///
+/// In Java Record Layer, all record types within a record store are
+/// interleaved within the same extent. In our implementation, we
+/// specialize this further, and **require** that all record types
+/// within a record store have the same [`RawRecordPrimaryKeySchema`].
+///
+/// In relational terms this means that our record store can be
+/// thought of as a collection of tables where each table has the same
+/// type for the primary key column. The type of the primary key
+/// column would be represented using
+/// [`RawRecordPrimaryKeySchema`].
+///
+/// It is very common to require tables (record types) with multiple
+/// [`RawRecordPrimaryKeySchema`]. Therefore it follows that in our
+/// design any reasonable application would end up utilizing multiple
+/// record stores.
+///
+/// The motivation for choosing this apporach is two fold.
+///
+/// *Firstly*, it avoids edge cases with [`split_helper`] where
+/// integer values are a part of a primary key tuple.
+///
+/// Assume that we allowed record types to have multiple primary key
+/// schemas.
+///
+/// Suppose we have two record types with primary key schemas of
+/// `(int, )` and `(int, int,)`. Given the way [`split_helper`] works,
+/// their split suffixes (`-1`, `0`, etc.,) would overlap. Now if we
+/// had to delete a record with primary key of `(1, )` we simply
+/// cannot issue a clear range on prefix `(1, )` without verifying if
+/// key of the form `(1, ..., )` exists. If any key of the form `(1,
+/// ..., )` exists, then deleting key `(1, )` would accidentally
+/// delete that key too.
+///
+/// Hence, we do not permit record types with multiple primary key
+/// schemas to avoid this class of problems.
+///
+/// *Secondly*, the [`RawRecordCursor`] implementation is aware of
+/// [`RawRecordPrimaryKeySchema`]. This means any [`RawRecord`] value
+/// returned by the cursor is well formed.
+///
 /// <p style="background:rgba(255,181,77,0.16);padding:0.75em;">
 /// <strong>Warning:</strong> This type is <strong>not</strong> meant
 /// to be public. We need to make this type public to support
 /// integration tests. Do not use this type in your code.</p>
+///
+/// [`split_helper`]: crate::split_helper
 #[derive(Clone, Debug, PartialEq)]
 pub struct RawRecord {
     primary_key: RawRecordPrimaryKey,
@@ -580,10 +624,20 @@ impl
 
 /// A cursor that returns [`RawRecord`]s from the FDB database.
 ///
+/// Unlike Java Record Layer [`KeyValueUnsplitter`], in case of
+/// [`RawRecordCursor`] we do not exceed out-of-band limits.
+///
+/// In the event the underlying [`KeyValueCursor`] we encounters an
+/// out-of-band limit, the cursor state machine will discard any
+/// partially read record, switch to a final state and return the
+/// appropriate continuation.
+///
 /// <p style="background:rgba(255,181,77,0.16);padding:0.75em;">
 /// <strong>Warning:</strong> This type is <strong>not</strong> meant
 /// to be public. We need to make this type public to support
 /// integration tests. Do not use this type in your code.</p>
+///
+/// [`KeyValueUnsplitter`]: https://github.com/FoundationDB/fdb-record-layer/blob/3.3.397.0/fdb-record-layer-core/src/main/java/com/apple/foundationdb/record/provider/foundationdb/SplitHelper.java#L721
 #[derive(Debug)]
 pub struct RawRecordCursor {
     primary_key_schema: RawRecordPrimaryKeySchema,

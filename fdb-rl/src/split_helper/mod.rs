@@ -47,7 +47,7 @@
 //! * The `versionstamp` contains information about
 //! [`RecordVersion`]'s global version and local version.
 //!
-//! There is *no* tuple encoding for the data, that is *100KB chunk or
+//! There is *no* tuple encoding for the data. That is *100KB chunk or
 //! less* value is stored in the raw format. This is because tuple
 //! encoding would introduce escape sequences which depending on the
 //! data might exceed the 100KB limit.
@@ -68,8 +68,24 @@
 //! |------------------------------+---------------|
 //! ```
 //!
+//! The functions [`load`], [`save`] and [`delete`] does not take a
+//! value of [`RawRecordPrimaryKeySchema`] as its
+//! argument. **However** its implementation assumes that you are
+//! adhering to *primary key schema constraint* as mentioned in the
+//! documentation for [`RawRecord`].
+//!
+//! <p style="background:rgba(255,181,77,0.16);padding:0.75em;">
+//! <strong>Warning:</strong> Functions in this module are
+//! <strong>not</strong> meant to be public. We need to make functions
+//! in this module public to support integration tests. Do not use
+//! functions in this module in your code.</p>
+//!
 //! [limitation]: https://apple.github.io/foundationdb/known-limitations.html#large-keys-and-values
 //! [`RecordContext`]: crate::RecordContext
+//!
+//! [`RawRecordPrimaryKeySchema`]: crate::raw_record::primary_key::RawRecordPrimaryKeySchema
+//!
+//! [`RawRecord`]: crate::raw_record::RawRecord
 //
 // In the design, we use atleast one data split even in case of an
 // empty record because it helps us model our `RawRecordCursor` more
