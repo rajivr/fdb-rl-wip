@@ -1,0 +1,55 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Grade-school multiplication algorithm."><title>long_mul in minimal_lexical::bigint - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-07416f8512e0e04c.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="minimal_lexical" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0-nightly (da6b55cc5 2023-07-17)" data-channel="nightly" data-search-js="search-f6292fe389d70017.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-6d2c9675f3d09c26.css" data-theme-dark-css="dark-45ceb8f2e522f4d1.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../static.files/light-6d2c9675f3d09c26.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../static.files/dark-45ceb8f2e522f4d1.css"><link rel="stylesheet" href="../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc fn"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="logo-container" href="../../minimal_lexical/index.html"><img class="rust-logo" src="../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><h2></h2></nav><nav class="sidebar"><a class="logo-container" href="../../minimal_lexical/index.html"><img class="rust-logo" src="../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><div class="sidebar-elems"><h2><a href="index.html">In minimal_lexical::bigint</a></h2></div></nav><main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1>Function <a href="../index.html">minimal_lexical</a>::<wbr><a href="index.html">bigint</a>::<wbr><a class="fn" href="#">long_mul</a><button id="copy-path" title="Copy item path to clipboard"><img src="../../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><a class="src" href="../../src/minimal_lexical/bigint.rs.html#577-598">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><pre class="rust item-decl"><code>pub fn long_mul(x: &amp;[<a class="type" href="type.Limb.html" title="type minimal_lexical::bigint::Limb">Limb</a>], y: &amp;[<a class="type" href="type.Limb.html" title="type minimal_lexical::bigint::Limb">Limb</a>]) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="type" href="type.VecType.html" title="type minimal_lexical::bigint::VecType">VecType</a>&gt;</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Grade-school multiplication algorithm.</p>
+<p>Slow, naive algorithm, using limb-bit bases and just shifting left for
+each iteration. This could be optimized with numerous other algorithms,
+but it’s extremely simple, and works in O(n*m) time, which is fine
+by me. Each iteration, of which there are <code>m</code> iterations, requires
+<code>n</code> multiplications, and <code>n</code> additions, or grade-school multiplication.</p>
+<p>Don’t use Karatsuba multiplication, since out implementation seems to
+be slower asymptotically, which is likely just due to the small sizes
+we deal with here. For example, running on the following data:</p>
+<div class="example-wrap"><pre class="language-text"><code>const SMALL_X: &amp;[u32] = &amp;[
+    766857581, 3588187092, 1583923090, 2204542082, 1564708913, 2695310100, 3676050286,
+    1022770393, 468044626, 446028186
+];
+const SMALL_Y: &amp;[u32] = &amp;[
+    3945492125, 3250752032, 1282554898, 1708742809, 1131807209, 3171663979, 1353276095,
+    1678845844, 2373924447, 3640713171
+];
+const LARGE_X: &amp;[u32] = &amp;[
+    3647536243, 2836434412, 2154401029, 1297917894, 137240595, 790694805, 2260404854,
+    3872698172, 690585094, 99641546, 3510774932, 1672049983, 2313458559, 2017623719,
+    638180197, 1140936565, 1787190494, 1797420655, 14113450, 2350476485, 3052941684,
+    1993594787, 2901001571, 4156930025, 1248016552, 848099908, 2660577483, 4030871206,
+    692169593, 2835966319, 1781364505, 4266390061, 1813581655, 4210899844, 2137005290,
+    2346701569, 3715571980, 3386325356, 1251725092, 2267270902, 474686922, 2712200426,
+    197581715, 3087636290, 1379224439, 1258285015, 3230794403, 2759309199, 1494932094,
+    326310242
+];
+const LARGE_Y: &amp;[u32] = &amp;[
+    1574249566, 868970575, 76716509, 3198027972, 1541766986, 1095120699, 3891610505,
+    2322545818, 1677345138, 865101357, 2650232883, 2831881215, 3985005565, 2294283760,
+    3468161605, 393539559, 3665153349, 1494067812, 106699483, 2596454134, 797235106,
+    705031740, 1209732933, 2732145769, 4122429072, 141002534, 790195010, 4014829800,
+    1303930792, 3649568494, 308065964, 1233648836, 2807326116, 79326486, 1262500691,
+    621809229, 2258109428, 3819258501, 171115668, 1139491184, 2979680603, 1333372297,
+    1657496603, 2790845317, 4090236532, 4220374789, 601876604, 1828177209, 2372228171,
+    2247372529
+];
+</code></pre></div>
+<p>We get the following results:</p>
+<div class="example-wrap"><pre class="language-text"><code>mul/small:long          time:   [220.23 ns 221.47 ns 222.81 ns]
+Found 4 outliers among 100 measurements (4.00%)
+  2 (2.00%) high mild
+  2 (2.00%) high severe
+mul/small:karatsuba     time:   [233.88 ns 234.63 ns 235.44 ns]
+Found 11 outliers among 100 measurements (11.00%)
+  8 (8.00%) high mild
+  3 (3.00%) high severe
+mul/large:long          time:   [1.9365 us 1.9455 us 1.9558 us]
+Found 12 outliers among 100 measurements (12.00%)
+  7 (7.00%) high mild
+  5 (5.00%) high severe
+mul/large:karatsuba     time:   [4.4250 us 4.4515 us 4.4812 us]
+</code></pre></div>
+<p>In short, Karatsuba multiplication is never worthwhile for out use-case.</p>
+</div></details></section></div></main></body></html>

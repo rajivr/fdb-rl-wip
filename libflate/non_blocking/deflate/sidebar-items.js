@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":[["Decoder","DEFLATE decoder which supports non-blocking I/O."]]};

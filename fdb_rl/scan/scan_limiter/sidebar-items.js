@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["LimiterMode","TimeLimiterMode"],"struct":["ByteScanLimiter","KeyValueScanLimiter","ScanLimiter","TimeScanLimiter"]};

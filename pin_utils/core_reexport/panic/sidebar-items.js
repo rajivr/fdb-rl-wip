@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"macro":["panic_2015","panic_2021","unreachable_2015","unreachable_2021"],"struct":["AssertUnwindSafe","Location","PanicInfo"],"trait":["BoxMeUp","RefUnwindSafe","UnwindSafe"]};

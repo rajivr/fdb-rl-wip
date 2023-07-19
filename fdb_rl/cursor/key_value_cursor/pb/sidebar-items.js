@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["ProtoKeyValueContinuationEnumV1"],"struct":["KeyValueContinuationInternalV1","ProtoBeginMarkerV1","ProtoEndMarkerV1","ProtoKeyMarkerV1","ProtoKeyValueContinuationV1"]};

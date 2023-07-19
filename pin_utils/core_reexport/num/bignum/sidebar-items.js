@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["tests"],"struct":["Big32x40"],"trait":["FullOps"],"type":["Digit32"]};

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/cursor/key_value_cursor.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>key_value_cursor.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-52c5db6f6f352e54.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../../../static.files/light-4743e13df3dfe8c4.css"><link rel="stylesheet" disabled href="../../../static.files/dark-0e1b889528bd466b.css"><link rel="stylesheet" disabled href="../../../static.files/ayu-65289d5d067c7c66.css"><script id="default-settings" ></script><script src="../../../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="../../../static.files/source-script-ea63cb6500f71309.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../static.files/main-3367e395607fafc1.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../fdb_rl/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `fdb-rl/src/cursor/key_value_cursor.rs`."><title>key_value_cursor.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-07416f8512e0e04c.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="fdb_rl" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0-nightly (da6b55cc5 2023-07-17)" data-channel="nightly" data-search-js="search-f6292fe389d70017.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-6d2c9675f3d09c26.css" data-theme-dark-css="dark-45ceb8f2e522f4d1.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../static.files/light-6d2c9675f3d09c26.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../static.files/dark-45ceb8f2e522f4d1.css"><link rel="stylesheet" href="../../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../fdb_rl/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1018,145 +1018,7 @@
 <a href="#1018" id="1018">1018</a>
 <a href="#1019" id="1019">1019</a>
 <a href="#1020" id="1020">1020</a>
-<a href="#1021" id="1021">1021</a>
-<a href="#1022" id="1022">1022</a>
-<a href="#1023" id="1023">1023</a>
-<a href="#1024" id="1024">1024</a>
-<a href="#1025" id="1025">1025</a>
-<a href="#1026" id="1026">1026</a>
-<a href="#1027" id="1027">1027</a>
-<a href="#1028" id="1028">1028</a>
-<a href="#1029" id="1029">1029</a>
-<a href="#1030" id="1030">1030</a>
-<a href="#1031" id="1031">1031</a>
-<a href="#1032" id="1032">1032</a>
-<a href="#1033" id="1033">1033</a>
-<a href="#1034" id="1034">1034</a>
-<a href="#1035" id="1035">1035</a>
-<a href="#1036" id="1036">1036</a>
-<a href="#1037" id="1037">1037</a>
-<a href="#1038" id="1038">1038</a>
-<a href="#1039" id="1039">1039</a>
-<a href="#1040" id="1040">1040</a>
-<a href="#1041" id="1041">1041</a>
-<a href="#1042" id="1042">1042</a>
-<a href="#1043" id="1043">1043</a>
-<a href="#1044" id="1044">1044</a>
-<a href="#1045" id="1045">1045</a>
-<a href="#1046" id="1046">1046</a>
-<a href="#1047" id="1047">1047</a>
-<a href="#1048" id="1048">1048</a>
-<a href="#1049" id="1049">1049</a>
-<a href="#1050" id="1050">1050</a>
-<a href="#1051" id="1051">1051</a>
-<a href="#1052" id="1052">1052</a>
-<a href="#1053" id="1053">1053</a>
-<a href="#1054" id="1054">1054</a>
-<a href="#1055" id="1055">1055</a>
-<a href="#1056" id="1056">1056</a>
-<a href="#1057" id="1057">1057</a>
-<a href="#1058" id="1058">1058</a>
-<a href="#1059" id="1059">1059</a>
-<a href="#1060" id="1060">1060</a>
-<a href="#1061" id="1061">1061</a>
-<a href="#1062" id="1062">1062</a>
-<a href="#1063" id="1063">1063</a>
-<a href="#1064" id="1064">1064</a>
-<a href="#1065" id="1065">1065</a>
-<a href="#1066" id="1066">1066</a>
-<a href="#1067" id="1067">1067</a>
-<a href="#1068" id="1068">1068</a>
-<a href="#1069" id="1069">1069</a>
-<a href="#1070" id="1070">1070</a>
-<a href="#1071" id="1071">1071</a>
-<a href="#1072" id="1072">1072</a>
-<a href="#1073" id="1073">1073</a>
-<a href="#1074" id="1074">1074</a>
-<a href="#1075" id="1075">1075</a>
-<a href="#1076" id="1076">1076</a>
-<a href="#1077" id="1077">1077</a>
-<a href="#1078" id="1078">1078</a>
-<a href="#1079" id="1079">1079</a>
-<a href="#1080" id="1080">1080</a>
-<a href="#1081" id="1081">1081</a>
-<a href="#1082" id="1082">1082</a>
-<a href="#1083" id="1083">1083</a>
-<a href="#1084" id="1084">1084</a>
-<a href="#1085" id="1085">1085</a>
-<a href="#1086" id="1086">1086</a>
-<a href="#1087" id="1087">1087</a>
-<a href="#1088" id="1088">1088</a>
-<a href="#1089" id="1089">1089</a>
-<a href="#1090" id="1090">1090</a>
-<a href="#1091" id="1091">1091</a>
-<a href="#1092" id="1092">1092</a>
-<a href="#1093" id="1093">1093</a>
-<a href="#1094" id="1094">1094</a>
-<a href="#1095" id="1095">1095</a>
-<a href="#1096" id="1096">1096</a>
-<a href="#1097" id="1097">1097</a>
-<a href="#1098" id="1098">1098</a>
-<a href="#1099" id="1099">1099</a>
-<a href="#1100" id="1100">1100</a>
-<a href="#1101" id="1101">1101</a>
-<a href="#1102" id="1102">1102</a>
-<a href="#1103" id="1103">1103</a>
-<a href="#1104" id="1104">1104</a>
-<a href="#1105" id="1105">1105</a>
-<a href="#1106" id="1106">1106</a>
-<a href="#1107" id="1107">1107</a>
-<a href="#1108" id="1108">1108</a>
-<a href="#1109" id="1109">1109</a>
-<a href="#1110" id="1110">1110</a>
-<a href="#1111" id="1111">1111</a>
-<a href="#1112" id="1112">1112</a>
-<a href="#1113" id="1113">1113</a>
-<a href="#1114" id="1114">1114</a>
-<a href="#1115" id="1115">1115</a>
-<a href="#1116" id="1116">1116</a>
-<a href="#1117" id="1117">1117</a>
-<a href="#1118" id="1118">1118</a>
-<a href="#1119" id="1119">1119</a>
-<a href="#1120" id="1120">1120</a>
-<a href="#1121" id="1121">1121</a>
-<a href="#1122" id="1122">1122</a>
-<a href="#1123" id="1123">1123</a>
-<a href="#1124" id="1124">1124</a>
-<a href="#1125" id="1125">1125</a>
-<a href="#1126" id="1126">1126</a>
-<a href="#1127" id="1127">1127</a>
-<a href="#1128" id="1128">1128</a>
-<a href="#1129" id="1129">1129</a>
-<a href="#1130" id="1130">1130</a>
-<a href="#1131" id="1131">1131</a>
-<a href="#1132" id="1132">1132</a>
-<a href="#1133" id="1133">1133</a>
-<a href="#1134" id="1134">1134</a>
-<a href="#1135" id="1135">1135</a>
-<a href="#1136" id="1136">1136</a>
-<a href="#1137" id="1137">1137</a>
-<a href="#1138" id="1138">1138</a>
-<a href="#1139" id="1139">1139</a>
-<a href="#1140" id="1140">1140</a>
-<a href="#1141" id="1141">1141</a>
-<a href="#1142" id="1142">1142</a>
-<a href="#1143" id="1143">1143</a>
-<a href="#1144" id="1144">1144</a>
-<a href="#1145" id="1145">1145</a>
-<a href="#1146" id="1146">1146</a>
-<a href="#1147" id="1147">1147</a>
-<a href="#1148" id="1148">1148</a>
-<a href="#1149" id="1149">1149</a>
-<a href="#1150" id="1150">1150</a>
-<a href="#1151" id="1151">1151</a>
-<a href="#1152" id="1152">1152</a>
-<a href="#1153" id="1153">1153</a>
-<a href="#1154" id="1154">1154</a>
-<a href="#1155" id="1155">1155</a>
-<a href="#1156" id="1156">1156</a>
-</pre><pre class="rust"><code><span class="kw">use </span>apache_avro::{<span class="self">self</span>, Schema};
-
-<span class="kw">use </span>bytes::{Buf, Bytes};
+</pre></div><pre class="rust"><code><span class="kw">use </span>bytes::{Bytes, BytesMut};
 
 <span class="kw">use </span>fdb::error::{FdbError, FdbResult};
 <span class="kw">use </span>fdb::future::FdbStreamKeyValue;
@@ -1166,13 +1028,13 @@
 <span class="kw">use </span>fdb::tuple::Tuple;
 <span class="kw">use </span>fdb::{Key, KeySelector, KeyValue, Value};
 
-<span class="kw">use </span>serde::{Deserialize, Serialize};
+<span class="kw">use </span>prost::Message;
 
 <span class="kw">use </span>tokio_stream::StreamExt;
 
 <span class="kw">use </span>std::collections::BTreeMap;
 <span class="kw">use </span>std::convert::{TryFrom, TryInto};
-<span class="kw">use </span>std::sync::{Arc, LazyLock};
+<span class="kw">use </span>std::sync::Arc;
 
 <span class="kw">use </span><span class="kw">crate</span>::cursor::{
     Continuation, Cursor, CursorError, CursorResult, CursorSuccess, LimitManager,
@@ -1183,215 +1045,137 @@
 <span class="kw">use </span><span class="kw">crate</span>::range::{bytes_endpoint, KeyRange};
 <span class="kw">use </span><span class="kw">crate</span>::scan::ScanProperties;
 
-<span class="doccomment">/// Simple schema registry that maps KeyValue Continuation writer
-/// schema version to the corresponding Avro [`Schema`].
-</span><span class="kw">static </span>KEYVALUE_CONTINUATION_SCHEMA_REGISTRY: LazyLock&lt;BTreeMap&lt;usize, Schema&gt;&gt; =
-    LazyLock::new(|| {
-        <span class="kw">let </span><span class="kw-2">mut </span>schema_registry = BTreeMap::new();
+<span class="doccomment">/// Protobuf types.
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>pb {
+    <span class="kw">use </span>fdb::error::{FdbError, FdbResult};
 
-        <span class="comment">// Safety: Safe to unwrap here because we have unit tests that
-        //          checks that the avsc files are well formed. See
-        //          `keyvalue_continuation_schema_registry::schema_v0_keyvalue_continuation`.
-        </span><span class="kw">let </span>schema_v0_keyvalue_continuation = Schema::parse_str(<span class="macro">include_str!</span>(<span class="macro">concat!</span>(
-            <span class="string">&quot;../../avro/Continuation/KeyValueContinuation/&quot;</span>,
-            <span class="string">&quot;v0/avsc/KeyValueContinuation.avsc&quot;
-        </span>)))
-        .unwrap();
+    <span class="kw">use </span>std::convert::TryFrom;
 
-        schema_registry.insert(<span class="number">0</span>, schema_v0_keyvalue_continuation);
+    <span class="kw">use </span><span class="kw">crate</span>::error::CURSOR_INVALID_CONTINUATION;
 
-        schema_registry
-    });
+    <span class="doccomment">/// Protobuf generated types renamed to prepend `Proto` and append
+    /// version (and add `Enum` suffix).
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use </span>fdb_rl_proto::cursor::v1::key_value_continuation::{
+        BeginMarker <span class="kw">as </span>ProtoBeginMarkerV1, EndMarker <span class="kw">as </span>ProtoEndMarkerV1,
+        KeyMarker <span class="kw">as </span>ProtoKeyMarkerV1, KeyValueContinuation <span class="kw">as </span>ProtoKeyValueContinuationEnumV1,
+    };
 
-<span class="doccomment">/// Rust type that corresponds to `v0` of Avro `KeyValueContinuation`.
-///
-/// It serialized and deserialized to a
-/// [`KeyValueContinuationInternal`].
-///
-/// The opaque continuation that is returned to the client is a FDB
-/// tuple `(0, Avro serialized bytes of KeyValueContinuationV0,)`. `0`
-/// is the writer schema version.
-///
-/// Invariant checking happens in the following methods.
-///
-/// 1. `&lt;Bytes as
-/// TryFrom&lt;KeyValueContinuationV0&gt;&gt;::try_from(keyvalue_continuation_v0:
-/// KeyValueContinuationV0) -&gt; FdbResult&lt;Bytes&gt;)`
-///
-///    In this method we ensure that we do not generate an invalid
-///    bytes by mistake.
-///
-/// 1. `&lt;KeyValueContinuationInternal as
-/// TryFrom&lt;KeyValueContinuationV0&gt;&gt;::try_from(keyvalue_continuation_v0:
-/// KeyValueContinuationV0) -&gt; FdbResult&lt;KeyValueContinuationInternal&gt;`
-///
-///    `KeyValueContinuationV0` type has invariants which cannot be
-///    captured by Avro. So, in the event we receive a value that Avro
-///    considered to be valid, before converting it into
-///    `KeyValueContinuationInternal` type, we check to ensure that
-///    additional contraints of `KeyValueContinuationV0` type is
-///    satisfied.
-///
-/// ### Note
-///
-/// There is no method with the signature `&lt;KeyValueContinuationV0 as
-/// TryFrom&lt;Bytes&gt;::try_from(bytes: Bytes) -&gt;
-/// FdbResult&lt;KeyValueContinuationV0&gt;`. We **do not** convert from a
-/// value of `Bytes` directly to a value of `KeyValueContinuationV0`.
-///
-/// Instead, we have the method `&lt;KeyValueContinuationInternal as
-/// TryFrom&lt;Bytes&gt;::try_from(continuation: Bytes) -&gt;
-/// FdbResult&lt;KeyValueContinuationInternal&gt;`. In this method we do
-/// Avro specific backwards and forwards compatibility checks and
-/// convertions prior to returning a value of
-/// `KeyValueContinuationInternal` type.
-</span><span class="attr">#[derive(Debug, PartialEq, Deserialize, Serialize)]
-</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>KeyValueContinuationV0 {
-    <span class="doccomment">/// [`Key`] bytes. Valid only when `continuation_type` is `1`.
-    </span><span class="attr">#[serde(with = <span class="string">&quot;serde_bytes&quot;</span>)]
-    </span>continuation: <span class="prelude-ty">Option</span>&lt;Vec&lt;u8&gt;&gt;,
+    <span class="doccomment">/// Protobuf generated types renamed to append version.
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use </span>fdb_rl_proto::cursor::v1::KeyValueContinuation <span class="kw">as </span>ProtoKeyValueContinuationV1;
 
-    <span class="doccomment">/// `continuation_type` is an enum represented using an `i32`.
-    ///
-    /// ```
-    /// |-------------------+-------------------------------------------|
-    /// | continuation_type | value                                     |
-    /// |-------------------+-------------------------------------------|
-    /// |                 0 | unspecified                               |
-    /// |                   | (avro default *but* semantically invalid) |
-    /// |-------------------+-------------------------------------------|
-    /// |                 1 | continuation                              |
-    /// |-------------------+-------------------------------------------|
-    /// |                 2 | begin marker                              |
-    /// |-------------------+-------------------------------------------|
-    /// |                 3 | end marker                                |
-    /// |-------------------+-------------------------------------------|
-    /// ```
-    </span>continuation_type: i32,
-}
+    <span class="doccomment">/// Protobuf message `fdb_rl.cursor.v1.KeyValueContinuation`
+    /// contains a `Required` field. So, we need to define this type.
+    </span><span class="attr">#[derive(Clone, Debug, PartialEq)]
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>KeyValueContinuationInternalV1 {
+        <span class="kw">pub</span>(<span class="kw">crate</span>) key_value_continuation: ProtoKeyValueContinuationEnumV1,
+    }
 
-<span class="kw">impl </span>KeyValueContinuationV0 {
-    <span class="doccomment">/// Create a continuation from a [`Key`].
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>continuation(key: Key) -&gt; KeyValueContinuationV0 {
-        KeyValueContinuationV0 {
-            continuation: <span class="prelude-val">Some</span>((Bytes::from(key)).into()),
-            continuation_type: <span class="number">1</span>,
+    <span class="kw">impl </span>TryFrom&lt;ProtoKeyValueContinuationV1&gt; <span class="kw">for </span>KeyValueContinuationInternalV1 {
+        <span class="kw">type </span>Error = FdbError;
+
+        <span class="kw">fn </span>try_from(
+            keyvalue_continuation_v1: ProtoKeyValueContinuationV1,
+        ) -&gt; FdbResult&lt;KeyValueContinuationInternalV1&gt; {
+            keyvalue_continuation_v1
+                .key_value_continuation
+                .ok_or_else(|| FdbError::new(CURSOR_INVALID_CONTINUATION))
+                .map(
+                    |keyvalue_continuation_enum_v1| KeyValueContinuationInternalV1 {
+                        key_value_continuation: keyvalue_continuation_enum_v1,
+                    },
+                )
         }
     }
 
-    <span class="doccomment">/// Create a begin marker continuation.
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>begin_marker() -&gt; KeyValueContinuationV0 {
-        KeyValueContinuationV0 {
-            continuation: <span class="prelude-val">None</span>,
-            continuation_type: <span class="number">2</span>,
-        }
-    }
-
-    <span class="doccomment">/// Create a end marker continuation.
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>end_marker() -&gt; KeyValueContinuationV0 {
-        KeyValueContinuationV0 {
-            continuation: <span class="prelude-val">None</span>,
-            continuation_type: <span class="number">3</span>,
-        }
-    }
-}
-
-<span class="kw">impl </span>From&lt;KeyValueContinuationInternal&gt; <span class="kw">for </span>KeyValueContinuationV0 {
-    <span class="kw">fn </span>from(
-        keyvalue_continuation_internal: KeyValueContinuationInternal,
-    ) -&gt; KeyValueContinuationV0 {
-        <span class="kw">match </span>keyvalue_continuation_internal {
-            KeyValueContinuationInternal::BeginMarker =&gt; KeyValueContinuationV0::begin_marker(),
-            KeyValueContinuationInternal::Continuation(key) =&gt; {
-                KeyValueContinuationV0::continuation(key)
-            }
-            KeyValueContinuationInternal::EndMarker =&gt; KeyValueContinuationV0::end_marker(),
-        }
-    }
-}
-
-<span class="kw">impl </span>TryFrom&lt;KeyValueContinuationV0&gt; <span class="kw">for </span>Bytes {
-    <span class="kw">type </span>Error = FdbError;
-
-    <span class="kw">fn </span>try_from(keyvalue_continuation_v0: KeyValueContinuationV0) -&gt; FdbResult&lt;Bytes&gt; {
-        <span class="comment">// Check for invalid `KeyValueContinuationV0`.
-        </span>{
-            <span class="kw">if </span>keyvalue_continuation_v0.continuation_type &lt;= <span class="number">0
-                </span>|| keyvalue_continuation_v0.continuation_type &gt; <span class="number">3
-            </span>{
-                <span class="kw">return </span><span class="prelude-val">Err</span>(FdbError::new(CURSOR_INVALID_CONTINUATION));
-            }
-
-            <span class="kw">if </span>keyvalue_continuation_v0.continuation_type == <span class="number">1
-                </span>&amp;&amp; keyvalue_continuation_v0.continuation.is_none()
-            {
-                <span class="kw">return </span><span class="prelude-val">Err</span>(FdbError::new(CURSOR_INVALID_CONTINUATION));
+    <span class="kw">impl </span>From&lt;KeyValueContinuationInternalV1&gt; <span class="kw">for </span>ProtoKeyValueContinuationV1 {
+        <span class="kw">fn </span>from(
+            keyvalue_continuation_internal_v1: KeyValueContinuationInternalV1,
+        ) -&gt; ProtoKeyValueContinuationV1 {
+            ProtoKeyValueContinuationV1 {
+                key_value_continuation: <span class="prelude-val">Some</span>(
+                    keyvalue_continuation_internal_v1.key_value_continuation,
+                ),
             }
         }
-
-        <span class="kw">let </span>writers_schema_ref = KEYVALUE_CONTINUATION_SCHEMA_REGISTRY
-            .get(<span class="kw-2">&amp;</span><span class="number">0</span>)
-            .ok_or_else(|| FdbError::new(CURSOR_INVALID_CONTINUATION))<span class="question-mark">?</span>;
-
-        <span class="comment">// (version, bytes)
-        </span><span class="kw">let </span>continuation_tup: (i64, Bytes) = (
-            <span class="number">0</span>,
-            Bytes::from(
-                apache_avro::to_value(keyvalue_continuation_v0)
-                    .and_then(|x| apache_avro::to_avro_datum(writers_schema_ref, x))
-                    .map_err(|<span class="kw">_</span>| FdbError::new(CURSOR_INVALID_CONTINUATION))<span class="question-mark">?</span>,
-            ),
-        );
-
-        <span class="kw">let </span>continuation_bytes = {
-            <span class="kw">let </span><span class="kw-2">mut </span>tup = Tuple::new();
-
-            <span class="comment">// version
-            </span>tup.push_back::&lt;i64&gt;(continuation_tup.<span class="number">0</span>);
-
-            tup.push_back::&lt;Bytes&gt;(continuation_tup.<span class="number">1</span>);
-
-            tup
-        }
-        .pack();
-
-        <span class="prelude-val">Ok</span>(continuation_bytes)
     }
 }
 
 <span class="doccomment">/// Internal representation of key-value continuation.
+///
+/// We define this type so we can implement [`Continuation`] trait on
+/// it. In addition it has `TryFrom&lt;Bytes&gt; for
+/// KeyValueContinuationInternal` and
+/// `TryFrom&lt;KeyValueContinuationInternal&gt; for Bytes` traits
+/// implemented so we can convert between `Bytes` and
+/// `KeyValueContinuationInternal`.
 </span><span class="attr">#[derive(Debug, Clone, PartialEq)]
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">enum </span>KeyValueContinuationInternal {
-    <span class="doccomment">/// Marker indicating the beginning
-    </span>BeginMarker,
-    <span class="doccomment">/// Continuation
-    </span>Continuation(Key),
-    <span class="doccomment">/// Marker indicating the end
-    </span>EndMarker,
+    V1(pb::KeyValueContinuationInternalV1),
 }
 
-<span class="kw">impl </span>Continuation <span class="kw">for </span>KeyValueContinuationInternal {
-    <span class="kw">fn </span>to_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; FdbResult&lt;Bytes&gt; {
-        <span class="comment">// Return v0 version of `KeyValueContinuation`.
-        </span><span class="kw">match </span><span class="self">self </span>{
-            KeyValueContinuationInternal::BeginMarker =&gt; {
-                KeyValueContinuationV0::begin_marker().try_into()
-            }
-            KeyValueContinuationInternal::Continuation(key) =&gt; {
-                KeyValueContinuationV0::continuation(key.clone()).try_into()
-            }
-            KeyValueContinuationInternal::EndMarker =&gt; {
-                KeyValueContinuationV0::end_marker().try_into()
+<span class="kw">impl </span>KeyValueContinuationInternal {
+    <span class="doccomment">/// Create a `V1` begin marker value.
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new_v1_begin_marker() -&gt; KeyValueContinuationInternal {
+        KeyValueContinuationInternal::V1(pb::KeyValueContinuationInternalV1 {
+            key_value_continuation: pb::ProtoKeyValueContinuationEnumV1::BeginMarker(
+                pb::ProtoBeginMarkerV1 {},
+            ),
+        })
+    }
+
+    <span class="doccomment">/// Create a `V1` key marker value.
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new_v1_key_marker(key_marker: Bytes) -&gt; KeyValueContinuationInternal {
+        KeyValueContinuationInternal::V1(pb::KeyValueContinuationInternalV1 {
+            key_value_continuation: pb::ProtoKeyValueContinuationEnumV1::KeyMarker(
+                pb::ProtoKeyMarkerV1 { key_marker },
+            ),
+        })
+    }
+
+    <span class="doccomment">/// Create a `V1` end marker value.
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new_v1_end_marker() -&gt; KeyValueContinuationInternal {
+        KeyValueContinuationInternal::V1(pb::KeyValueContinuationInternalV1 {
+            key_value_continuation: pb::ProtoKeyValueContinuationEnumV1::EndMarker(
+                pb::ProtoEndMarkerV1 {},
+            ),
+        })
+    }
+}
+
+<span class="kw">impl </span>TryFrom&lt;KeyValueContinuationInternal&gt; <span class="kw">for </span>Bytes {
+    <span class="kw">type </span>Error = FdbError;
+
+    <span class="kw">fn </span>try_from(keyvalue_continuation_internal: KeyValueContinuationInternal) -&gt; FdbResult&lt;Bytes&gt; {
+        <span class="kw">match </span>keyvalue_continuation_internal {
+            KeyValueContinuationInternal::V1(keyvalue_continuation_internal_v1) =&gt; {
+                <span class="kw">let </span>keyvalue_continuation_v1 =
+                    pb::ProtoKeyValueContinuationV1::from(keyvalue_continuation_internal_v1);
+
+                <span class="kw">let </span><span class="kw-2">mut </span>buf = BytesMut::with_capacity(keyvalue_continuation_v1.encoded_len());
+
+                keyvalue_continuation_v1
+                    .encode(<span class="kw-2">&amp;mut </span>buf)
+                    .map_err(|<span class="kw">_</span>| FdbError::new(CURSOR_INVALID_CONTINUATION))
+                    .map(|<span class="kw">_</span>| {
+                        <span class="comment">// (version, bytes). Version is `1`.
+                        </span><span class="kw">let </span>continuation_tup: (i64, Bytes) = (<span class="number">1</span>, Bytes::from(buf));
+
+                        <span class="kw">let </span>continuation_bytes = {
+                            <span class="kw">let </span><span class="kw-2">mut </span>tup = Tuple::new();
+
+                            <span class="comment">// version
+                            </span>tup.push_back::&lt;i64&gt;(continuation_tup.<span class="number">0</span>);
+
+                            tup.push_back::&lt;Bytes&gt;(continuation_tup.<span class="number">1</span>);
+
+                            tup
+                        }
+                        .pack();
+
+                        Bytes::from(continuation_bytes)
+                    })
             }
         }
-    }
-
-    <span class="kw">fn </span>is_begin_marker(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-        <span class="macro">matches!</span>(<span class="self">self</span>, KeyValueContinuationInternal::BeginMarker)
-    }
-
-    <span class="kw">fn </span>is_end_marker(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-        <span class="macro">matches!</span>(<span class="self">self</span>, KeyValueContinuationInternal::EndMarker)
     }
 }
 
@@ -1413,51 +1197,47 @@
             })
             .map_err(|<span class="kw">_</span>| FdbError::new(CURSOR_INVALID_CONTINUATION))<span class="question-mark">?</span>;
 
-        <span class="comment">// Currently we have only one version. So, we don&#39;t have to
-        // worry about schema compatibility. In the event we have to
-        // support multiple version of avro `KeyValueContinuation`,
-        // then we will need to update the code here.
-        </span><span class="kw">let </span>writers_schema_ref = KEYVALUE_CONTINUATION_SCHEMA_REGISTRY
-            .get(<span class="kw-2">&amp;</span>version)
-            .ok_or_else(|| FdbError::new(CURSOR_INVALID_CONTINUATION))<span class="question-mark">?</span>;
+        <span class="comment">// Currently there is only one version.
+        </span><span class="kw">if </span>version == <span class="number">1 </span>{
+            <span class="kw">let </span>keyvalue_continuation_internal_v1 =
+                pb::ProtoKeyValueContinuationV1::decode(continuation)
+                    .map_err(|<span class="kw">_</span>| FdbError::new(CURSOR_INVALID_CONTINUATION))<span class="question-mark">?
+                    </span>.try_into()<span class="question-mark">?</span>;
 
-        <span class="kw">let </span>keyvalue_continuation_v0 =
-            apache_avro::from_avro_datum(writers_schema_ref, <span class="kw-2">&amp;mut </span>continuation.reader(), <span class="prelude-val">None</span>)
-                .and_then(|v| apache_avro::from_value::&lt;KeyValueContinuationV0&gt;(<span class="kw-2">&amp;</span>v))
-                .map_err(|<span class="kw">_</span>| FdbError::new(CURSOR_INVALID_CONTINUATION))<span class="question-mark">?</span>;
-
-        keyvalue_continuation_v0.try_into()
+            <span class="prelude-val">Ok</span>(KeyValueContinuationInternal::V1(
+                keyvalue_continuation_internal_v1,
+            ))
+        } <span class="kw">else </span>{
+            <span class="prelude-val">Err</span>(FdbError::new(CURSOR_INVALID_CONTINUATION))
+        }
     }
 }
 
-<span class="kw">impl </span>TryFrom&lt;KeyValueContinuationV0&gt; <span class="kw">for </span>KeyValueContinuationInternal {
-    <span class="kw">type </span>Error = FdbError;
+<span class="kw">impl </span>Continuation <span class="kw">for </span>KeyValueContinuationInternal {
+    <span class="kw">fn </span>to_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; FdbResult&lt;Bytes&gt; {
+        <span class="self">self</span>.clone().try_into()
+    }
 
-    <span class="kw">fn </span>try_from(
-        keyvalue_continuation_v0: KeyValueContinuationV0,
-    ) -&gt; FdbResult&lt;KeyValueContinuationInternal&gt; {
-        <span class="kw">match </span>keyvalue_continuation_v0.continuation {
-            <span class="prelude-val">Some</span>(continuation) =&gt; {
-                <span class="comment">// It *must* be a continuation containing a key
-                </span><span class="kw">if </span>keyvalue_continuation_v0.continuation_type == <span class="number">1 </span>{
-                    <span class="prelude-val">Ok</span>(KeyValueContinuationInternal::Continuation(Key::from(
-                        Bytes::from(continuation),
-                    )))
-                } <span class="kw">else </span>{
-                    <span class="prelude-val">Err</span>(FdbError::new(CURSOR_INVALID_CONTINUATION))
-                }
-            }
-            <span class="prelude-val">None </span>=&gt; {
-                <span class="comment">// It *must* be either a begin marker or end marker
-                </span><span class="kw">if </span>keyvalue_continuation_v0.continuation_type == <span class="number">2 </span>{
-                    <span class="prelude-val">Ok</span>(KeyValueContinuationInternal::BeginMarker)
-                } <span class="kw">else if </span>keyvalue_continuation_v0.continuation_type == <span class="number">3 </span>{
-                    <span class="prelude-val">Ok</span>(KeyValueContinuationInternal::EndMarker)
-                } <span class="kw">else </span>{
-                    <span class="prelude-val">Err</span>(FdbError::new(CURSOR_INVALID_CONTINUATION))
-                }
-            }
-        }
+    <span class="kw">fn </span>is_begin_marker(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="macro">matches!</span>(
+            <span class="self">self</span>,
+            KeyValueContinuationInternal::V1(pb::KeyValueContinuationInternalV1 {
+                key_value_continuation: pb::ProtoKeyValueContinuationEnumV1::BeginMarker(
+                    pb::ProtoBeginMarkerV1 {}
+                )
+            })
+        )
+    }
+
+    <span class="kw">fn </span>is_end_marker(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="macro">matches!</span>(
+            <span class="self">self</span>,
+            KeyValueContinuationInternal::V1(pb::KeyValueContinuationInternalV1 {
+                key_value_continuation: pb::ProtoKeyValueContinuationEnumV1::EndMarker(
+                    pb::ProtoEndMarkerV1 {}
+                )
+            })
+        )
     }
 }
 
@@ -1488,8 +1268,18 @@
 ///
 /// Methods [`KeyValueCursorBuilder::subspace`] and
 /// [`KeyValueCursorBuilder::continuation`] can be used when needed,
-/// and are not to build a value of type [`KeyValueCursor`].
+/// and are not needed to build a value of type [`KeyValueCursor`].
+///
+/// **Note:** Please make sure you read about the limitation mentioned
+/// in the documentation for
+/// [`KeyValueCursorBuilder::scan_properties`]. As a heads-up, setting
+/// in-band limit is unsafe only for [`KeyValueCursor`]. This
+/// limitation does not exist for other cursors because it does not
+/// directly use [`RangeOptions`] API.
+///
+/// [`RangeOptions`]: fdb::range::RangeOptions
 </span><span class="comment">//
+//
 // It is *not* possible for `KeyValueCursorBuilder` to safely derive
 // `ParitialEq`. This is because, `ScanProperties` type contains a
 // `ScanLimiter`. A `ScanLimiter` type can optionally contain a
@@ -1549,8 +1339,17 @@
     /// [`ScanProperties`]) to set a limit of `0`. *Infact* if you set
     /// the limit to `0`, you are indicating that you want [unlimited]
     /// rows, which almost always is not the behavior that you
-    /// want. The correct way to handle this is not to create the
-    /// [`KeyValueCursor`], when you want a limit of `0`.
+    /// want.
+    ///
+    /// The correct way to handle this is not to create the
+    /// [`KeyValueCursor`], when you want a limit of `0`. If you
+    /// provide a limit of `0` or less, the behavior that **you will**
+    /// actually get is that you will be requesting [`i32::MAX`] key
+    /// values.
+    ///
+    /// Since [`KeyValueCursor`] is a low-level API we expect the
+    /// users of this API to be aware of this limitation if you are
+    /// using this API.
     ///
     /// If you intend to set a continuation, then you *must* use the
     /// same [`RangeOptions`] (within [`ScanProperties`]) used to
@@ -1668,7 +1467,7 @@
                     fdb_stream_keyvalue,
                     limit_manager,
                     values_limit,
-                    KeyValueContinuationInternal::BeginMarker,
+                    KeyValueContinuationInternal::new_v1_begin_marker(),
                 )
             }
         })
@@ -1691,7 +1490,10 @@
     ) -&gt; FdbResult&lt;Range&gt; {
         <span class="kw">match </span>maybe_continuation_internal {
             <span class="prelude-val">Some</span>(continuation_internal) =&gt; <span class="kw">match </span>continuation_internal {
-                KeyValueContinuationInternal::BeginMarker =&gt; {
+                KeyValueContinuationInternal::V1(pb::KeyValueContinuationInternalV1 {
+                    key_value_continuation:
+                        pb::ProtoKeyValueContinuationEnumV1::BeginMarker(pb::ProtoBeginMarkerV1 {}),
+                }) =&gt; {
                     <span class="comment">// A begin marker is only returned in the event
                     // there was an out-of-band limit (such as a
                     // timeout) even before we could attempt to read
@@ -1705,15 +1507,21 @@
                         reverse,
                     )
                 }
-                KeyValueContinuationInternal::Continuation(key) =&gt; {
-                    bytes_endpoint::build_range_continuation(
-                        maybe_subspace,
-                        key_range,
-                        <span class="prelude-val">Some</span>(key.into()),
-                        reverse,
-                    )
-                }
-                KeyValueContinuationInternal::EndMarker =&gt; {
+                KeyValueContinuationInternal::V1(pb::KeyValueContinuationInternalV1 {
+                    key_value_continuation:
+                        pb::ProtoKeyValueContinuationEnumV1::KeyMarker(pb::ProtoKeyMarkerV1 {
+                            key_marker,
+                        }),
+                }) =&gt; bytes_endpoint::build_range_continuation(
+                    maybe_subspace,
+                    key_range,
+                    <span class="prelude-val">Some</span>(key_marker),
+                    reverse,
+                ),
+                KeyValueContinuationInternal::V1(pb::KeyValueContinuationInternalV1 {
+                    key_value_continuation:
+                        pb::ProtoKeyValueContinuationEnumV1::EndMarker(pb::ProtoEndMarkerV1 {}),
+                }) =&gt; {
                     <span class="comment">// A end marker means that we have exhausted the
                     // range, but the client is still trying to read
                     // it. In this case, we need to build an empty
@@ -1833,7 +1641,13 @@
                         // error.
                         </span><span class="self">self</span>.error = <span class="prelude-val">Some</span>(cursor_error.clone());
                         <span class="prelude-val">Err</span>(cursor_error)
-                    } <span class="kw">else if let </span>KeyValueContinuationInternal::EndMarker = <span class="self">self</span>.continuation {
+                    } <span class="kw">else if let </span>KeyValueContinuationInternal::V1(
+                        pb::KeyValueContinuationInternalV1 {
+                            key_value_continuation:
+                                pb::ProtoKeyValueContinuationEnumV1::EndMarker(pb::ProtoEndMarkerV1 {}),
+                        },
+                    ) = <span class="self">self</span>.continuation
+                    {
                         <span class="comment">// KeyValueCursor was built using a
                         // end marker continuation. If so, set
                         // the error state and just return
@@ -1844,7 +1658,7 @@
                             // use `CursorResultContinuation::new`
                             // here. Therefore use `Arc::new`.
                             </span><span class="kw">let </span>cursor_result_continuation =
-                                Arc::new(KeyValueContinuationInternal::EndMarker);
+                                Arc::new(KeyValueContinuationInternal::new_v1_end_marker());
                             CursorError::NoNextReason(NoNextReason::SourceExhausted(
                                 cursor_result_continuation,
                             ))
@@ -1865,7 +1679,7 @@
                                     // `CursorResultContinuation::new`
                                     // here. Therefore use `Arc::new`.
                                     </span><span class="kw">let </span>cursor_result_continuation =
-                                        Arc::new(KeyValueContinuationInternal::EndMarker);
+                                        Arc::new(KeyValueContinuationInternal::new_v1_end_marker());
                                     CursorError::NoNextReason(NoNextReason::SourceExhausted(
                                         cursor_result_continuation,
                                     ))
@@ -1899,7 +1713,9 @@
 
                                         <span class="comment">// Update continuation
                                         </span><span class="self">self</span>.continuation =
-                                            KeyValueContinuationInternal::Continuation(key.clone());
+                                            KeyValueContinuationInternal::new_v1_key_marker(
+                                                Bytes::from(key.clone()),
+                                            );
 
                                         <span class="kw">let </span>keyvalue = KeyValue::new(key, value_bytes);
 
@@ -1966,85 +1782,7 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
-    <span class="kw">mod </span>keyvalue_continuation_schema_registry {
-        <span class="kw">use </span>apache_avro::Schema;
-
-        <span class="attr">#[test]
-        </span><span class="kw">fn </span>schema_v0_keyvalue_continuation() {
-            <span class="kw">let </span>schema_v0_keyvalue_continuation = Schema::parse_str(<span class="macro">include_str!</span>(<span class="macro">concat!</span>(
-                <span class="string">&quot;../../avro/Continuation/KeyValueContinuation/&quot;</span>,
-                <span class="string">&quot;v0/avsc/KeyValueContinuation.avsc&quot;
-            </span>)));
-
-            <span class="macro">assert!</span>(schema_v0_keyvalue_continuation.is_ok());
-        }
-    }
-
-    <span class="kw">mod </span>keyvalue_continuation_v0 {
-        <span class="kw">use </span>bytes::Bytes;
-        <span class="kw">use </span>fdb::error::FdbError;
-
-        <span class="kw">use </span>std::convert::TryFrom;
-
-        <span class="kw">use </span><span class="kw">crate</span>::error::CURSOR_INVALID_CONTINUATION;
-
-        <span class="kw">use </span><span class="kw">super</span>::<span class="kw">super</span>::{KeyValueContinuationInternal, KeyValueContinuationV0};
-
-        <span class="attr">#[test]
-        </span><span class="kw">fn </span>from_keyvalue_continuation_internal_from() {
-            <span class="macro">assert_eq!</span>(
-                KeyValueContinuationV0::from(KeyValueContinuationInternal::BeginMarker),
-                KeyValueContinuationV0::begin_marker()
-            );
-            <span class="macro">assert_eq!</span>(
-                KeyValueContinuationV0::from(KeyValueContinuationInternal::Continuation(
-                    Bytes::from_static(<span class="string">b&quot;hello_world&quot;</span>).into()
-                )),
-                KeyValueContinuationV0::continuation(Bytes::from_static(<span class="string">b&quot;hello_world&quot;</span>).into())
-            );
-            <span class="macro">assert_eq!</span>(
-                KeyValueContinuationV0::from(KeyValueContinuationInternal::EndMarker),
-                KeyValueContinuationV0::end_marker()
-            );
-        }
-
-        <span class="attr">#[test]
-        </span><span class="kw">fn </span>try_from_keyvalue_continuation_v0_try_from() {
-            <span class="kw">let </span>keyvalue_continuation_v0 = KeyValueContinuationV0 {
-                continuation: <span class="prelude-val">None</span>,
-                continuation_type: <span class="number">0</span>,
-            };
-            <span class="macro">assert_eq!</span>(
-                <span class="prelude-val">Err</span>(FdbError::new(CURSOR_INVALID_CONTINUATION)),
-                Bytes::try_from(keyvalue_continuation_v0)
-            );
-
-            <span class="kw">let </span>keyvalue_continuation_v0 = KeyValueContinuationV0 {
-                continuation: <span class="prelude-val">None</span>,
-                continuation_type: <span class="number">1</span>,
-            };
-            <span class="macro">assert_eq!</span>(
-                <span class="prelude-val">Err</span>(FdbError::new(CURSOR_INVALID_CONTINUATION)),
-                Bytes::try_from(keyvalue_continuation_v0)
-            );
-
-            <span class="kw">let </span>keyvalue_continuation_v0 =
-                KeyValueContinuationV0::continuation(Bytes::from_static(<span class="string">b&quot;hello_world&quot;</span>).into());
-            <span class="macro">assert_eq!</span>(
-                KeyValueContinuationInternal::Continuation(
-                    Bytes::from_static(<span class="string">b&quot;hello_world&quot;</span>).into()
-                ),
-                <span class="comment">// Convert to `KeyValueContinuationInternal`.
-                </span>KeyValueContinuationInternal::try_from(
-                    <span class="comment">// Convert to `Bytes`.
-                    </span>Bytes::try_from(keyvalue_continuation_v0).unwrap()
-                )
-                .unwrap()
-            );
-        }
-    }
-
-    <span class="kw">mod </span>keyvalue_continuation_internal {
+    <span class="kw">mod </span>key_value_continuation_internal {
         <span class="kw">use </span>bytes::Bytes;
 
         <span class="kw">use </span>fdb::error::FdbError;
@@ -2055,43 +1793,41 @@
         <span class="kw">use </span><span class="kw">crate</span>::cursor::Continuation;
         <span class="kw">use </span><span class="kw">crate</span>::error::CURSOR_INVALID_CONTINUATION;
 
-        <span class="kw">use </span><span class="kw">super</span>::<span class="kw">super</span>::{KeyValueContinuationInternal, KeyValueContinuationV0};
+        <span class="kw">use </span><span class="kw">super</span>::<span class="kw">super</span>::KeyValueContinuationInternal;
 
         <span class="attr">#[test]
         </span><span class="kw">fn </span>continuation_to_bytes() {
             <span class="macro">assert_eq!</span>(
-                KeyValueContinuationInternal::BeginMarker,
+                KeyValueContinuationInternal::new_v1_begin_marker(),
                 KeyValueContinuationInternal::try_from(
                     KeyValueContinuationInternal::to_bytes(
-                        <span class="kw-2">&amp;</span>KeyValueContinuationInternal::BeginMarker
+                        <span class="kw-2">&amp;</span>KeyValueContinuationInternal::new_v1_begin_marker()
                     )
-                    .unwrap()
+                    .unwrap(),
                 )
                 .unwrap()
             );
 
             <span class="macro">assert_eq!</span>(
-                KeyValueContinuationInternal::Continuation(
-                    Bytes::from_static(<span class="string">b&quot;hello_world&quot;</span>).into()
-                ),
+                KeyValueContinuationInternal::new_v1_key_marker(Bytes::from_static(<span class="string">b&quot;hello_world&quot;</span>)),
                 KeyValueContinuationInternal::try_from(
                     KeyValueContinuationInternal::to_bytes(
-                        <span class="kw-2">&amp;</span>KeyValueContinuationInternal::Continuation(
-                            Bytes::from_static(<span class="string">b&quot;hello_world&quot;</span>).into()
-                        )
+                        <span class="kw-2">&amp;</span>KeyValueContinuationInternal::new_v1_key_marker(Bytes::from_static(
+                            <span class="string">b&quot;hello_world&quot;
+                        </span>))
                     )
-                    .unwrap()
+                    .unwrap(),
                 )
                 .unwrap()
             );
 
             <span class="macro">assert_eq!</span>(
-                KeyValueContinuationInternal::EndMarker,
+                KeyValueContinuationInternal::new_v1_end_marker(),
                 KeyValueContinuationInternal::try_from(
                     KeyValueContinuationInternal::to_bytes(
-                        <span class="kw-2">&amp;</span>KeyValueContinuationInternal::EndMarker
+                        <span class="kw-2">&amp;</span>KeyValueContinuationInternal::new_v1_end_marker()
                     )
-                    .unwrap()
+                    .unwrap(),
                 )
                 .unwrap()
             );
@@ -2100,20 +1836,22 @@
         <span class="attr">#[test]
         </span><span class="kw">fn </span>continuation_is_begin_marker() {
             <span class="macro">assert!</span>(KeyValueContinuationInternal::is_begin_marker(
-                <span class="kw-2">&amp;</span>KeyValueContinuationInternal::BeginMarker
+                <span class="kw-2">&amp;</span>KeyValueContinuationInternal::new_v1_begin_marker()
             ));
+
             <span class="macro">assert!</span>(!KeyValueContinuationInternal::is_begin_marker(
-                <span class="kw-2">&amp;</span>KeyValueContinuationInternal::EndMarker
+                <span class="kw-2">&amp;</span>KeyValueContinuationInternal::new_v1_end_marker()
             ));
         }
 
         <span class="attr">#[test]
         </span><span class="kw">fn </span>continuation_is_end_marker() {
-            <span class="macro">assert!</span>(KeyValueContinuationInternal::is_begin_marker(
-                <span class="kw-2">&amp;</span>KeyValueContinuationInternal::BeginMarker
+            <span class="macro">assert!</span>(KeyValueContinuationInternal::is_end_marker(
+                <span class="kw-2">&amp;</span>KeyValueContinuationInternal::new_v1_end_marker()
             ));
-            <span class="macro">assert!</span>(!KeyValueContinuationInternal::is_begin_marker(
-                <span class="kw-2">&amp;</span>KeyValueContinuationInternal::EndMarker
+
+            <span class="macro">assert!</span>(!KeyValueContinuationInternal::is_end_marker(
+                <span class="kw-2">&amp;</span>KeyValueContinuationInternal::new_v1_begin_marker()
             ));
         }
 
@@ -2128,7 +1866,7 @@
 
             {
                 <span class="kw">let </span>continuation_bytes = {
-                    <span class="kw">let </span>continuation_tup: (i8, Bytes) = (<span class="number">0</span>, Bytes::from_static(<span class="string">b&quot;some_garbage&quot;</span>));
+                    <span class="kw">let </span>continuation_tup: (i8, Bytes) = (<span class="number">1</span>, Bytes::from_static(<span class="string">b&quot;some_garbage&quot;</span>));
                     <span class="kw">let </span><span class="kw-2">mut </span>tup = Tuple::new();
 
                     tup.push_back::&lt;i8&gt;(continuation_tup.<span class="number">0</span>);
@@ -2144,10 +1882,12 @@
 
             <span class="comment">// valid case
             </span>{
-                <span class="kw">let </span>keyvalue_continuation_internal = KeyValueContinuationInternal::Continuation(
-                    Bytes::from_static(<span class="string">b&quot;hello_world&quot;</span>).into(),
-                );
-                <span class="kw">let </span>continuation_bytes = keyvalue_continuation_internal.clone().to_bytes().unwrap();
+                <span class="kw">let </span>keyvalue_continuation_internal =
+                    KeyValueContinuationInternal::new_v1_key_marker(Bytes::from_static(
+                        <span class="string">b&quot;hello_world&quot;</span>,
+                    ));
+
+                <span class="kw">let </span>continuation_bytes = keyvalue_continuation_internal.to_bytes().unwrap();
                 <span class="kw">let </span>res =
                     &lt;KeyValueContinuationInternal <span class="kw">as </span>TryFrom&lt;Bytes&gt;&gt;::try_from(continuation_bytes);
                 <span class="macro">assert_eq!</span>(<span class="prelude-val">Ok</span>(keyvalue_continuation_internal), res);
@@ -2155,68 +1895,56 @@
         }
 
         <span class="attr">#[test]
-        </span><span class="kw">fn </span>try_from_keyvalue_continuation_v0_try_from() {
-            {
-                <span class="kw">let </span>keyvalue_continuation_v0 = KeyValueContinuationV0 {
-                    continuation: <span class="prelude-val">None</span>,
-                    continuation_type: i32::MAX,
-                };
-                <span class="kw">let </span>res =
-                    &lt;KeyValueContinuationInternal <span class="kw">as </span>TryFrom&lt;KeyValueContinuationV0&gt;&gt;::try_from(
-                        keyvalue_continuation_v0,
-                    );
-                <span class="macro">assert_eq!</span>(<span class="prelude-val">Err</span>(FdbError::new(CURSOR_INVALID_CONTINUATION)), res);
-            }
-
-            {
-                <span class="kw">let </span>keyvalue_continuation_v0 = KeyValueContinuationV0 {
-                    continuation: <span class="prelude-val">Some</span>(Bytes::from_static(<span class="string">b&quot;hello_world&quot;</span>).into()),
-                    continuation_type: i32::MAX,
-                };
-                <span class="kw">let </span>res =
-                    &lt;KeyValueContinuationInternal <span class="kw">as </span>TryFrom&lt;KeyValueContinuationV0&gt;&gt;::try_from(
-                        keyvalue_continuation_v0,
-                    );
-                <span class="macro">assert_eq!</span>(<span class="prelude-val">Err</span>(FdbError::new(CURSOR_INVALID_CONTINUATION)), res);
-            }
-
-            <span class="comment">// valid cases
+        </span><span class="kw">fn </span>try_from_key_value_continuation_internal_try_from() {
+            <span class="comment">// We do not a have a way to generate Protobuf message
+            // `encode` error. So, we can only test valid cases.
+            //
+            // *Note:*: `to_bytes` and `try_from` uses the same code
+            // path.
             </span>{
-                <span class="kw">let </span>keyvalue_continuation_v0 =
-                    KeyValueContinuationV0::continuation(Bytes::from_static(<span class="string">b&quot;hello_world&quot;</span>).into());
-                <span class="kw">let </span>res =
-                    &lt;KeyValueContinuationInternal <span class="kw">as </span>TryFrom&lt;KeyValueContinuationV0&gt;&gt;::try_from(
-                        keyvalue_continuation_v0,
-                    );
-                <span class="macro">assert_eq!</span>(
-                    <span class="prelude-val">Ok</span>(KeyValueContinuationInternal::Continuation(
-                        Bytes::from_static(<span class="string">b&quot;hello_world&quot;</span>).into()
-                    )),
-                    res
+                <span class="kw">let </span>keyvalue_continuation_internal =
+                    KeyValueContinuationInternal::new_v1_key_marker(Bytes::from_static(
+                        <span class="string">b&quot;hello_world&quot;</span>,
+                    ));
+
+                <span class="kw">let </span>continuation_bytes = keyvalue_continuation_internal.to_bytes();
+
+                <span class="kw">let </span>res = &lt;Bytes <span class="kw">as </span>TryFrom&lt;KeyValueContinuationInternal&gt;&gt;::try_from(
+                    keyvalue_continuation_internal,
                 );
+
+                <span class="macro">assert_eq!</span>(continuation_bytes, res);
             }
 
             {
-                <span class="kw">let </span>keyvalue_continuation_v0 = KeyValueContinuationV0::begin_marker();
-                <span class="kw">let </span>res =
-                    &lt;KeyValueContinuationInternal <span class="kw">as </span>TryFrom&lt;KeyValueContinuationV0&gt;&gt;::try_from(
-                        keyvalue_continuation_v0,
-                    );
-                <span class="macro">assert_eq!</span>(<span class="prelude-val">Ok</span>(KeyValueContinuationInternal::BeginMarker), res);
+                <span class="kw">let </span>keyvalue_continuation_internal =
+                    KeyValueContinuationInternal::new_v1_begin_marker();
+
+                <span class="kw">let </span>continuation_bytes = keyvalue_continuation_internal.to_bytes();
+
+                <span class="kw">let </span>res = &lt;Bytes <span class="kw">as </span>TryFrom&lt;KeyValueContinuationInternal&gt;&gt;::try_from(
+                    keyvalue_continuation_internal,
+                );
+
+                <span class="macro">assert_eq!</span>(continuation_bytes, res);
             }
 
             {
-                <span class="kw">let </span>keyvalue_continuation_v0 = KeyValueContinuationV0::end_marker();
-                <span class="kw">let </span>res =
-                    &lt;KeyValueContinuationInternal <span class="kw">as </span>TryFrom&lt;KeyValueContinuationV0&gt;&gt;::try_from(
-                        keyvalue_continuation_v0,
-                    );
-                <span class="macro">assert_eq!</span>(<span class="prelude-val">Ok</span>(KeyValueContinuationInternal::EndMarker), res);
+                <span class="kw">let </span>keyvalue_continuation_internal =
+                    KeyValueContinuationInternal::new_v1_end_marker();
+
+                <span class="kw">let </span>continuation_bytes = keyvalue_continuation_internal.to_bytes();
+
+                <span class="kw">let </span>res = &lt;Bytes <span class="kw">as </span>TryFrom&lt;KeyValueContinuationInternal&gt;&gt;::try_from(
+                    keyvalue_continuation_internal,
+                );
+
+                <span class="macro">assert_eq!</span>(continuation_bytes, res);
             }
         }
     }
 
-    <span class="kw">mod </span>keyvalue_cursor_builder {
+    <span class="kw">mod </span>key_value_cursor_builder {
         <span class="kw">use </span>bytes::Bytes;
 
         <span class="kw">use </span>fdb::subspace::Subspace;
@@ -2303,12 +2031,11 @@
         }
     }
 
-    <span class="kw">mod </span>keyvalue_cursor {
-        <span class="comment">// There are not unit tests for `KeyValueCursor` as the
-        // primary use of this type is to implement the `Cursor`
-        // trait. There are integration tests that checks the
-        // behaviour of the methods in the `Cursor` trait.
+    <span class="kw">mod </span>key_value_cursor {
+        <span class="comment">// There are no unit tests for `KeyValueCursor` as the primary
+        // use of this type is to implement the `Cursor` trait. There
+        // are integration tests that checks the behaviour of the
+        // methods in the `Cursor` trait.
     </span>}
 }
-</code></pre></div>
-</section></main><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="fdb_rl" data-themes="" data-resource-suffix="" data-rustdoc-version="1.68.0-nightly (5ce39f42b 2023-01-20)" data-search-js="search-98d53477a794af0b.js" data-settings-js="settings-c3c521c753752a1a.js" data-settings-css="settings-ab1d4ae2ec52020e.css" ></div></body></html>
+</code></pre></div></section></main></body></html>

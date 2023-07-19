@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["extended_to_float"],"struct":["ExtendedFloat"]};

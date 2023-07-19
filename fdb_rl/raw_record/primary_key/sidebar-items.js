@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["walk_tuple_schema","walk_tuple_schema_element"],"struct":["PrimaryKeySchemaValidatorVisitor","RawRecordPrimaryKey","RawRecordPrimaryKeySchema"],"trait":["Visitor"]};

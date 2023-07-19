@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["format_err","must_use"],"macro":["concat","format","format_args","stringify"],"mod":["kind"]};

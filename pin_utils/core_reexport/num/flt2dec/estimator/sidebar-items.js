@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["estimate_scaling_factor"]};

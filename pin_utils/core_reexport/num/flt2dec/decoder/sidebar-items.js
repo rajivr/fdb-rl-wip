@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["FullDecoded"],"fn":["decode"],"struct":["Decoded"],"trait":["DecodableFloat"]};

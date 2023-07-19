@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["RAW_RECORD_CURSOR_BUILDER_ERROR","RAW_RECORD_CURSOR_NEXT_ERROR"],"fn":["raw_record_cursor_builder_build","raw_record_from"],"struct":["RawRecord","RawRecordPrimaryKey","RawRecordPrimaryKeySchema"]};

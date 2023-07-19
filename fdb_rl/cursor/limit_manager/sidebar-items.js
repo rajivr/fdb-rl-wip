@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["LimitManagerStoppedReason"],"struct":["LimitManager"]};
