@@ -10,4 +10,4 @@ echo "+---------------------+"
 
 cd ../../fdb-rl || { echo "cd failure"; exit 1; }
 
-cargo doc
+RUSTDOCFLAGS='-Z unstable-options --document-hidden-items' cargo doc --document-private-items

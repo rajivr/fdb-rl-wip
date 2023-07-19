@@ -122,6 +122,7 @@
           llvmPackages.libcxxClang
           openssl
           pkgconfig
+          protobuf3_21
           (rust-bin.nightly."2023-07-18".default.override {
             extensions = [
               "llvm-tools-preview"
@@ -131,6 +132,9 @@
 
         LD_LIBRARY_PATH = "/opt/fdb/client-lib";
         FDB_CLUSTER_FILE = "/home/runner/fdb.cluster";
+
+        PROTOC = "${protobuf3_21}/bin/protoc";
+        PROTOC_INCLUDE = "${protobuf3_21}/include";
 
         # https://github.com/NixOS/nixpkgs/issues/52447#issuecomment-853429315
         BINDGEN_EXTRA_CLANG_ARGS = "-isystem ${llvmPackages.libclang.lib}/lib/clang/${lib.getVersion clang}/include";
