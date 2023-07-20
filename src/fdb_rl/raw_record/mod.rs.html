@@ -927,6 +927,15 @@
 <a href="#927" id="927">927</a>
 <a href="#928" id="928">928</a>
 <a href="#929" id="929">929</a>
+<a href="#930" id="930">930</a>
+<a href="#931" id="931">931</a>
+<a href="#932" id="932">932</a>
+<a href="#933" id="933">933</a>
+<a href="#934" id="934">934</a>
+<a href="#935" id="935">935</a>
+<a href="#936" id="936">936</a>
+<a href="#937" id="937">937</a>
+<a href="#938" id="938">938</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Provides [`RawRecord`] type and associated items.
 
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>error;
@@ -1022,23 +1031,30 @@
 ///
 /// ### Primary key schema constraint
 ///
-/// In Java Record Layer, all record types within a record store are
-/// interleaved within the same extent. In our implementation, we
-/// specialize this further, and **require** that all record types
-/// within a record store have the same [`RawRecordPrimaryKeySchema`].
+/// In Java Record Layer, by default all record types within a record
+/// store are interleaved within the same record extent. This behavior
+/// can be changed using [`RecordTypeKeyExpression`] Java class, which
+/// indicates that record type identifier should be contained at the
+/// start of the primary key, thereby partitioning the record extent
+/// by record type.
 ///
-/// In relational terms this means that our record store can be
-/// thought of as a collection of tables where each table has the same
-/// type for the primary key column. The type of the primary key
-/// column would be represented using
-/// [`RawRecordPrimaryKeySchema`].
+/// In our implementation, we **require** that all record types within
+/// a record store have the same [`RawRecordPrimaryKeySchema`]. While
+/// it is not handled by [`RawRecord`] type, our record extent will be
+/// also be partitioned by record type and that information would be
+/// contained at the beginning of [`RawRecordPrimaryKeySchema`].
 ///
-/// It is very common to require tables (record types) with multiple
-/// [`RawRecordPrimaryKeySchema`]. Therefore it follows that in our
-/// design any reasonable application would end up utilizing multiple
-/// record stores.
+/// Additionally, using [`RawRecordPrimaryKeySchema`] constraints the
+/// flexibility of primary key schema for record types within a record
+/// store. It will require all record types to have the same primary
+/// key schema.
 ///
-/// The motivation for choosing this apporach is two fold.
+/// There are two workarounds possible here. One is to setup a unique
+/// secondary index for a particular field of the record type,
+/// effectively minicking primary key behavior. Another is to use a
+/// different record store altogether.
+///
+/// The motivation for choosing this approach is two fold.
 ///
 /// *Firstly*, it avoids edge cases with [`split_helper`] where
 /// integer values are a part of a primary key tuple.
@@ -1060,13 +1076,15 @@
 ///
 /// *Secondly*, the [`RawRecordCursor`] implementation is aware of
 /// [`RawRecordPrimaryKeySchema`]. This means any [`RawRecord`] value
-/// returned by the cursor is well formed.
+/// returned by the cursor will always be well formed and any errors
+/// can be identified at the lowest level of abstraction.
 ///
 /// &lt;p style=&quot;background:rgba(255,181,77,0.16);padding:0.75em;&quot;&gt;
 /// &lt;strong&gt;Warning:&lt;/strong&gt; This type is &lt;strong&gt;not&lt;/strong&gt; meant
 /// to be public. We need to make this type public to support
 /// integration tests. Do not use this type in your code.&lt;/p&gt;
 ///
+/// [`RecordTypeKeyExpression`]: https://github.com/FoundationDB/fdb-record-layer/blob/3.3.397.0/fdb-record-layer-core/src/main/java/com/apple/foundationdb/record/metadata/expressions/RecordTypeKeyExpression.java#L41-L57
 /// [`split_helper`]: crate::split_helper
 </span><span class="attr">#[derive(Clone, Debug, PartialEq)]
 </span><span class="kw">pub struct </span>RawRecord {
