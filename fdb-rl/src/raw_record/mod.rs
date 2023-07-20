@@ -93,23 +93,30 @@ pub(crate) mod pb {
 ///
 /// ### Primary key schema constraint
 ///
-/// In Java Record Layer, all record types within a record store are
-/// interleaved within the same extent. In our implementation, we
-/// specialize this further, and **require** that all record types
-/// within a record store have the same [`RawRecordPrimaryKeySchema`].
+/// In Java Record Layer, by default all record types within a record
+/// store are interleaved within the same record extent. This behavior
+/// can be changed using [`RecordTypeKeyExpression`] Java class, which
+/// indicates that record type identifier should be contained at the
+/// start of the primary key, thereby partitioning the record extent
+/// by record type.
 ///
-/// In relational terms this means that our record store can be
-/// thought of as a collection of tables where each table has the same
-/// type for the primary key column. The type of the primary key
-/// column would be represented using
-/// [`RawRecordPrimaryKeySchema`].
+/// In our implementation, we **require** that all record types within
+/// a record store have the same [`RawRecordPrimaryKeySchema`]. While
+/// it is not handled by [`RawRecord`] type, our record extent will be
+/// also be partitioned by record type and that information would be
+/// contained at the beginning of [`RawRecordPrimaryKeySchema`].
 ///
-/// It is very common to require tables (record types) with multiple
-/// [`RawRecordPrimaryKeySchema`]. Therefore it follows that in our
-/// design any reasonable application would end up utilizing multiple
-/// record stores.
+/// Additionally, using [`RawRecordPrimaryKeySchema`] constraints the
+/// flexibility of primary key schema for record types within a record
+/// store. It will require all record types to have the same primary
+/// key schema.
 ///
-/// The motivation for choosing this apporach is two fold.
+/// There are two workarounds possible here. One is to setup a unique
+/// secondary index for a particular field of the record type,
+/// effectively minicking primary key behavior. Another is to use a
+/// different record store altogether.
+///
+/// The motivation for choosing this approach is two fold.
 ///
 /// *Firstly*, it avoids edge cases with [`split_helper`] where
 /// integer values are a part of a primary key tuple.
@@ -131,13 +138,15 @@ pub(crate) mod pb {
 ///
 /// *Secondly*, the [`RawRecordCursor`] implementation is aware of
 /// [`RawRecordPrimaryKeySchema`]. This means any [`RawRecord`] value
-/// returned by the cursor is well formed.
+/// returned by the cursor will always be well formed and any errors
+/// can be identified at the lowest level of abstraction.
 ///
 /// <p style="background:rgba(255,181,77,0.16);padding:0.75em;">
 /// <strong>Warning:</strong> This type is <strong>not</strong> meant
 /// to be public. We need to make this type public to support
 /// integration tests. Do not use this type in your code.</p>
 ///
+/// [`RecordTypeKeyExpression`]: https://github.com/FoundationDB/fdb-record-layer/blob/3.3.397.0/fdb-record-layer-core/src/main/java/com/apple/foundationdb/record/metadata/expressions/RecordTypeKeyExpression.java#L41-L57
 /// [`split_helper`]: crate::split_helper
 #[derive(Clone, Debug, PartialEq)]
 pub struct RawRecord {
