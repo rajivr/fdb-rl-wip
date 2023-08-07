@@ -366,6 +366,15 @@
 <a href="#366" id="366">366</a>
 <a href="#367" id="367">367</a>
 <a href="#368" id="368">368</a>
+<a href="#369" id="369">369</a>
+<a href="#370" id="370">370</a>
+<a href="#371" id="371">371</a>
+<a href="#372" id="372">372</a>
+<a href="#373" id="373">373</a>
+<a href="#374" id="374">374</a>
+<a href="#375" id="375">375</a>
+<a href="#376" id="376">376</a>
+<a href="#377" id="377">377</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Provides types and traits related to [`RawRecordPrimaryKey`].
 
 </span><span class="kw">use </span>fdb::tuple::{Tuple, TupleSchema, TupleSchemaElement};
@@ -406,7 +415,16 @@
             | TupleSchemaElement::MaybeDouble
             | TupleSchemaElement::MaybeBoolean
             | TupleSchemaElement::MaybeUuid
-            | TupleSchemaElement::MaybeVersionstamp =&gt; <span class="bool-val">false</span>,
+            | TupleSchemaElement::MaybeVersionstamp
+            | TupleSchemaElement::ListOfBytes
+            | TupleSchemaElement::ListOfString
+            | TupleSchemaElement::ListOfTuple(<span class="kw">_</span>)
+            | TupleSchemaElement::ListOfInteger
+            | TupleSchemaElement::ListOfFloat
+            | TupleSchemaElement::ListOfDouble
+            | TupleSchemaElement::ListOfBoolean
+            | TupleSchemaElement::ListOfUuid
+            | TupleSchemaElement::ListOfVersionstamp =&gt; <span class="bool-val">false</span>,
             TupleSchemaElement::Bytes
             | TupleSchemaElement::String
             | TupleSchemaElement::Integer
