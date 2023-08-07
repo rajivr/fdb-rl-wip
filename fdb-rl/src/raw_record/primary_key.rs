@@ -38,7 +38,16 @@ impl Visitor for PrimaryKeySchemaValidatorVisitor {
             | TupleSchemaElement::MaybeDouble
             | TupleSchemaElement::MaybeBoolean
             | TupleSchemaElement::MaybeUuid
-            | TupleSchemaElement::MaybeVersionstamp => false,
+            | TupleSchemaElement::MaybeVersionstamp
+            | TupleSchemaElement::ListOfBytes
+            | TupleSchemaElement::ListOfString
+            | TupleSchemaElement::ListOfTuple(_)
+            | TupleSchemaElement::ListOfInteger
+            | TupleSchemaElement::ListOfFloat
+            | TupleSchemaElement::ListOfDouble
+            | TupleSchemaElement::ListOfBoolean
+            | TupleSchemaElement::ListOfUuid
+            | TupleSchemaElement::ListOfVersionstamp => false,
             TupleSchemaElement::Bytes
             | TupleSchemaElement::String
             | TupleSchemaElement::Integer
