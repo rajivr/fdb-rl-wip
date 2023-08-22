@@ -40,7 +40,8 @@ pub(crate) mod pb {
         KeyMarker as ProtoKeyMarkerV1, KeyValueContinuation as ProtoKeyValueContinuationEnumV1,
     };
 
-    /// Protobuf generated types renamed to append version.
+    /// Protobuf generated types renamed to prepend `Proto` and append
+    /// version.
     pub(crate) use fdb_rl_proto::cursor::v1::KeyValueContinuation as ProtoKeyValueContinuationV1;
 
     /// Protobuf message `fdb_rl.cursor.v1.KeyValueContinuation`
@@ -59,11 +60,9 @@ pub(crate) mod pb {
             keyvalue_continuation_v1
                 .key_value_continuation
                 .ok_or_else(|| FdbError::new(CURSOR_INVALID_CONTINUATION))
-                .map(
-                    |keyvalue_continuation_enum_v1| KeyValueContinuationInternalV1 {
-                        key_value_continuation: keyvalue_continuation_enum_v1,
-                    },
-                )
+                .map(|key_value_continuation| KeyValueContinuationInternalV1 {
+                    key_value_continuation,
+                })
         }
     }
 

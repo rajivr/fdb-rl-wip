@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package fdb_rl.tuple_fields.v1;
+
+// Following table describes the mapping between Protobuf type, Rust
+// type and `enum TupleSchemaElement` (from `fdb` crate).
+//
+// |---------------+--------------+--------------------|
+// | Protobuf Type | Rust Type    | TupleSchemaElement |
+// |---------------+--------------+--------------------|
+// | double        | f64          | Double             |
+// | float         | f32          | Float              |
+// | int32         | i32          | Integer            |
+// | int64         | i64          | Integer            |
+// | uint32        | u32          | Integer            |
+// | uint64        | u64          | Integer            |
+// | sint32        | i32          | Integer            |
+// | sint64        | i64          | Integer            |
+// | fixed32       | u32          | Integer            |
+// | fixed64       | u64          | Integer            |
+// | sfixed32      | i32          | Integer            |
+// | sfixed64      | i64          | Integer            |
+// | bool          | bool         | Boolean            |
+// | string        | String       | String             |
+// | bytes         | Vec<u8> or   | Bytes              |
+// |               | bytes::Bytes |                    |
+// | message UUID  | uuid::Uuid   | Uuid               |
+// |---------------+--------------+--------------------|
+//
+// From the above table, you can note that multiple Protobuf types
+// maps to the same Rust type. For example `int32`, `sint32` and
+// `sfixed32` maps to `i32` Rust type. Similarly multiple Rust types
+// can map to an `TupleSchemaElement` variant. For example `i32`,
+// `i64`, `u32`, `u64` maps to `TupleSchemaElement::Integer`. So, when
+// you see a tuple value `(1, 2, 3,)`, the source of truth for what
+// type `1`, `2`, `3` has can only come from Protobuf.
+//
+// The `prost-build` crate provides option to use `bytes::Bytes` Rust
+// type for Protobuf `bytes` type. This is used in our crate and is
+// the only supported Protobuf `bytes` type.
+//
+// FoundationDB Tuple layer has native support for UUID type. In Rust
+// we map this to `uuid::Uuid` type (from `uuid` crate) and `message
+// UUID` defined below.
+//
+// FoundationDB Tuple layer Versionstamp is special. It does not make
+// sense do define `message Versionstamp` as FoundationDB will not be
+// able to automatically populate it.
+//
+// [1]: https://docs.rs/prost-build/0.11.9/prost_build/struct.Config.html#method.bytes
+
+// Java RecordLayer defines this type using two `sfixed64` fields. In
+// Java, `UUID` class consists of two `long` values [1], so it makes
+// sense to use `sfixed64`.
+//
+// In our case, we use `uuid::Uuid` which uses `type Bytes = [u8; 16]`
+// internally [2]. So, we use Protobuf `bytes` type internally in
+// UUID`. From this [3] comment, it looks like Google uses `bytes` and
+// `string` for UUID.
+//
+// [1]: https://docs.oracle.com/javase/8/docs/api/java/util/UUID.html
+// [2]: https://docs.rs/uuid/1.4.1/src/uuid/lib.rs.html#450
+// [3]: https://github.com/protocolbuffers/protobuf/issues/2224#issuecomment-1104418456
+message UUID {
+  bytes value = 1;
+}

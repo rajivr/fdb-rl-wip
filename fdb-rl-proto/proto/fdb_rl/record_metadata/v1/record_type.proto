@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package fdb_rl.record_metadata.v1;
+
+// Unlike Java RecordLayer, in our case we ues `field_number` instead
+// of `name`. The `field_number` is the field number in the union of
+// `RecordType`s.
+message RecordType {
+  // Required.
+  optional uint32 field_number = 1;
+}

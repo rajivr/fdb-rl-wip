@@ -21,3 +21,21 @@ pub mod cursor {
         include_proto!("fdb_rl.cursor.v1");
     }
 }
+
+pub mod key_expression {
+    pub mod v1 {
+        include_proto!("fdb_rl.key_expression.v1");
+    }
+}
+
+pub mod record_metadata {
+    pub mod v1 {
+        include_proto!("fdb_rl.record_metadata.v1");
+    }
+}
+
+pub mod tuple_fields {
+    pub mod v1 {
+        include_proto!("fdb_rl.tuple_fields.v1");
+    }
+}

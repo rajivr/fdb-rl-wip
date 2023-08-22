@@ -49,6 +49,7 @@ pub(crate) mod split_helper;
 
 pub mod cursor;
 pub mod error;
+pub mod key_expression;
 pub mod range;
 pub mod scan;
 
