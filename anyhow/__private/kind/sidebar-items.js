@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"trait":["AdhocKind","BoxedKind","TraitKind"]};
+window.SIDEBAR_ITEMS = {};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["FieldLabel"],"mod":["field_fan_type","field_null_interpretation"],"struct":["FieldFanType","FieldNullInterpretation"]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["cursor"]};
+window.SIDEBAR_ITEMS = {"mod":["cursor","key_expression","record_metadata","tuple_fields"]};
