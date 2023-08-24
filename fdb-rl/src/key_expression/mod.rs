@@ -2,6 +2,12 @@
 
 pub(crate) mod error;
 
+use fdb::error::{FdbError, FdbResult};
+
+use std::convert::TryFrom;
+
+use error::{KEY_EXPRESSION_CONCAT_FIELDS_CANNOT_NEST, KEY_EXPRESSION_INVALID_VARIANT};
+
 /// Protobuf types.
 pub(crate) mod pb {
     use fdb::error::{FdbError, FdbResult};
@@ -33,6 +39,9 @@ pub(crate) mod pb {
 
     /// Protobuf message `fdb_rl.key_expression.v1.Field.FieldFanType`
     /// contains a `Required` field. So, we need to define this type.
+    ///
+    /// We have conversion functions to and from
+    /// [`ProtoFieldFanTypeV1`].
     #[derive(Clone, Debug, PartialEq)]
     pub(crate) struct FieldFanTypeInternalV1 {
         pub(crate) field_fan_type: ProtoFieldFanTypeEnumV1,
@@ -63,6 +72,9 @@ pub(crate) mod pb {
     /// enum indirectly contains a `Required` field (via
     /// `FieldNullInterpretation` and `FieldFanType`. So, we need to
     /// define this type.
+    ///
+    /// We have conversion functions to and from
+    /// [`ProtoFieldLabelEnumV1`].
     #[derive(Clone, Debug, PartialEq)]
     pub(crate) enum FieldLabelInternalEnumV1 {
         NullInterpretation(FieldNullInterpretationInternalV1),
@@ -268,6 +280,7 @@ pub(crate) mod pb {
 
         fn try_from(proto_nest_v1: ProtoNestV1) -> FdbResult<NestInternalV1> {
             let ProtoNestV1 { parent, child } = proto_nest_v1;
+
             parent
                 .and_then(|x| FieldInternalV1::try_from(x).ok())
                 .and_then(|field_internal_v1| {
@@ -280,8 +293,28 @@ pub(crate) mod pb {
                             })
                     })
                 })
+                .and_then(|(parent, child)| {
+                    // For a nested expression, the parent field
+                    // *cannot* be
+                    // `ProtoFieldFanTypeEnumV1::Concatenate(ProtoConcatenateV1
+                    // {})`
+                    //
+                    // See `Field::try_nest(...)` for additional
+                    // comments.
+                    if matches!(
+                        parent.field_label,
+                        FieldLabelInternalEnumV1::FanType(FieldFanTypeInternalV1 {
+                            field_fan_type: ProtoFieldFanTypeEnumV1::Concatenate(
+                                ProtoConcatenateV1 {}
+                            )
+                        })
+                    ) {
+                        None
+                    } else {
+                        Some(NestInternalV1 { parent, child })
+                    }
+                })
                 .ok_or_else(|| FdbError::new(KEY_EXPRESSION_INVALID_PROTO))
-                .map(|(parent, child)| NestInternalV1 { parent, child })
         }
     }
 
@@ -547,6 +580,32 @@ pub(crate) struct Field {
     field_label: FieldLabel,
 }
 
+impl Field {
+    /// TODO
+    //
+    // For a nested expression, the parent field *cannot*
+    // be`FieldFanType::Concatenate`.
+    //
+    // In Java RecordLayer, there is a comment [1] that says it is
+    // possible to allow `FieldFanType::Concatenate`. We can revisit
+    // this once it is implemented upstream.
+    //
+    // [1]: https://github.com/FoundationDB/fdb-record-layer/blob/3.3.406.0/fdb-record-layer-core/src/main/java/com/apple/foundationdb/record/metadata/expressions/FieldKeyExpression.java#L284-L286
+    pub(crate) fn try_nest(self, child: KeyExpression) -> FdbResult<Nest> {
+        if matches!(
+            self.field_label,
+            FieldLabel::FanType(FieldFanType::Concatenate)
+        ) {
+            Err(FdbError::new(KEY_EXPRESSION_CONCAT_FIELDS_CANNOT_NEST))
+        } else {
+            Ok(Nest {
+                parent: self,
+                child: Box::new(child),
+            })
+        }
+    }
+}
+
 impl From<pb::FieldInternalV1> for Field {
     fn from(pb_field_internal_v1: pb::FieldInternalV1) -> Field {
         let pb::FieldInternalV1 {
@@ -676,4 +735,73 @@ impl From<KeyExpression> for pb::KeyExpressionInternalV1 {
 
         pb::KeyExpressionInternalV1 { key_expression }
     }
+}
+
+impl From<Field> for KeyExpression {
+    fn from(field: Field) -> KeyExpression {
+        KeyExpression::Field(field)
+    }
+}
+
+impl TryFrom<KeyExpression> for Field {
+    type Error = FdbError;
+
+    fn try_from(key_expression: KeyExpression) -> FdbResult<Field> {
+        if let KeyExpression::Field(field) = key_expression {
+            Ok(field)
+        } else {
+            Err(FdbError::new(KEY_EXPRESSION_INVALID_VARIANT))
+        }
+    }
+}
+
+impl From<Nest> for KeyExpression {
+    fn from(nest: Nest) -> KeyExpression {
+        KeyExpression::Nest(Box::new(nest))
+    }
+}
+
+impl TryFrom<KeyExpression> for Nest {
+    type Error = FdbError;
+
+    fn try_from(key_expression: KeyExpression) -> FdbResult<Nest> {
+        if let KeyExpression::Nest(boxed_nest) = key_expression {
+            Ok(*boxed_nest)
+        } else {
+            Err(FdbError::new(KEY_EXPRESSION_INVALID_VARIANT))
+        }
+    }
+}
+
+impl From<Concat> for KeyExpression {
+    fn from(concat: Concat) -> KeyExpression {
+        KeyExpression::Concat(concat)
+    }
+}
+
+impl TryFrom<KeyExpression> for Concat {
+    type Error = FdbError;
+
+    fn try_from(key_expression: KeyExpression) -> FdbResult<Concat> {
+        if let KeyExpression::Concat(concat) = key_expression {
+            Ok(concat)
+        } else {
+            Err(FdbError::new(KEY_EXPRESSION_INVALID_VARIANT))
+        }
+    }
+}
+
+// TODO: Semi-public apis to generate key expressions.
+
+/// TODO
+pub(crate) fn field(field_number: u32, field_label: FieldLabel) -> Field {
+    Field {
+        field_number,
+        field_label,
+    }
+}
+
+/// TODO
+pub(crate) fn concat(children: Vec<KeyExpression>) -> Concat {
+    Concat { children }
 }
