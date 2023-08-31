@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["cursor","field","key_expression","record_metadata"]};

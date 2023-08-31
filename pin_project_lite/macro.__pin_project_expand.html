@@ -11,6 +11,6 @@
         {
             $(<span class="macro-nonterminal">$body_data</span>:tt)*
         }
-        $(<span class="kw">impl </span>$(<span class="macro-nonterminal">$pinned_drop</span>:tt)<span class="kw-2">*</span>)<span class="question-mark">?
+        $($(<span class="attr">#[<span class="macro-nonterminal">$drop_impl_attrs</span>:meta]</span>)* <span class="kw">impl </span>$(<span class="macro-nonterminal">$pinned_drop</span>:tt)<span class="kw-2">*</span>)<span class="question-mark">?
     </span>) =&gt; { ... };
 }</pre></section></div></main></body></html>

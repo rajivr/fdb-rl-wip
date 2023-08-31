@@ -805,9 +805,13 @@
 <a href="#805" id="805">805</a>
 <a href="#806" id="806">806</a>
 <a href="#807" id="807">807</a>
+<a href="#808" id="808">808</a>
+<a href="#809" id="809">809</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! Provides types for Key Expression.
 
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>error;
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>record_type_key_expression;
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>well_formed_message_descriptor;
 
 <span class="kw">use </span>fdb::error::{FdbError, FdbResult};
 
@@ -825,21 +829,21 @@
 
     <span class="doccomment">/// Protobuf generated types renamed to prepend `Proto` and append
     /// version (and add `Enum` suffix).
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use </span>fdb_rl_proto::key_expression::v1::field::field_fan_type::{
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use </span>fdb_rl_proto::fdb_rl::key_expression::v1::field::field_fan_type::{
         Concatenate <span class="kw">as </span>ProtoConcatenateV1, FanOut <span class="kw">as </span>ProtoFanOutV1,
         FieldFanType <span class="kw">as </span>ProtoFieldFanTypeEnumV1,
     };
 
     <span class="doccomment">/// Protobuf generated types renamed to prepend `Proto` and append
     /// version (and add `Enum` suffix).
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use </span>fdb_rl_proto::key_expression::v1::field::field_null_interpretation::{
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use </span>fdb_rl_proto::fdb_rl::key_expression::v1::field::field_null_interpretation::{
         Distinct <span class="kw">as </span>ProtoDistinctV1, FieldNullInterpretation <span class="kw">as </span>ProtoFieldNullInterpretationEnumV1,
         NotDistinct <span class="kw">as </span>ProtoNotDistinctV1, NotNull <span class="kw">as </span>ProtoNotNullV1,
     };
 
     <span class="doccomment">/// Protobuf generated types renamed to prepend `Proto` and append
     /// version (and add `Enum` suffix).
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use </span>fdb_rl_proto::key_expression::v1::field::{
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use </span>fdb_rl_proto::fdb_rl::key_expression::v1::field::{
         FieldFanType <span class="kw">as </span>ProtoFieldFanTypeV1, FieldLabel <span class="kw">as </span>ProtoFieldLabelEnumV1,
         FieldNullInterpretation <span class="kw">as </span>ProtoFieldNullInterpretationV1,
     };
@@ -963,7 +967,7 @@
 
     <span class="doccomment">/// Protobuf generated types renamed to prepend `Proto` and append
     /// version (and add `Enum` suffix).
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use </span>fdb_rl_proto::key_expression::v1::key_expression::KeyExpression <span class="kw">as </span>ProtoKeyExpressionEnumV1;
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use </span>fdb_rl_proto::fdb_rl::key_expression::v1::key_expression::KeyExpression <span class="kw">as </span>ProtoKeyExpressionEnumV1;
 
     <span class="doccomment">/// Protobuf oneof
     /// `fdb_rl.key_expression.v1.KeyExpression.key_expression` uses
@@ -1022,7 +1026,7 @@
 
     <span class="doccomment">/// Protobuf generated types renamed to prepend `Proto` and append
     /// version.
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use </span>fdb_rl_proto::key_expression::v1::{
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use </span>fdb_rl_proto::fdb_rl::key_expression::v1::{
         Concat <span class="kw">as </span>ProtoConcatV1, Field <span class="kw">as </span>ProtoFieldV1, KeyExpression <span class="kw">as </span>ProtoKeyExpressionV1,
         Nest <span class="kw">as </span>ProtoNestV1,
     };

@@ -12,7 +12,7 @@
                 </span><span class="macro-nonterminal">$field_vis</span>:vis <span class="macro-nonterminal">$field</span>:ident: <span class="macro-nonterminal">$field_ty</span>:ty
             ),+ $(,)<span class="question-mark">?
         </span>}
-        $(<span class="kw">impl </span>$(<span class="macro-nonterminal">$pinned_drop</span>:tt)<span class="kw-2">*</span>)<span class="question-mark">?
+        $($(<span class="attr">#[<span class="macro-nonterminal">$drop_impl_attrs</span>:meta]</span>)* <span class="kw">impl </span>$(<span class="macro-nonterminal">$pinned_drop</span>:tt)<span class="kw-2">*</span>)<span class="question-mark">?
     </span>) =&gt; { ... };
     (
         [$(<span class="attr">#[<span class="macro-nonterminal">$attrs</span>:meta]</span>)* <span class="macro-nonterminal">$vis</span>:vis <span class="kw">enum </span><span class="macro-nonterminal">$ident</span>:ident]
@@ -32,6 +32,6 @@
                 </span>})<span class="question-mark">?
             </span>),+ $(,)<span class="question-mark">?
         </span>}
-        $(<span class="kw">impl </span>$(<span class="macro-nonterminal">$pinned_drop</span>:tt)<span class="kw-2">*</span>)<span class="question-mark">?
+        $($(<span class="attr">#[<span class="macro-nonterminal">$drop_impl_attrs</span>:meta]</span>)* <span class="kw">impl </span>$(<span class="macro-nonterminal">$pinned_drop</span>:tt)<span class="kw-2">*</span>)<span class="question-mark">?
     </span>) =&gt; { ... };
 }</pre></section></div></main></body></html>

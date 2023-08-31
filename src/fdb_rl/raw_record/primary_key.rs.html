@@ -392,6 +392,26 @@
     <span class="kw">fn </span>visit_tuple_schema_element(<span class="kw-2">&amp;</span><span class="self">self</span>, tuple_schema_element: <span class="kw-2">&amp;</span>TupleSchemaElement) -&gt; bool;
 }
 
+<span class="kw">fn </span>walk_tuple_schema(visitor: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Visitor, tuple_schema: <span class="kw-2">&amp;</span>TupleSchema) -&gt; bool {
+    <span class="kw">if </span>tuple_schema.len() == <span class="number">0 </span>{
+        <span class="bool-val">false
+    </span>} <span class="kw">else </span>{
+        <span class="kw">for </span>tuple_schema_element <span class="kw">in </span>tuple_schema.iter() {
+            <span class="kw">if </span>!walk_tuple_schema_element(visitor, tuple_schema_element) {
+                <span class="kw">return </span><span class="bool-val">false</span>;
+            }
+        }
+        <span class="bool-val">true
+    </span>}
+}
+
+<span class="kw">fn </span>walk_tuple_schema_element(
+    visitor: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Visitor,
+    tuple_schema_element: <span class="kw-2">&amp;</span>TupleSchemaElement,
+) -&gt; bool {
+    visitor.visit_tuple_schema_element(tuple_schema_element)
+}
+
 <span class="doccomment">/// We do not allow the primary key&#39;s [`TupleSchema`] of [`RawRecord`]
 /// to be empty or to have a [`Null`] or [`Versionstamp`] or a nullable
 /// type (such as `MaybeXYZ`) or an empty nested tuple.
@@ -435,26 +455,6 @@
             TupleSchemaElement::Tuple(ts) =&gt; walk_tuple_schema(<span class="self">self</span>, ts),
         }
     }
-}
-
-<span class="kw">fn </span>walk_tuple_schema(visitor: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Visitor, tuple_schema: <span class="kw-2">&amp;</span>TupleSchema) -&gt; bool {
-    <span class="kw">if </span>tuple_schema.len() == <span class="number">0 </span>{
-        <span class="bool-val">false
-    </span>} <span class="kw">else </span>{
-        <span class="kw">for </span>tuple_schema_element <span class="kw">in </span>tuple_schema.iter() {
-            <span class="kw">if </span>!walk_tuple_schema_element(visitor, tuple_schema_element) {
-                <span class="kw">return </span><span class="bool-val">false</span>;
-            }
-        }
-        <span class="bool-val">true
-    </span>}
-}
-
-<span class="kw">fn </span>walk_tuple_schema_element(
-    visitor: <span class="kw-2">&amp;</span><span class="kw">dyn </span>Visitor,
-    tuple_schema_element: <span class="kw-2">&amp;</span>TupleSchemaElement,
-) -&gt; bool {
-    visitor.visit_tuple_schema_element(tuple_schema_element)
 }
 
 <span class="doccomment">/// Represents the schema for a [`RawRecordPrimaryKey`].

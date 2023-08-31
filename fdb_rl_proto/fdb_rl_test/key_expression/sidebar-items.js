@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["well_formed_message_descriptor"]};

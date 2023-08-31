@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["FieldFanType","FieldLabel","FieldNullInterpretation","KeyExpression","KeyExpressionInternal"],"fn":["concat","field"],"mod":["error","pb"],"struct":["Concat","Field","Nest"]};
+window.SIDEBAR_ITEMS = {"enum":["FieldFanType","FieldLabel","FieldNullInterpretation","KeyExpression","KeyExpressionInternal"],"fn":["concat","field"],"mod":["error","pb","record_type_key_expression","well_formed_message_descriptor"],"struct":["Concat","Field","Nest"]};
