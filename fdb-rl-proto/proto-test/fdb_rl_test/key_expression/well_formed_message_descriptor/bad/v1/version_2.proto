@@ -1,0 +1,9 @@
+syntax = "proto2";
+
+package fdb_rl_test.key_expression.well_formed_message_descriptor.bad.v1;
+
+// We do not support `proto2`.
+message HelloWorld {
+  required string hello = 1;
+  optional string world = 2;
+}

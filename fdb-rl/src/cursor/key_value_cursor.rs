@@ -35,14 +35,14 @@ pub(crate) mod pb {
 
     /// Protobuf generated types renamed to prepend `Proto` and append
     /// version (and add `Enum` suffix).
-    pub(crate) use fdb_rl_proto::cursor::v1::key_value_continuation::{
+    pub(crate) use fdb_rl_proto::fdb_rl::cursor::v1::key_value_continuation::{
         BeginMarker as ProtoBeginMarkerV1, EndMarker as ProtoEndMarkerV1,
         KeyMarker as ProtoKeyMarkerV1, KeyValueContinuation as ProtoKeyValueContinuationEnumV1,
     };
 
     /// Protobuf generated types renamed to prepend `Proto` and append
     /// version.
-    pub(crate) use fdb_rl_proto::cursor::v1::KeyValueContinuation as ProtoKeyValueContinuationV1;
+    pub(crate) use fdb_rl_proto::fdb_rl::cursor::v1::KeyValueContinuation as ProtoKeyValueContinuationV1;
 
     /// Protobuf message `fdb_rl.cursor.v1.KeyValueContinuation`
     /// contains a `Required` field. So, we need to define this type.

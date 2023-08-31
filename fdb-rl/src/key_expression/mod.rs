@@ -1,6 +1,8 @@
 //! Provides types for Key Expression.
 
 pub(crate) mod error;
+pub(crate) mod record_type_key_expression;
+pub(crate) mod well_formed_message_descriptor;
 
 use fdb::error::{FdbError, FdbResult};
 
@@ -18,21 +20,21 @@ pub(crate) mod pb {
 
     /// Protobuf generated types renamed to prepend `Proto` and append
     /// version (and add `Enum` suffix).
-    pub(crate) use fdb_rl_proto::key_expression::v1::field::field_fan_type::{
+    pub(crate) use fdb_rl_proto::fdb_rl::key_expression::v1::field::field_fan_type::{
         Concatenate as ProtoConcatenateV1, FanOut as ProtoFanOutV1,
         FieldFanType as ProtoFieldFanTypeEnumV1,
     };
 
     /// Protobuf generated types renamed to prepend `Proto` and append
     /// version (and add `Enum` suffix).
-    pub(crate) use fdb_rl_proto::key_expression::v1::field::field_null_interpretation::{
+    pub(crate) use fdb_rl_proto::fdb_rl::key_expression::v1::field::field_null_interpretation::{
         Distinct as ProtoDistinctV1, FieldNullInterpretation as ProtoFieldNullInterpretationEnumV1,
         NotDistinct as ProtoNotDistinctV1, NotNull as ProtoNotNullV1,
     };
 
     /// Protobuf generated types renamed to prepend `Proto` and append
     /// version (and add `Enum` suffix).
-    pub(crate) use fdb_rl_proto::key_expression::v1::field::{
+    pub(crate) use fdb_rl_proto::fdb_rl::key_expression::v1::field::{
         FieldFanType as ProtoFieldFanTypeV1, FieldLabel as ProtoFieldLabelEnumV1,
         FieldNullInterpretation as ProtoFieldNullInterpretationV1,
     };
@@ -156,7 +158,7 @@ pub(crate) mod pb {
 
     /// Protobuf generated types renamed to prepend `Proto` and append
     /// version (and add `Enum` suffix).
-    pub(crate) use fdb_rl_proto::key_expression::v1::key_expression::KeyExpression as ProtoKeyExpressionEnumV1;
+    pub(crate) use fdb_rl_proto::fdb_rl::key_expression::v1::key_expression::KeyExpression as ProtoKeyExpressionEnumV1;
 
     /// Protobuf oneof
     /// `fdb_rl.key_expression.v1.KeyExpression.key_expression` uses
@@ -215,7 +217,7 @@ pub(crate) mod pb {
 
     /// Protobuf generated types renamed to prepend `Proto` and append
     /// version.
-    pub(crate) use fdb_rl_proto::key_expression::v1::{
+    pub(crate) use fdb_rl_proto::fdb_rl::key_expression::v1::{
         Concat as ProtoConcatV1, Field as ProtoFieldV1, KeyExpression as ProtoKeyExpressionV1,
         Nest as ProtoNestV1,
     };

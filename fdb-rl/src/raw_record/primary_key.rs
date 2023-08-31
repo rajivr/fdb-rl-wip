@@ -15,6 +15,26 @@ trait Visitor {
     fn visit_tuple_schema_element(&self, tuple_schema_element: &TupleSchemaElement) -> bool;
 }
 
+fn walk_tuple_schema(visitor: &dyn Visitor, tuple_schema: &TupleSchema) -> bool {
+    if tuple_schema.len() == 0 {
+        false
+    } else {
+        for tuple_schema_element in tuple_schema.iter() {
+            if !walk_tuple_schema_element(visitor, tuple_schema_element) {
+                return false;
+            }
+        }
+        true
+    }
+}
+
+fn walk_tuple_schema_element(
+    visitor: &dyn Visitor,
+    tuple_schema_element: &TupleSchemaElement,
+) -> bool {
+    visitor.visit_tuple_schema_element(tuple_schema_element)
+}
+
 /// We do not allow the primary key's [`TupleSchema`] of [`RawRecord`]
 /// to be empty or to have a [`Null`] or [`Versionstamp`] or a nullable
 /// type (such as `MaybeXYZ`) or an empty nested tuple.
@@ -58,26 +78,6 @@ impl Visitor for PrimaryKeySchemaValidatorVisitor {
             TupleSchemaElement::Tuple(ts) => walk_tuple_schema(self, ts),
         }
     }
-}
-
-fn walk_tuple_schema(visitor: &dyn Visitor, tuple_schema: &TupleSchema) -> bool {
-    if tuple_schema.len() == 0 {
-        false
-    } else {
-        for tuple_schema_element in tuple_schema.iter() {
-            if !walk_tuple_schema_element(visitor, tuple_schema_element) {
-                return false;
-            }
-        }
-        true
-    }
-}
-
-fn walk_tuple_schema_element(
-    visitor: &dyn Visitor,
-    tuple_schema_element: &TupleSchemaElement,
-) -> bool {
-    visitor.visit_tuple_schema_element(tuple_schema_element)
 }
 
 /// Represents the schema for a [`RawRecordPrimaryKey`].

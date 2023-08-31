@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package fdb_rl_test.key_expression.well_formed_message_descriptor.good.v1;
+
+import "fdb_rl/field/v1/field.proto";
+
+message HelloWorld {
+  optional fdb_rl.field.v1.UUID primary_key = 1;
+  optional string hello = 2;
+  optional string world = 3;
+}

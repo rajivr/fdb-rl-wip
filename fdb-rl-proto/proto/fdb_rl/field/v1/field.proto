@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package fdb_rl.tuple_fields.v1;
+package fdb_rl.field.v1;
 
 // Following table describes the mapping between Protobuf type, Rust
 // type and `enum TupleSchemaElement` (from `fdb` crate).

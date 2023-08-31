@@ -42,7 +42,7 @@ pub(crate) mod pb {
 
     // Protobuf generated types renamed to prepend `Proto` and append
     // version.
-    pub(crate) use fdb_rl_proto::cursor::v1::RawRecordContinuation as ProtoRawRecordContinuationV1;
+    pub(crate) use fdb_rl_proto::fdb_rl::cursor::v1::RawRecordContinuation as ProtoRawRecordContinuationV1;
 
     /// Protobuf message `fdb_rl.cursor.v1.RawRecordContinuation`
     /// contains a `Required` field. So, we need to define this type.
