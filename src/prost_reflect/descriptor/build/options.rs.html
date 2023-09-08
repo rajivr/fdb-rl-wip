@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/prost-reflect-0.11.5/src/descriptor/build/options.rs`."><title>options.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-07416f8512e0e04c.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="prost_reflect" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0-nightly (da6b55cc5 2023-07-17)" data-channel="nightly" data-search-js="search-f6292fe389d70017.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-6d2c9675f3d09c26.css" data-theme-dark-css="dark-45ceb8f2e522f4d1.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../../../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../../static.files/light-6d2c9675f3d09c26.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../../static.files/dark-45ceb8f2e522f4d1.css"><link rel="stylesheet" href="../../../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../prost_reflect/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/prost-reflect-0.12.0/src/descriptor/build/options.rs`."><title>options.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-07416f8512e0e04c.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="prost_reflect" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0-nightly (da6b55cc5 2023-07-17)" data-channel="nightly" data-search-js="search-f6292fe389d70017.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-6d2c9675f3d09c26.css" data-theme-dark-css="dark-45ceb8f2e522f4d1.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../../../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../../static.files/light-6d2c9675f3d09c26.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../../static.files/dark-45ceb8f2e522f4d1.css"><link rel="stylesheet" href="../../../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../prost_reflect/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -799,6 +799,34 @@
 <a href="#799" id="799">799</a>
 <a href="#800" id="800">800</a>
 <a href="#801" id="801">801</a>
+<a href="#802" id="802">802</a>
+<a href="#803" id="803">803</a>
+<a href="#804" id="804">804</a>
+<a href="#805" id="805">805</a>
+<a href="#806" id="806">806</a>
+<a href="#807" id="807">807</a>
+<a href="#808" id="808">808</a>
+<a href="#809" id="809">809</a>
+<a href="#810" id="810">810</a>
+<a href="#811" id="811">811</a>
+<a href="#812" id="812">812</a>
+<a href="#813" id="813">813</a>
+<a href="#814" id="814">814</a>
+<a href="#815" id="815">815</a>
+<a href="#816" id="816">816</a>
+<a href="#817" id="817">817</a>
+<a href="#818" id="818">818</a>
+<a href="#819" id="819">819</a>
+<a href="#820" id="820">820</a>
+<a href="#821" id="821">821</a>
+<a href="#822" id="822">822</a>
+<a href="#823" id="823">823</a>
+<a href="#824" id="824">824</a>
+<a href="#825" id="825">825</a>
+<a href="#826" id="826">826</a>
+<a href="#827" id="827">827</a>
+<a href="#828" id="828">828</a>
+<a href="#829" id="829">829</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::sync::Arc;
 
 <span class="kw">use </span>prost::{bytes::Bytes, Message};
@@ -810,7 +838,7 @@
             visit::{visit, Visitor},
             DescriptorPoolOffsets,
         },
-        error::{DescriptorErrorKind, Label},
+        error::{fmt_name_not_found_help, DescriptorErrorKind, Label},
         tag,
         types::{
             uninterpreted_option, DescriptorProto, EnumDescriptorProto, EnumValueDescriptorProto,
@@ -1158,53 +1186,40 @@
 
             <span class="kw">let </span>desc = message.descriptor();
             <span class="kw">if </span>part.is_extension {
-                <span class="kw">match </span><span class="self">self</span>.find_extension(scope, <span class="kw-2">&amp;</span>part.name_part) {
-                    <span class="prelude-val">Some</span>(extension_desc) =&gt; {
-                        resolved_path.push(extension_desc.number() <span class="kw">as </span>i32);
+                <span class="kw">let </span>extension_desc =
+                    <span class="self">self</span>.find_extension(scope, <span class="kw-2">&amp;</span>part.name_part, file, <span class="kw-2">&amp;</span>path, <span class="kw-2">&amp;</span>desc)<span class="question-mark">?</span>;
+                resolved_path.push(extension_desc.number() <span class="kw">as </span>i32);
 
-                        <span class="kw">if </span>is_last {
-                            <span class="kw">if </span>extension_desc.cardinality() != Cardinality::Repeated
-                                &amp;&amp; message.has_extension(<span class="kw-2">&amp;</span>extension_desc)
-                            {
-                                <span class="kw">return </span><span class="prelude-val">Err</span>(DescriptorErrorKind::DuplicateOption {
-                                    name: fmt_option_name(<span class="kw-2">&amp;</span>option.name),
-                                    found: Label::new(
-                                        <span class="kw-2">&amp;</span><span class="self">self</span>.pool.inner.files,
-                                        <span class="string">&quot;found here&quot;</span>,
-                                        file,
-                                        path,
-                                    ),
-                                });
-                            } <span class="kw">else </span>{
-                                <span class="self">self</span>.set_field_value(
-                                    message.get_extension_mut(<span class="kw-2">&amp;</span>extension_desc),
-                                    <span class="kw-2">&amp;mut </span>resolved_path,
-                                    <span class="kw-2">&amp;</span>extension_desc,
-                                    option,
-                                    file,
-                                    <span class="kw-2">&amp;</span>path,
-                                )<span class="question-mark">?</span>;
-                            }
-                        } <span class="kw">else if let </span>Value::Message(submessage) =
-                            message.get_extension_mut(<span class="kw-2">&amp;</span>extension_desc)
-                        {
-                            message = submessage;
-                        } <span class="kw">else </span>{
-                            <span class="kw">return </span><span class="prelude-val">Err</span>(DescriptorErrorKind::InvalidOptionType {
-                                name: fmt_option_name(<span class="kw-2">&amp;</span>option.name[..i + <span class="number">1</span>]),
-                                ty: fmt_field_ty(<span class="kw-2">&amp;</span>extension_desc),
-                                value: fmt_value(option),
-                                is_last,
-                                found: Label::new(<span class="kw-2">&amp;</span><span class="self">self</span>.pool.inner.files, <span class="string">&quot;found here&quot;</span>, file, path),
-                            });
-                        }
-                    }
-                    <span class="prelude-val">None </span>=&gt; {
-                        <span class="kw">return </span><span class="prelude-val">Err</span>(DescriptorErrorKind::OptionNotFound {
-                            name: fmt_option_name(<span class="kw-2">&amp;</span>option.name[..i + <span class="number">1</span>]),
+                <span class="kw">if </span>is_last {
+                    <span class="kw">if </span>extension_desc.cardinality() != Cardinality::Repeated
+                        &amp;&amp; message.has_extension(<span class="kw-2">&amp;</span>extension_desc)
+                    {
+                        <span class="kw">return </span><span class="prelude-val">Err</span>(DescriptorErrorKind::DuplicateOption {
+                            name: fmt_option_name(<span class="kw-2">&amp;</span>option.name),
                             found: Label::new(<span class="kw-2">&amp;</span><span class="self">self</span>.pool.inner.files, <span class="string">&quot;found here&quot;</span>, file, path),
-                        })
+                        });
+                    } <span class="kw">else </span>{
+                        <span class="self">self</span>.set_field_value(
+                            message.get_extension_mut(<span class="kw-2">&amp;</span>extension_desc),
+                            <span class="kw-2">&amp;mut </span>resolved_path,
+                            <span class="kw-2">&amp;</span>extension_desc,
+                            option,
+                            file,
+                            <span class="kw-2">&amp;</span>path,
+                        )<span class="question-mark">?</span>;
                     }
+                } <span class="kw">else if let </span>Value::Message(submessage) =
+                    message.get_extension_mut(<span class="kw-2">&amp;</span>extension_desc)
+                {
+                    message = submessage;
+                } <span class="kw">else </span>{
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(DescriptorErrorKind::InvalidOptionType {
+                        name: fmt_option_name(<span class="kw-2">&amp;</span>option.name[..i + <span class="number">1</span>]),
+                        ty: fmt_field_ty(<span class="kw-2">&amp;</span>extension_desc),
+                        value: fmt_value(option),
+                        is_last,
+                        found: Label::new(<span class="kw-2">&amp;</span><span class="self">self</span>.pool.inner.files, <span class="string">&quot;found here&quot;</span>, file, path),
+                    });
                 }
             } <span class="kw">else </span>{
                 <span class="kw">match </span>desc.get_field_by_name(<span class="kw-2">&amp;</span>part.name_part) {
@@ -1327,19 +1342,60 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">fn </span>find_extension(<span class="kw-2">&amp;</span><span class="self">self</span>, scope: <span class="kw-2">&amp;</span>str, name: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Option</span>&lt;ExtensionDescriptor&gt; {
-        <span class="kw">match </span>resolve_name(<span class="kw-2">&amp;</span><span class="self">self</span>.pool.inner.names, scope, name) {
-            <span class="prelude-val">Some</span>((
+    <span class="attr">#[allow(clippy::result_large_err)]
+    </span><span class="kw">fn </span>find_extension(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        scope: <span class="kw-2">&amp;</span>str,
+        name: <span class="kw-2">&amp;</span>str,
+        file: FileIndex,
+        path: <span class="kw-2">&amp;</span>[i32],
+        extendee: <span class="kw-2">&amp;</span>MessageDescriptor,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;ExtensionDescriptor, DescriptorErrorKind&gt; {
+        <span class="kw">match </span>resolve_name(
+            <span class="kw-2">&amp;</span><span class="self">self</span>.pool.inner.files[file <span class="kw">as </span>usize].transitive_dependencies,
+            <span class="kw-2">&amp;</span><span class="self">self</span>.pool.inner.names,
+            scope,
+            name,
+        ) {
+            <span class="prelude-val">Ok</span>((
                 <span class="kw">_</span>,
                 <span class="kw-2">&amp;</span>Definition {
                     kind: DefinitionKind::Extension(index),
                     ..
                 },
-            )) =&gt; <span class="prelude-val">Some</span>(ExtensionDescriptor {
-                pool: <span class="self">self</span>.pool.clone(),
-                index,
+            )) =&gt; {
+                <span class="kw">let </span>desc = ExtensionDescriptor {
+                    pool: <span class="self">self</span>.pool.clone(),
+                    index,
+                };
+
+                <span class="kw">if </span>desc.containing_message() == <span class="kw-2">*</span>extendee {
+                    <span class="prelude-val">Ok</span>(desc)
+                } <span class="kw">else </span>{
+                    <span class="prelude-val">Err</span>(DescriptorErrorKind::InvalidOptionExtendee {
+                        name: desc.full_name().to_owned(),
+                        expected_extendee: extendee.full_name().to_owned(),
+                        actual_extendee: desc.containing_message().full_name().to_owned(),
+                        found: Label::new(<span class="kw-2">&amp;</span><span class="self">self</span>.pool.inner.files, <span class="string">&quot;found here&quot;</span>, file, path.into()),
+                    })
+                }
+            }
+            <span class="prelude-val">Ok</span>((<span class="kw">_</span>, def)) =&gt; {
+                <span class="kw">let </span>def_file = def.file;
+                <span class="kw">let </span>def_path = def.path.clone();
+
+                <span class="prelude-val">Err</span>(DescriptorErrorKind::InvalidType {
+                    name: name.to_owned(),
+                    expected: <span class="string">&quot;an extension&quot;</span>.to_owned(),
+                    found: Label::new(<span class="kw-2">&amp;</span><span class="self">self</span>.pool.inner.files, <span class="string">&quot;found here&quot;</span>, file, path.into()),
+                    defined: Label::new(<span class="kw-2">&amp;</span><span class="self">self</span>.pool.inner.files, <span class="string">&quot;defined here&quot;</span>, def_file, def_path),
+                })
+            }
+            <span class="prelude-val">Err</span>(help) =&gt; <span class="prelude-val">Err</span>(DescriptorErrorKind::NameNotFound {
+                name: name.to_owned(),
+                found: Label::new(<span class="kw-2">&amp;</span><span class="self">self</span>.pool.inner.files, <span class="string">&quot;found here&quot;</span>, file, path.into()),
+                help: fmt_name_not_found_help(<span class="kw-2">&amp;</span><span class="self">self</span>.pool.inner.files, file, help),
             }),
-            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
         }
     }
 }

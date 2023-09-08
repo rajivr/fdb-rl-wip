@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["walk_message_descriptor"],"struct":["MessageDescriptorValidatorVisitor","WellFormedMessageDescriptor"],"trait":["Visitor"]};
+window.SIDEBAR_ITEMS = {"fn":["walk_message_descriptor"],"static":["FDB_RL_WKT"],"struct":["MessageDescriptorValidatorVisitor","WellFormedMessageDescriptor"],"trait":["Visitor"]};

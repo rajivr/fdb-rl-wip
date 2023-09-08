@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/prost-reflect-0.11.5/src/descriptor/error.rs`."><title>error.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-07416f8512e0e04c.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="prost_reflect" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0-nightly (da6b55cc5 2023-07-17)" data-channel="nightly" data-search-js="search-f6292fe389d70017.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-6d2c9675f3d09c26.css" data-theme-dark-css="dark-45ceb8f2e522f4d1.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../static.files/light-6d2c9675f3d09c26.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../static.files/dark-45ceb8f2e522f4d1.css"><link rel="stylesheet" href="../../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../prost_reflect/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/prost-reflect-0.12.0/src/descriptor/error.rs`."><title>error.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-07416f8512e0e04c.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="prost_reflect" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0-nightly (da6b55cc5 2023-07-17)" data-channel="nightly" data-search-js="search-f6292fe389d70017.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-6d2c9675f3d09c26.css" data-theme-dark-css="dark-45ceb8f2e522f4d1.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../static.files/light-6d2c9675f3d09c26.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../static.files/dark-45ceb8f2e522f4d1.css"><link rel="stylesheet" href="../../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../prost_reflect/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -793,6 +793,55 @@
 <a href="#793" id="793">793</a>
 <a href="#794" id="794">794</a>
 <a href="#795" id="795">795</a>
+<a href="#796" id="796">796</a>
+<a href="#797" id="797">797</a>
+<a href="#798" id="798">798</a>
+<a href="#799" id="799">799</a>
+<a href="#800" id="800">800</a>
+<a href="#801" id="801">801</a>
+<a href="#802" id="802">802</a>
+<a href="#803" id="803">803</a>
+<a href="#804" id="804">804</a>
+<a href="#805" id="805">805</a>
+<a href="#806" id="806">806</a>
+<a href="#807" id="807">807</a>
+<a href="#808" id="808">808</a>
+<a href="#809" id="809">809</a>
+<a href="#810" id="810">810</a>
+<a href="#811" id="811">811</a>
+<a href="#812" id="812">812</a>
+<a href="#813" id="813">813</a>
+<a href="#814" id="814">814</a>
+<a href="#815" id="815">815</a>
+<a href="#816" id="816">816</a>
+<a href="#817" id="817">817</a>
+<a href="#818" id="818">818</a>
+<a href="#819" id="819">819</a>
+<a href="#820" id="820">820</a>
+<a href="#821" id="821">821</a>
+<a href="#822" id="822">822</a>
+<a href="#823" id="823">823</a>
+<a href="#824" id="824">824</a>
+<a href="#825" id="825">825</a>
+<a href="#826" id="826">826</a>
+<a href="#827" id="827">827</a>
+<a href="#828" id="828">828</a>
+<a href="#829" id="829">829</a>
+<a href="#830" id="830">830</a>
+<a href="#831" id="831">831</a>
+<a href="#832" id="832">832</a>
+<a href="#833" id="833">833</a>
+<a href="#834" id="834">834</a>
+<a href="#835" id="835">835</a>
+<a href="#836" id="836">836</a>
+<a href="#837" id="837">837</a>
+<a href="#838" id="838">838</a>
+<a href="#839" id="839">839</a>
+<a href="#840" id="840">840</a>
+<a href="#841" id="841">841</a>
+<a href="#842" id="842">842</a>
+<a href="#843" id="843">843</a>
+<a href="#844" id="844">844</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     fmt,
     ops::{Range, RangeInclusive},
@@ -875,6 +924,8 @@
     NameNotFound {
         name: String,
         found: Label,
+        <span class="attr">#[cfg_attr(not(feature = <span class="string">&quot;miette&quot;</span>), allow(dead_code))]
+        </span>help: <span class="prelude-ty">Option</span>&lt;String&gt;,
     },
     InvalidType {
         name: String,
@@ -916,6 +967,12 @@
         ty: String,
         value: String,
         is_last: bool,
+        found: Label,
+    },
+    InvalidOptionExtendee {
+        name: String,
+        expected_extendee: String,
+        actual_extendee: String,
         found: Label,
     },
     <span class="attr">#[cfg(feature = <span class="string">&quot;text-format&quot;</span>)]
@@ -1111,6 +1168,7 @@
             DescriptorErrorKind::EnumNumberInReservedRange { found, .. } =&gt; <span class="prelude-val">Some</span>(found),
             DescriptorErrorKind::OptionNotFound { found, .. } =&gt; <span class="prelude-val">Some</span>(found),
             DescriptorErrorKind::InvalidOptionType { found, .. } =&gt; <span class="prelude-val">Some</span>(found),
+            DescriptorErrorKind::InvalidOptionExtendee { found, .. } =&gt; <span class="prelude-val">Some</span>(found),
             <span class="attr">#[cfg(feature = <span class="string">&quot;text-format&quot;</span>)]
             </span>DescriptorErrorKind::InvalidMessageOption { found, .. } =&gt; <span class="prelude-val">Some</span>(found),
             DescriptorErrorKind::DuplicateOption { found, .. } =&gt; <span class="prelude-val">Some</span>(found),
@@ -1191,6 +1249,9 @@
                 found.resolve_span(file, source);
             }
             DescriptorErrorKind::InvalidOptionType { found, .. } =&gt; {
+                found.resolve_span(file, source);
+            }
+            DescriptorErrorKind::InvalidOptionExtendee { found, .. } =&gt; {
                 found.resolve_span(file, source);
             }
             <span class="attr">#[cfg(feature = <span class="string">&quot;text-format&quot;</span>)]
@@ -1353,6 +1414,18 @@
                     )
                 }
             }
+            DescriptorErrorKind::InvalidOptionExtendee {
+                name,
+                expected_extendee,
+                actual_extendee,
+                ..
+            } =&gt; {
+                <span class="macro">write!</span>(
+                    f,
+                    <span class="string">&quot;expected an extension to type &#39;{}&#39;, but &#39;{}&#39; extends &#39;{}&#39;&quot;</span>,
+                    expected_extendee, name, actual_extendee
+                )
+            }
             <span class="attr">#[cfg(feature = <span class="string">&quot;text-format&quot;</span>)]
             </span>DescriptorErrorKind::InvalidMessageOption { name, ty, .. } =&gt; {
                 <span class="macro">write!</span>(f, <span class="string">&quot;invalid value of type &#39;{}&#39; for option &#39;{}&#39;&quot;</span>, ty, name)
@@ -1405,7 +1478,9 @@
             DescriptorErrorKind::FieldNumberInExtensionRange { .. } =&gt; <span class="prelude-val">None</span>,
             DescriptorErrorKind::DuplicateFieldJsonName { .. } =&gt; <span class="prelude-val">None</span>,
             DescriptorErrorKind::DuplicateFieldCamelCaseName { .. } =&gt; <span class="prelude-val">None</span>,
-            DescriptorErrorKind::NameNotFound { .. } =&gt; <span class="prelude-val">None</span>,
+            DescriptorErrorKind::NameNotFound { help, .. } =&gt; help
+                .as_ref()
+                .map(|h| -&gt; Box&lt;<span class="kw">dyn </span>fmt::Display&gt; { Box::new(h.clone()) }),
             DescriptorErrorKind::InvalidType { .. } =&gt; <span class="prelude-val">None</span>,
             DescriptorErrorKind::InvalidFieldDefault { .. } =&gt; <span class="prelude-val">None</span>,
             DescriptorErrorKind::EmptyEnum { .. } =&gt; <span class="prelude-val">None</span>,
@@ -1416,6 +1491,7 @@
             DescriptorErrorKind::EnumNumberInReservedRange { .. } =&gt; <span class="prelude-val">None</span>,
             DescriptorErrorKind::OptionNotFound { .. } =&gt; <span class="prelude-val">None</span>,
             DescriptorErrorKind::InvalidOptionType { .. } =&gt; <span class="prelude-val">None</span>,
+            DescriptorErrorKind::InvalidOptionExtendee { .. } =&gt; <span class="prelude-val">None</span>,
             <span class="attr">#[cfg(feature = <span class="string">&quot;text-format&quot;</span>)]
             </span>DescriptorErrorKind::InvalidMessageOption { .. } =&gt; <span class="prelude-val">None</span>,
             DescriptorErrorKind::DuplicateOption { .. } =&gt; <span class="prelude-val">None</span>,
@@ -1497,6 +1573,9 @@
             DescriptorErrorKind::InvalidOptionType { found, .. } =&gt; {
                 spans.extend(found.to_span());
             }
+            DescriptorErrorKind::InvalidOptionExtendee { found, .. } =&gt; {
+                spans.extend(found.to_span());
+            }
             <span class="attr">#[cfg(feature = <span class="string">&quot;text-format&quot;</span>)]
             </span>DescriptorErrorKind::InvalidMessageOption { found, .. } =&gt; {
                 spans.extend(found.to_span());
@@ -1520,6 +1599,25 @@
             <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
         }
     }
+}
+
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">type </span>NameNotFoundHelp = Vec&lt;(String, FileIndex)&gt;;
+
+<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>fmt_name_not_found_help(
+    files: <span class="kw-2">&amp;</span>[FileDescriptorInner],
+    root: FileIndex,
+    help: NameNotFoundHelp,
+) -&gt; <span class="prelude-ty">Option</span>&lt;String&gt; {
+    <span class="kw">let </span>root_name = files[root <span class="kw">as </span>usize].raw.name();
+    help.into_iter()
+        .map(|(name, dep)| {
+            <span class="kw">let </span>dep_name = files[dep <span class="kw">as </span>usize].raw.name();
+            <span class="macro">format!</span>(
+                <span class="string">&quot;&#39;{}&#39; is defined in &#39;{}&#39;, which is not imported by &#39;{}&#39;&quot;</span>,
+                name, dep_name, root_name
+            )
+        })
+        .next()
 }
 
 <span class="kw">impl </span>Label {

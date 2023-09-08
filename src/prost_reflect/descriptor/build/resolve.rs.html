@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/prost-reflect-0.11.5/src/descriptor/build/resolve.rs`."><title>resolve.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-07416f8512e0e04c.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="prost_reflect" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0-nightly (da6b55cc5 2023-07-17)" data-channel="nightly" data-search-js="search-f6292fe389d70017.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-6d2c9675f3d09c26.css" data-theme-dark-css="dark-45ceb8f2e522f4d1.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../../../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../../static.files/light-6d2c9675f3d09c26.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../../static.files/dark-45ceb8f2e522f4d1.css"><link rel="stylesheet" href="../../../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../prost_reflect/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/prost-reflect-0.12.0/src/descriptor/build/resolve.rs`."><title>resolve.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-07416f8512e0e04c.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="prost_reflect" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0-nightly (da6b55cc5 2023-07-17)" data-channel="nightly" data-search-js="search-f6292fe389d70017.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-6d2c9675f3d09c26.css" data-theme-dark-css="dark-45ceb8f2e522f4d1.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../../../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../../static.files/light-6d2c9675f3d09c26.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../../static.files/dark-45ceb8f2e522f4d1.css"><link rel="stylesheet" href="../../../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../prost_reflect/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -1028,7 +1028,37 @@
 <a href="#1028" id="1028">1028</a>
 <a href="#1029" id="1029">1029</a>
 <a href="#1030" id="1030">1030</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span>prost::bytes::Bytes;
+<a href="#1031" id="1031">1031</a>
+<a href="#1032" id="1032">1032</a>
+<a href="#1033" id="1033">1033</a>
+<a href="#1034" id="1034">1034</a>
+<a href="#1035" id="1035">1035</a>
+<a href="#1036" id="1036">1036</a>
+<a href="#1037" id="1037">1037</a>
+<a href="#1038" id="1038">1038</a>
+<a href="#1039" id="1039">1039</a>
+<a href="#1040" id="1040">1040</a>
+<a href="#1041" id="1041">1041</a>
+<a href="#1042" id="1042">1042</a>
+<a href="#1043" id="1043">1043</a>
+<a href="#1044" id="1044">1044</a>
+<a href="#1045" id="1045">1045</a>
+<a href="#1046" id="1046">1046</a>
+<a href="#1047" id="1047">1047</a>
+<a href="#1048" id="1048">1048</a>
+<a href="#1049" id="1049">1049</a>
+<a href="#1050" id="1050">1050</a>
+<a href="#1051" id="1051">1051</a>
+<a href="#1052" id="1052">1052</a>
+<a href="#1053" id="1053">1053</a>
+<a href="#1054" id="1054">1054</a>
+<a href="#1055" id="1055">1055</a>
+<a href="#1056" id="1056">1056</a>
+<a href="#1057" id="1057">1057</a>
+<a href="#1058" id="1058">1058</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashSet;
+
+<span class="kw">use </span>prost::bytes::Bytes;
 
 <span class="kw">use crate</span>::{
     descriptor::{
@@ -1037,7 +1067,9 @@
             visit::{visit, Visitor},
             DescriptorPoolOffsets,
         },
-        error::{DescriptorError, DescriptorErrorKind, Label},
+        error::{
+            fmt_name_not_found_help, DescriptorError, DescriptorErrorKind, Label, NameNotFoundHelp,
+        },
         find_enum_proto, find_message_proto, tag, to_index,
         types::{
             field_descriptor_proto, DescriptorProto, EnumValueDescriptorProto,
@@ -1079,11 +1111,17 @@
 
 <span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Visitor <span class="kw">for </span>ResolveVisitor&lt;<span class="lifetime">&#39;a</span>&gt; {
     <span class="kw">fn </span>visit_file(<span class="kw-2">&amp;mut </span><span class="self">self</span>, path: <span class="kw-2">&amp;</span>[i32], index: FileIndex, file: <span class="kw-2">&amp;</span>FileDescriptorProto) {
+        <span class="kw">let </span><span class="kw-2">mut </span>transitive_dependencies = HashSet::with_capacity(file.dependency.len() + <span class="number">1</span>);
+        transitive_dependencies.insert(index);
+
         <span class="kw">for </span>(i, dependency) <span class="kw">in </span>file.dependency.iter().enumerate() {
             <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>dependency_index) = <span class="self">self</span>.pool.file_names.get(dependency.as_str()) {
                 <span class="self">self</span>.pool.files[index <span class="kw">as </span>usize]
                     .dependencies
                     .push(dependency_index);
+
+                transitive_dependencies.insert(dependency_index);
+                <span class="self">self</span>.resolve_public_dependencies(<span class="kw-2">&amp;mut </span>transitive_dependencies, dependency_index);
             } <span class="kw">else </span>{
                 <span class="self">self</span>.errors.push(DescriptorErrorKind::FileNotFound {
                     name: dependency.clone(),
@@ -1096,6 +1134,9 @@
                 });
             }
         }
+
+        <span class="self">self</span>.pool.files[index <span class="kw">as </span>usize].transitive_dependencies = transitive_dependencies;
+
         <span class="kw">for </span><span class="kw-2">&amp;</span>public_dependency <span class="kw">in </span><span class="kw-2">&amp;</span>file.public_dependency {
             <span class="kw">if </span>!<span class="macro">matches!</span>(usize::try_from(public_dependency), <span class="prelude-val">Ok</span>(i) <span class="kw">if </span>i &lt; file.dependency.len()) {
                 <span class="self">self</span>.errors.push(DescriptorErrorKind::InvalidImportIndex);
@@ -1434,6 +1475,20 @@
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; ResolveVisitor&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">fn </span>resolve_public_dependencies(<span class="kw-2">&amp;</span><span class="self">self</span>, dependencies: <span class="kw-2">&amp;mut </span>HashSet&lt;FileIndex&gt;, index: FileIndex) {
+        <span class="kw">let </span>file = <span class="kw-2">&amp;</span><span class="self">self</span>.pool.files[index <span class="kw">as </span>usize];
+
+        <span class="kw">for </span>(i, dependency) <span class="kw">in </span>file.raw.dependency.iter().enumerate() {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>dependency_index) = <span class="self">self</span>.pool.file_names.get(dependency.as_str()) {
+                <span class="kw">if </span>file.raw.public_dependency.contains(<span class="kw-2">&amp;</span>(i <span class="kw">as </span>i32))
+                    &amp;&amp; !dependencies.insert(dependency_index)
+                {
+                    <span class="self">self</span>.resolve_public_dependencies(dependencies, dependency_index);
+                }
+            }
+        }
+    }
+
     <span class="kw">fn </span>check_field_number(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         message: MessageIndex,
@@ -1608,7 +1663,7 @@
             }
         } <span class="kw">else </span>{
             <span class="kw">match </span><span class="self">self</span>.resolve_name(scope, ty_name, file, path, tag::field::TYPE_NAME) {
-                <span class="prelude-val">Some</span>(Definition {
+                <span class="prelude-val">Ok</span>(Definition {
                     kind: DefinitionKind::Message(message),
                     ..
                 }) =&gt; {
@@ -1618,11 +1673,11 @@
                         <span class="prelude-val">Ok</span>(KindIndex::Message(<span class="kw-2">*</span>message))
                     }
                 }
-                <span class="prelude-val">Some</span>(Definition {
+                <span class="prelude-val">Ok</span>(Definition {
                     kind: DefinitionKind::Enum(enum_),
                     ..
                 }) =&gt; <span class="prelude-val">Ok</span>(KindIndex::Enum(<span class="kw-2">*</span>enum_)),
-                <span class="prelude-val">Some</span>(def) =&gt; {
+                <span class="prelude-val">Ok</span>(def) =&gt; {
                     <span class="kw">let </span>def_file = def.file;
                     <span class="kw">let </span>def_path = def.path.clone();
 
@@ -1639,7 +1694,7 @@
                     });
                     <span class="prelude-val">Err</span>(())
                 }
-                <span class="prelude-val">None </span>=&gt; {
+                <span class="prelude-val">Err</span>(help) =&gt; {
                     <span class="self">self</span>.errors.push(DescriptorErrorKind::NameNotFound {
                         name: ty_name.to_owned(),
                         found: Label::new(
@@ -1648,6 +1703,7 @@
                             file,
                             join_path(path, <span class="kw-2">&amp;</span>[tag::field::TYPE_NAME]),
                         ),
+                        help: fmt_name_not_found_help(<span class="kw-2">&amp;</span><span class="self">self</span>.pool.files, file, help),
                     });
                     <span class="prelude-val">Err</span>(())
                 }
@@ -1741,11 +1797,11 @@
         path2: i32,
     ) -&gt; <span class="prelude-ty">Option</span>&lt;MessageIndex&gt; {
         <span class="kw">match </span><span class="self">self</span>.resolve_name(scope, name, file, path1, path2) {
-            <span class="prelude-val">Some</span>(Definition {
+            <span class="prelude-val">Ok</span>(Definition {
                 kind: DefinitionKind::Message(message),
                 ..
             }) =&gt; <span class="prelude-val">Some</span>(<span class="kw-2">*</span>message),
-            <span class="prelude-val">Some</span>(def) =&gt; {
+            <span class="prelude-val">Ok</span>(def) =&gt; {
                 <span class="kw">let </span>def_file = def.file;
                 <span class="kw">let </span>def_path = def.path.clone();
 
@@ -1762,7 +1818,7 @@
                 });
                 <span class="prelude-val">None
             </span>}
-            <span class="prelude-val">None </span>=&gt; {
+            <span class="prelude-val">Err</span>(help) =&gt; {
                 <span class="self">self</span>.errors.push(DescriptorErrorKind::NameNotFound {
                     name: name.to_owned(),
                     found: Label::new(
@@ -1771,6 +1827,7 @@
                         file,
                         join_path(path1, <span class="kw-2">&amp;</span>[path2]),
                     ),
+                    help: fmt_name_not_found_help(<span class="kw-2">&amp;</span><span class="self">self</span>.pool.files, file, help),
                 });
                 <span class="prelude-val">None
             </span>}
@@ -1784,30 +1841,32 @@
         file: FileIndex,
         path: <span class="kw-2">&amp;</span>[i32],
         tag: i32,
-    ) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Definition&gt; {
-        <span class="kw">if let </span><span class="prelude-val">Some</span>((type_name, def)) = resolve_name(<span class="kw-2">&amp;</span><span class="self">self</span>.pool.names, scope, name) {
-            <span class="kw">let </span>ty = <span class="kw">if </span><span class="macro">matches!</span>(
-                def,
-                Definition {
-                    kind: DefinitionKind::Message(<span class="kw">_</span>),
-                    ..
-                }
-            ) {
-                field_descriptor_proto::Type::Message
-            } <span class="kw">else </span>{
-                field_descriptor_proto::Type::Enum
-            };
-            set_type_name(
-                <span class="kw-2">&amp;mut </span><span class="self">self</span>.pool.files[file <span class="kw">as </span>usize].raw,
-                path,
-                tag,
-                type_name.into_owned(),
-                ty,
-            );
-            <span class="prelude-val">Some</span>(def)
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span>Definition, NameNotFoundHelp&gt; {
+        <span class="kw">let </span>(type_name, def) = resolve_name(
+            <span class="kw-2">&amp;</span><span class="self">self</span>.pool.files[file <span class="kw">as </span>usize].transitive_dependencies,
+            <span class="kw-2">&amp;</span><span class="self">self</span>.pool.names,
+            scope,
+            name,
+        )<span class="question-mark">?</span>;
+        <span class="kw">let </span>ty = <span class="kw">if </span><span class="macro">matches!</span>(
+            def,
+            Definition {
+                kind: DefinitionKind::Message(<span class="kw">_</span>),
+                ..
+            }
+        ) {
+            field_descriptor_proto::Type::Message
         } <span class="kw">else </span>{
-            <span class="prelude-val">None
-        </span>}
+            field_descriptor_proto::Type::Enum
+        };
+        set_type_name(
+            <span class="kw-2">&amp;mut </span><span class="self">self</span>.pool.files[file <span class="kw">as </span>usize].raw,
+            path,
+            tag,
+            type_name.into_owned(),
+            ty,
+        );
+        <span class="prelude-val">Ok</span>(def)
     }
 
     <span class="kw">fn </span>add_missing_required_field_error(<span class="kw-2">&amp;mut </span><span class="self">self</span>, file: FileIndex, path: Box&lt;[i32]&gt;) {
@@ -2017,15 +2076,15 @@
     );
     <span class="macro">assert_eq!</span>(
         <span class="prelude-val">Ok</span>(Bytes::from_static(<span class="string">b&quot;\0&quot;</span>)),
-        unescape_c_escape_string(<span class="string">r#&quot;\0&quot;#</span>),
+        unescape_c_escape_string(<span class="string">r&quot;\0&quot;</span>),
     );
     <span class="macro">assert_eq!</span>(
         <span class="prelude-val">Ok</span>(Bytes::from_static(<span class="kw-2">&amp;</span>[<span class="number">0o012</span>, <span class="number">0o156</span>])),
-        unescape_c_escape_string(<span class="string">r#&quot;\012\156&quot;#</span>),
+        unescape_c_escape_string(<span class="string">r&quot;\012\156&quot;</span>),
     );
     <span class="macro">assert_eq!</span>(
         <span class="prelude-val">Ok</span>(Bytes::from_static(<span class="kw-2">&amp;</span>[<span class="number">0x01</span>, <span class="number">0x02</span>])),
-        unescape_c_escape_string(<span class="string">r#&quot;\x01\x02&quot;#</span>)
+        unescape_c_escape_string(<span class="string">r&quot;\x01\x02&quot;</span>)
     );
     <span class="macro">assert_eq!</span>(
         <span class="prelude-val">Ok</span>(Bytes::from_static(
@@ -2035,27 +2094,24 @@
     );
     <span class="macro">assert_eq!</span>(
         <span class="prelude-val">Err</span>(<span class="string">&quot;hex escape must contain two characters&quot;</span>),
-        unescape_c_escape_string(<span class="string">r#&quot;\x&quot;#</span>)
+        unescape_c_escape_string(<span class="string">r&quot;\x&quot;</span>)
     );
     <span class="macro">assert_eq!</span>(
         <span class="prelude-val">Err</span>(<span class="string">&quot;hex escape must contain two characters&quot;</span>),
-        unescape_c_escape_string(<span class="string">r#&quot;\x1&quot;#</span>)
+        unescape_c_escape_string(<span class="string">r&quot;\x1&quot;</span>)
     );
     <span class="macro">assert_eq!</span>(
         <span class="prelude-val">Ok</span>(Bytes::from_static(<span class="string">b&quot;\x11&quot;</span>)),
-        unescape_c_escape_string(<span class="string">r#&quot;\x11&quot;#</span>),
+        unescape_c_escape_string(<span class="string">r&quot;\x11&quot;</span>),
     );
     <span class="macro">assert_eq!</span>(
         <span class="prelude-val">Ok</span>(Bytes::from_static(<span class="string">b&quot;\x111&quot;</span>)),
-        unescape_c_escape_string(<span class="string">r#&quot;\x111&quot;#</span>),
+        unescape_c_escape_string(<span class="string">r&quot;\x111&quot;</span>)
     );
     <span class="macro">assert_eq!</span>(
         <span class="prelude-val">Err</span>(<span class="string">&quot;invalid escape character&quot;</span>),
-        unescape_c_escape_string(<span class="string">r#&quot;\w&quot;#</span>)
+        unescape_c_escape_string(<span class="string">r&quot;\w&quot;</span>)
     );
-    <span class="macro">assert_eq!</span>(
-        <span class="prelude-val">Err</span>(<span class="string">&quot;invalid hex escape&quot;</span>),
-        unescape_c_escape_string(<span class="string">r#&quot;\x__&quot;#</span>)
-    );
+    <span class="macro">assert_eq!</span>(<span class="prelude-val">Err</span>(<span class="string">&quot;invalid hex escape&quot;</span>), unescape_c_escape_string(<span class="string">r&quot;\x__&quot;</span>));
 }
 </code></pre></div></section></main></body></html>

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/prost-derive-0.11.9/src/field/scalar.rs`."><title>scalar.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-07416f8512e0e04c.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="prost_derive" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0-nightly (da6b55cc5 2023-07-17)" data-channel="nightly" data-search-js="search-f6292fe389d70017.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-6d2c9675f3d09c26.css" data-theme-dark-css="dark-45ceb8f2e522f4d1.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../static.files/light-6d2c9675f3d09c26.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../static.files/dark-45ceb8f2e522f4d1.css"><link rel="stylesheet" href="../../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../prost_derive/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/prost-derive-0.12.0/src/field/scalar.rs`."><title>scalar.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-07416f8512e0e04c.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="prost_derive" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0-nightly (da6b55cc5 2023-07-17)" data-channel="nightly" data-search-js="search-f6292fe389d70017.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-6d2c9675f3d09c26.css" data-theme-dark-css="dark-45ceb8f2e522f4d1.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../static.files/light-6d2c9675f3d09c26.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../static.files/dark-45ceb8f2e522f4d1.css"><link rel="stylesheet" href="../../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../prost_derive/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -821,15 +821,18 @@
 <a href="#821" id="821">821</a>
 <a href="#822" id="822">822</a>
 <a href="#823" id="823">823</a>
+<a href="#824" id="824">824</a>
+<a href="#825" id="825">825</a>
+<a href="#826" id="826">826</a>
+<a href="#827" id="827">827</a>
+<a href="#828" id="828">828</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::convert::TryFrom;
 <span class="kw">use </span>std::fmt;
 
 <span class="kw">use </span>anyhow::{anyhow, bail, Error};
 <span class="kw">use </span>proc_macro2::{Span, TokenStream};
 <span class="kw">use </span>quote::{quote, ToTokens, TokenStreamExt};
-<span class="kw">use </span>syn::{
-    parse_str, Ident, Index, Lit, LitByteStr, Meta, MetaList, MetaNameValue, NestedMeta, Path,
-};
+<span class="kw">use </span>syn::{parse_str, Expr, ExprLit, Ident, Index, Lit, LitByteStr, Meta, MetaNameValue, Path};
 
 <span class="kw">use </span><span class="kw">crate</span>::field::{bool_attr, set_option, tag_attr, Label};
 
@@ -1044,16 +1047,18 @@
                 <span class="kw">struct </span>#wrap_name&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>i32);
                 <span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; ::core::fmt::Debug <span class="kw">for </span>#wrap_name&lt;<span class="lifetime">&#39;a</span>&gt; {
                     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>::core::fmt::Formatter) -&gt; ::core::fmt::Result {
-                        <span class="kw">match </span>#ty::from_i32(<span class="kw-2">*</span><span class="self">self</span>.<span class="number">0</span>) {
-                            <span class="prelude-val">None </span>=&gt; ::core::fmt::Debug::fmt(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, f),
-                            <span class="prelude-val">Some</span>(en) =&gt; ::core::fmt::Debug::fmt(<span class="kw-2">&amp;</span>en, f),
+                        <span class="kw">let </span>res: <span class="prelude-ty">Result</span>&lt;#ty, <span class="kw">_</span>&gt; = ::core::convert::TryFrom::try_from(<span class="kw-2">*</span><span class="self">self</span>.<span class="number">0</span>);
+                        <span class="kw">match </span>res {
+                            <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; ::core::fmt::Debug::fmt(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>, f),
+                            <span class="prelude-val">Ok</span>(en) =&gt; ::core::fmt::Debug::fmt(<span class="kw-2">&amp;</span>en, f),
                         }
                     }
                 }
             }
         } <span class="kw">else </span>{
             <span class="macro">quote! </span>{
-                <span class="kw">fn </span>#wrap_name&lt;T&gt;(v: T) -&gt; T { v }
+                <span class="attr">#[allow(non_snake_case)]
+                </span><span class="kw">fn </span>#wrap_name&lt;T&gt;(v: T) -&gt; T { v }
             }
         }
     }
@@ -1120,7 +1125,7 @@
                     <span class="macro">quote! </span>{
                         <span class="attr">#[doc=#get_doc]
                         </span><span class="kw">pub fn </span>#get(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; #ty {
-                            #ty::from_i32(<span class="self">self</span>.#ident).unwrap_or(#default)
+                            ::core::convert::TryFrom::try_from(<span class="self">self</span>.#ident).unwrap_or(#default)
                         }
 
                         <span class="attr">#[doc=#set_doc]
@@ -1138,7 +1143,10 @@
                     <span class="macro">quote! </span>{
                         <span class="attr">#[doc=#get_doc]
                         </span><span class="kw">pub fn </span>#get(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; #ty {
-                            <span class="self">self</span>.#ident.and_then(#ty::from_i32).unwrap_or(#default)
+                            <span class="self">self</span>.#ident.and_then(|x| {
+                                <span class="kw">let </span>result: <span class="prelude-ty">Result</span>&lt;#ty, <span class="kw">_</span>&gt; = ::core::convert::TryFrom::try_from(x);
+                                result.ok()
+                            }).unwrap_or(#default)
                         }
 
                         <span class="attr">#[doc=#set_doc]
@@ -1160,7 +1168,10 @@
                             ::core::iter::Cloned&lt;::core::slice::Iter&lt;i32&gt;&gt;,
                             <span class="kw">fn</span>(i32) -&gt; ::core::option::Option&lt;#ty&gt;,
                         &gt; {
-                            <span class="self">self</span>.#ident.iter().cloned().filter_map(#ty::from_i32)
+                            <span class="self">self</span>.#ident.iter().cloned().filter_map(|x| {
+                                <span class="kw">let </span>result: <span class="prelude-ty">Result</span>&lt;#ty, <span class="kw">_</span>&gt; = ::core::convert::TryFrom::try_from(x);
+                                result.ok()
+                            })
                         }
                         <span class="attr">#[doc=#push_doc]
                         </span><span class="kw">pub fn </span>#push(<span class="kw-2">&amp;mut </span><span class="self">self</span>, value: #ty) {
@@ -1262,29 +1273,24 @@
             Meta::Path(<span class="kw-2">ref </span>name) <span class="kw">if </span>name.is_ident(<span class="string">&quot;bytes&quot;</span>) =&gt; Ty::Bytes(BytesTy::Vec),
             Meta::NameValue(MetaNameValue {
                 <span class="kw-2">ref </span>path,
-                lit: Lit::Str(<span class="kw-2">ref </span>l),
+                value:
+                    Expr::Lit(ExprLit {
+                        lit: Lit::Str(<span class="kw-2">ref </span>l),
+                        ..
+                    }),
                 ..
             }) <span class="kw">if </span>path.is_ident(<span class="string">&quot;bytes&quot;</span>) =&gt; Ty::Bytes(BytesTy::try_from_str(<span class="kw-2">&amp;</span>l.value())<span class="question-mark">?</span>),
             Meta::NameValue(MetaNameValue {
                 <span class="kw-2">ref </span>path,
-                lit: Lit::Str(<span class="kw-2">ref </span>l),
+                value:
+                    Expr::Lit(ExprLit {
+                        lit: Lit::Str(<span class="kw-2">ref </span>l),
+                        ..
+                    }),
                 ..
             }) <span class="kw">if </span>path.is_ident(<span class="string">&quot;enumeration&quot;</span>) =&gt; Ty::Enumeration(parse_str::&lt;Path&gt;(<span class="kw-2">&amp;</span>l.value())<span class="question-mark">?</span>),
-            Meta::List(MetaList {
-                <span class="kw-2">ref </span>path,
-                <span class="kw-2">ref </span>nested,
-                ..
-            }) <span class="kw">if </span>path.is_ident(<span class="string">&quot;enumeration&quot;</span>) =&gt; {
-                <span class="comment">// TODO(rustlang/rust#23121): slice pattern matching would make this much nicer.
-                </span><span class="kw">if </span>nested.len() == <span class="number">1 </span>{
-                    <span class="kw">if let </span>NestedMeta::Meta(Meta::Path(<span class="kw-2">ref </span>path)) = nested[<span class="number">0</span>] {
-                        Ty::Enumeration(path.clone())
-                    } <span class="kw">else </span>{
-                        <span class="macro">bail!</span>(<span class="string">&quot;invalid enumeration attribute: item must be an identifier&quot;</span>);
-                    }
-                } <span class="kw">else </span>{
-                    <span class="macro">bail!</span>(<span class="string">&quot;invalid enumeration attribute: only a single identifier is supported&quot;</span>);
-                }
+            Meta::List(<span class="kw-2">ref </span>meta_list) <span class="kw">if </span>meta_list.path.is_ident(<span class="string">&quot;enumeration&quot;</span>) =&gt; {
+                Ty::Enumeration(meta_list.parse_args::&lt;Path&gt;()<span class="question-mark">?</span>)
             }
             <span class="kw">_ </span>=&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
         };
@@ -1441,8 +1447,12 @@
     <span class="kw">pub fn </span>from_attr(attr: <span class="kw-2">&amp;</span>Meta) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Lit&gt;, Error&gt; {
         <span class="kw">if </span>!attr.path().is_ident(<span class="string">&quot;default&quot;</span>) {
             <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
-        } <span class="kw">else if let </span>Meta::NameValue(<span class="kw-2">ref </span>name_value) = <span class="kw-2">*</span>attr {
-            <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(name_value.lit.clone()))
+        } <span class="kw">else if let </span>Meta::NameValue(MetaNameValue {
+            value: Expr::Lit(ExprLit { <span class="kw-2">ref </span>lit, .. }),
+            ..
+        }) = <span class="kw-2">*</span>attr
+        {
+            <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(lit.clone()))
         } <span class="kw">else </span>{
             <span class="macro">bail!</span>(<span class="string">&quot;invalid default value attribute: {:?}&quot;</span>, attr)
         }
