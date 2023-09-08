@@ -9,3 +9,5 @@ message HelloWorld {
   optional string hello = 2;
   optional string world = 3;
 }
+
+// TODO: recursive test case - valid, invalid (by removing optional).

@@ -55,8 +55,8 @@ package fdb_rl.field.v1;
 //
 // In our case, we use `uuid::Uuid` which uses `type Bytes = [u8; 16]`
 // internally [2]. So, we use Protobuf `bytes` type internally in
-// UUID`. From this [3] comment, it looks like Google uses `bytes` and
-// `string` for UUID.
+// `UUID`. From this [3] comment, it looks like Google uses `bytes`
+// and `string` for UUID.
 //
 // [1]: https://docs.oracle.com/javase/8/docs/api/java/util/UUID.html
 // [2]: https://docs.rs/uuid/1.4.1/src/uuid/lib.rs.html#450

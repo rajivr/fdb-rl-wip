@@ -5,10 +5,11 @@
     rust_2018_idioms,
     unreachable_pub
 )]
-#![feature(type_alias_impl_trait)]
-#![feature(trait_upcasting)]
-#![feature(async_fn_in_trait)]
 #![feature(arc_unwrap_or_clone)]
+#![feature(async_fn_in_trait)]
+#![feature(lazy_cell)]
+#![feature(trait_upcasting)]
+#![feature(type_alias_impl_trait)]
 #![allow(rustdoc::private_intra_doc_links)]
 // TODO: Remove this later.
 #![allow(rustdoc::broken_intra_doc_links)]

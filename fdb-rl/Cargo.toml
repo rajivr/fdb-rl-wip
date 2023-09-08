@@ -21,9 +21,10 @@ bytes = "1"
 fdb = { git = "https://github.com/rajivr/fdb-wip", branch = "main" }
 fdb-rl-proto = { version = "0.1.0", path = "../fdb-rl-proto", default-features = false }
 num-bigint = "0.4"
-prost = "0.11"
-prost-reflect = "0.11"
+prost = "0.12"
+prost-reflect = "0.12"
 tokio-stream = "0.1"
+uuid = { version = "0.8", features = ["v4"] }
 
 [dev-dependencies]
 libtest-mimic = "0.5"
