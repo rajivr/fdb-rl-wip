@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["key_expression"]};
+window.SIDEBAR_ITEMS = {"mod":["java","key_expression"]};

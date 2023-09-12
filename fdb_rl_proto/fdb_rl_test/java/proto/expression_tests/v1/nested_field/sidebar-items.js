@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["other_nested"],"struct":["OtherNested"]};

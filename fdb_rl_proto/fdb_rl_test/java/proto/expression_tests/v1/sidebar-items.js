@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["customer","nested_field"],"struct":["Customer","NestedField","RecordTypeUnion","SubString","SubStrings","TestScalarFieldAccess"]};
