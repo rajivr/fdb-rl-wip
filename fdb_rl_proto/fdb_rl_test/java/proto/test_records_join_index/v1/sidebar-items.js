@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["nested_a","nested_b"],"struct":["Customer","CustomerWithHeader","Header","Item","JoiningRecord","MyOtherRecord","MySimpleRecord","NestedA","NestedB","Order","OrderWithHeader","RecordTypeUnion","Ref","TypeA","TypeB","TypeC"]};

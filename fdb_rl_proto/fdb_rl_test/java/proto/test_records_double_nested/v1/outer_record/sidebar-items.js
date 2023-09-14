@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["middle_record"],"struct":["MiddleRecord"]};

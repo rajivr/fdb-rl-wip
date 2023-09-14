@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["MyChainedRecord2","RecordTypeUnion"]};

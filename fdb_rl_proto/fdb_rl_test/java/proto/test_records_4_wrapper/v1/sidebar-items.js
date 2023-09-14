@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["RestaurantComplexRecord","RestaurantComplexReview","RestaurantComplexReviewList","RestaurantRecord","RestaurantReview","RestaurantReviewList","RestaurantReviewer","RestaurantTag","RestaurantTagList","ReviewerEndorsements","ReviewerEndorsementsList","ReviewerStats","StringList","UnionDescriptor"]};
