@@ -1,0 +1,142 @@
+/*
+ * test_records_join_index.proto
+ *
+ * This source file is part of the FoundationDB open source project
+ *
+ * Copyright 2015-2018 Apple Inc. and the FoundationDB project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+syntax = "proto3";
+
+package fdb_rl_test.java.proto.test_records_join_index.v1;
+
+import "fdb_rl/field/v1/field.proto";
+
+option java_outer_classname = "TestRecordsJoinIndexProto";
+option java_package = "com.apple.foundationdb.record";
+
+message MySimpleRecord {
+  optional int64 rec_no = 1;
+  optional string str_value = 2;
+  optional int32 num_value = 3;
+  optional int32 num_value_2 = 4;
+  optional int64 other_rec_no = 5;
+}
+
+message MyOtherRecord {
+  optional int64 rec_no = 1;
+  optional int32 num_value = 2;
+  optional int32 num_value_3 = 3;
+}
+
+message JoiningRecord {
+  optional int64 rec_no = 1;
+  optional int32 simple_rec_no = 2;
+  optional int64 other_rec_no = 3;
+}
+
+message TypeA {
+  optional int64 rec_no = 1;
+  optional string str_value = 2;
+  optional int64 type_b_rec_no = 3;
+}
+
+message TypeB {
+  optional int64 rec_no = 1;
+  optional string str_value = 2;
+  optional int64 type_c_rec_no = 3;
+}
+
+message TypeC {
+  optional int64 rec_no = 1;
+  optional string str_value = 2;
+  optional int64 type_a_rec_no = 3;
+}
+
+message NestedA {
+  optional int64 rec_no = 1;
+  message Repeated {
+    repeated int32 nums = 1;
+  }
+  repeated Repeated repeated = 2;
+}
+
+message NestedB {
+  optional int64 rec_no = 1;
+  message Repeated {
+    repeated int32 nums = 1;
+  }
+  repeated Repeated repeated = 2;
+}
+
+message Customer {
+  optional fdb_rl.field.v1.UUID uuid = 1;
+  optional string name = 2;
+  optional string city = 3;
+}
+
+message Order {
+  optional fdb_rl.field.v1.UUID uuid = 1;
+  optional int32 order_no = 2;
+  optional fdb_rl.field.v1.UUID customer_uuid = 3;
+}
+
+message Item {
+  optional fdb_rl.field.v1.UUID uuid = 1;
+  optional int32 item_no = 2;
+  optional int32 quantity = 3;
+  optional int32 total_price = 4;
+  optional fdb_rl.field.v1.UUID order_uuid = 5;
+}
+
+message Header {
+  optional int64 z_key = 1;
+  optional string rec_id = 2;
+  optional int64 int_rec_id = 3;
+}
+
+message Ref {
+  optional string string_value = 1;
+}
+
+message CustomerWithHeader {
+  optional Header header = 1;
+  optional string name = 2;
+  optional string city = 3;
+}
+
+message OrderWithHeader {
+  optional Header header = 1;
+  optional Ref cust_ref = 2;
+  optional int32 order_no = 3;
+  optional int32 quantity = 4;
+  repeated Ref cc = 5;
+  optional string order_desc = 6;
+}
+
+message RecordTypeUnion {
+  optional MySimpleRecord my_simple_record = 1;
+  optional MyOtherRecord my_other_record = 2;
+  optional JoiningRecord joining_record = 3;
+  optional TypeA type_a = 4;
+  optional TypeB type_b = 5;
+  optional TypeC type_c = 6;
+  optional NestedA nested_a = 7;
+  optional NestedB nested_b = 8;
+  optional Customer customer = 9;
+  optional Order order = 10;
+  optional Item item = 11;
+  optional CustomerWithHeader customer_with_header = 12;
+  optional OrderWithHeader order_with_header = 13;
+}

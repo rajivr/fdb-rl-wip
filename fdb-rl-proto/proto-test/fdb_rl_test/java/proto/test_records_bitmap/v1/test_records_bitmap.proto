@@ -1,0 +1,53 @@
+/*
+ * test_records_bitmap.proto
+ *
+ * This source file is part of the FoundationDB open source project
+ *
+ * Copyright 2020 Apple Inc. and the FoundationDB project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+syntax = "proto3";
+
+package fdb_rl_test.java.proto.test_records_bitmap.v1;
+
+option java_outer_classname = "TestRecordsBitmapProto";
+option java_package = "com.apple.foundationdb.record";
+
+message MySimpleRecord {
+  optional int64 rec_no = 1;
+  optional string str_value = 2;
+  optional int32 num_value_unique = 3;
+  optional int32 num_value_2 = 4;
+  optional int32 num_value_3 = 5;
+}
+
+message MyNestedRecord {
+  optional int64 rec_no = 1;
+  optional int32 num_value_1 = 2;
+  message Nested {
+    message Entry {
+      optional string str_value = 1;
+      optional int32 num_value = 2;
+    }
+    repeated Entry entry = 1;
+  }
+  optional Nested nested = 3;
+  optional int32 num_value_2 = 4;
+  optional int32 num_value_3 = 5;
+}
+
+message RecordTypeUnion {
+  optional MySimpleRecord my_simple_record = 1;
+  optional MyNestedRecord my_nested_record = 2;
+}
