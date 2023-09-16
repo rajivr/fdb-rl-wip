@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["header_ranked_record","nested_ranked_record"],"struct":["BasicRankedRecord","HeaderRankedRecord","NestedRankedRecord","RecordTypeUnion","RepeatedRankedRecord"]};

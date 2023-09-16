@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["map_record"],"struct":["MapRecord","OuterRecord","RecordTypeUnion"]};

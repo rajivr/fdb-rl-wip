@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["MyMarkedRecord","MyUnmarkedRecord1","MyUnmarkedRecord2","RecordTypeUnion"]};

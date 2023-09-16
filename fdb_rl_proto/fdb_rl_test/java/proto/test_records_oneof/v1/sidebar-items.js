@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["record_type_union"],"struct":["MyOtherRecord","MySimpleRecord","RecordTypeUnion"]};
