@@ -1,0 +1,48 @@
+/*
+ * test_records_multi.proto
+ *
+ * This source file is part of the FoundationDB open source project
+ *
+ * Copyright 2015-2018 Apple Inc. and the FoundationDB project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+syntax = "proto3";
+
+package fdb_rl_test.java.proto.test_records_multi.v1;
+
+option java_outer_classname = "TestRecordsMultiProto";
+
+message MultiRecordOne {
+  optional int64 id = 1;
+  optional string name = 2;
+  repeated string element = 3;
+}
+
+message MultiRecordTwo {
+  optional int64 ego = 1;
+  optional string value = 2;
+  repeated string element = 3;
+}
+
+message MultiRecordThree {
+  optional int64 ego = 1;
+  optional string data = 2;
+  repeated string element = 3;
+}
+
+message MultiDescriptor {
+  optional MultiRecordOne multi_record_one = 1;
+  optional MultiRecordTwo multi_record_two = 2;
+  optional MultiRecordThree multi_record_three = 3;
+}

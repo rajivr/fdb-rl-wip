@@ -293,6 +293,78 @@ pub mod fdb_rl_test {
                     include_proto!("fdb_rl_test.java.proto.test_records_join_index.v1");
                 }
             }
+
+            pub mod test_records_leaderboard {
+                pub mod v1 {
+                    include_proto!("fdb_rl_test.java.proto.test_records_leaderboard.v1");
+                }
+            }
+
+            pub mod test_records_map {
+                pub mod v1 {
+                    include_proto!("fdb_rl_test.java.proto.test_records_map.v1");
+                }
+            }
+
+            pub mod test_records_marked_unmarked {
+                pub mod v1 {
+                    include_proto!("fdb_rl_test.java.proto.test_records_marked_unmarked.v1");
+                }
+            }
+
+            pub mod test_records_multi {
+                pub mod v1 {
+                    include_proto!("fdb_rl_test.java.proto.test_records_multi.v1");
+                }
+            }
+
+            pub mod test_records_multidimensional {
+                pub mod v1 {
+                    include_proto!("fdb_rl_test.java.proto.test_records_multidimensional.v1");
+                }
+            }
+
+            pub mod test_records_name_clash {
+                pub mod v1 {
+                    include_proto!("fdb_rl_test.java.proto.test_records_name_clash.v1");
+                }
+            }
+
+            pub mod test_records_nested_as_record {
+                pub mod v1 {
+                    include_proto!("fdb_rl_test.java.proto.test_records_nested_as_record.v1");
+                }
+            }
+
+            pub mod test_records_no_primary_key {
+                pub mod v1 {
+                    include_proto!("fdb_rl_test.java.proto.test_records_no_primary_key.v1");
+                }
+            }
+
+            pub mod test_records_nulls_2 {
+                pub mod v1 {
+                    include_proto!("fdb_rl_test.java.proto.test_records_nulls_2.v1");
+                }
+            }
+
+            pub mod test_records_oneof {
+                pub mod v1 {
+                    include_proto!("fdb_rl_test.java.proto.test_records_oneof.v1");
+                }
+            }
+
+            pub mod test_records_parent_child {
+                pub mod v1 {
+                    include_proto!("fdb_rl_test.java.proto.test_records_parent_child.v1");
+                }
+            }
+
+            pub mod test_records_rank {
+                pub mod v1 {
+                    include_proto!("fdb_rl_test.java.proto.test_records_rank.v1");
+                }
+            }
         }
     }
 }
