@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["complex_document","map_document","nested_map_document"],"struct":["ComplexDocument","ManyFieldsDocument","MapDocument","MultiDocument","NestedMapDocument","RecordTypeUnion","SimpleDocument"]};

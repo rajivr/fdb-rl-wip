@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["default_transform_message","transform_message_max_types"],"struct":["DefaultTransformMessage","TransformMessageMaxTypes"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["MySimpleRecord","MySimpleRecord2","MySimpleRecord3","Nested","NotInUnion","UnionDescriptor"]};

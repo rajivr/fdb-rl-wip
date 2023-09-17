@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["NestedWithUnsigned","Unsigned2Union","UnsignedInNestedRecord"]};

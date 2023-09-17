@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["Fixed32UnsignedRecord","Unsigned3Union"]};
