@@ -365,6 +365,96 @@ pub mod fdb_rl_test {
                     include_proto!("fdb_rl_test.java.proto.test_records_rank.v1");
                 }
             }
+
+            pub mod test_records_text {
+                pub mod v1 {
+                    include_proto!("fdb_rl_test.java.proto.test_records_text.v1");
+                }
+            }
+
+            pub mod test_records_transform {
+                pub mod v1 {
+                    include_proto!("fdb_rl_test.java.proto.test_records_transform.v1");
+                }
+            }
+
+            pub mod test_records_tuple_fields {
+                pub mod v1 {
+                    include_proto!("fdb_rl_test.java.proto.test_records_tuple_fields.v1");
+                }
+            }
+
+            pub mod test_records_two_unions {
+                pub mod v1 {
+                    include_proto!("fdb_rl_test.java.proto.test_records_two_unions.v1");
+                }
+            }
+
+            pub mod test_records_union_default_name {
+                pub mod v1 {
+                    include_proto!("fdb_rl_test.java.proto.test_records_union_default_name.v1");
+                }
+            }
+
+            pub mod test_records_union_missing_record {
+                pub mod v1 {
+                    include_proto!("fdb_rl_test.java.proto.test_records_union_missing_record.v1");
+                }
+            }
+
+            pub mod test_records_union_with_imported_nested {
+                pub mod v1 {
+                    include_proto!("fdb_rl_test.java.proto.test_records_union_with_imported_nested.v1");
+                }
+            }
+
+            pub mod test_records_union_with_nested {
+                pub mod v1 {
+                    include_proto!("fdb_rl_test.java.proto.test_records_union_with_nested.v1");
+                }
+            }
+
+            pub mod test_records_unsigned_1 {
+                pub mod v1 {
+                    include_proto!("fdb_rl_test.java.proto.test_records_unsigned_1.v1");
+                }
+            }
+
+            pub mod test_records_unsigned_2 {
+                pub mod v1 {
+                    include_proto!("fdb_rl_test.java.proto.test_records_unsigned_2.v1");
+                }
+            }
+
+            pub mod test_records_unsigned_3 {
+                pub mod v1 {
+                    include_proto!("fdb_rl_test.java.proto.test_records_unsigned_3.v1");
+                }
+            }
+
+            pub mod test_records_unsigned_4 {
+                pub mod v1 {
+                    include_proto!("fdb_rl_test.java.proto.test_records_unsigned_4.v1");
+                }
+            }
+
+            pub mod test_records_unsigned_5 {
+                pub mod v1 {
+                    include_proto!("fdb_rl_test.java.proto.test_records_unsigned_5.v1");
+                }
+            }
+
+            pub mod test_records_with_header {
+                pub mod v1 {
+                    include_proto!("fdb_rl_test.java.proto.test_records_with_header.v1");
+                }
+            }
+
+            pub mod test_records_with_union {
+                pub mod v1 {
+                    include_proto!("fdb_rl_test.java.proto.test_records_with_union.v1");
+                }
+            }
         }
     }
 }

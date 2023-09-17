@@ -1086,6 +1086,208 @@ mod tests {
                         );
                     }
                 }
+
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto::test_records_text::v1::{
+                        ComplexDocument, ManyFieldsDocument, MapDocument, MultiDocument,
+                        NestedMapDocument, SimpleDocument,
+                    };
+
+                    for message_descriptor in vec![
+                        SimpleDocument::default().descriptor(),
+                        ComplexDocument::default().descriptor(),
+                        MapDocument::default().descriptor(),
+                        MultiDocument::default().descriptor(),
+                        NestedMapDocument::default().descriptor(),
+                        ManyFieldsDocument::default().descriptor(),
+                    ] {
+                        assert_eq!(
+                            WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
+                            Ok(WellFormedMessageDescriptor {
+                                inner: message_descriptor,
+                            })
+                        );
+                    }
+                }
+
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto::test_records_transform::v1::{
+                        DefaultTransformMessage, TransformMessageMaxTypes,
+                    };
+
+                    for message_descriptor in vec![
+                        DefaultTransformMessage::default().descriptor(),
+                        TransformMessageMaxTypes::default().descriptor(),
+                    ] {
+                        assert_eq!(
+                            WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
+                            Ok(WellFormedMessageDescriptor {
+                                inner: message_descriptor,
+                            })
+                        );
+                    }
+                }
+
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto::test_records_tuple_fields::v1::MyFieldsRecord;
+
+                    let message_descriptor = MyFieldsRecord::default().descriptor();
+                    assert_eq!(
+                        WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
+                        Ok(WellFormedMessageDescriptor {
+                            inner: message_descriptor,
+                        })
+                    );
+                }
+
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto::test_records_union_missing_record::v1::{MyMissingRecord, MyUsedRecord};
+
+                    for message_descriptor in vec![
+                        MyMissingRecord::default().descriptor(),
+                        MyUsedRecord::default().descriptor(),
+                    ] {
+                        assert_eq!(
+                            WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
+                            Ok(WellFormedMessageDescriptor {
+                                inner: message_descriptor,
+                            })
+                        );
+                    }
+                }
+
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto::test_records_union_with_imported_nested::v1::MyUsedRecord;
+
+                    let message_descriptor = MyUsedRecord::default().descriptor();
+                    assert_eq!(
+                        WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
+                        Ok(WellFormedMessageDescriptor {
+                            inner: message_descriptor,
+                        })
+                    );
+                }
+
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto::test_records_union_with_nested::v1::{MyNestedRecord, MyUsedRecord};
+
+                    for message_descriptor in vec![
+                        MyNestedRecord::default().descriptor(),
+                        MyUsedRecord::default().descriptor(),
+                    ] {
+                        assert_eq!(
+                            WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
+                            Ok(WellFormedMessageDescriptor {
+                                inner: message_descriptor,
+                            })
+                        );
+                    }
+                }
+
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto::test_records_unsigned_1::v1::SimpleUnsignedRecord;
+
+                    let message_descriptor = SimpleUnsignedRecord::default().descriptor();
+                    assert_eq!(
+                        WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
+                        Ok(WellFormedMessageDescriptor {
+                            inner: message_descriptor,
+                        })
+                    );
+                }
+
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto::test_records_unsigned_2::v1::{
+                        NestedWithUnsigned, UnsignedInNestedRecord,
+                    };
+
+                    for message_descriptor in vec![
+                        UnsignedInNestedRecord::default().descriptor(),
+                        NestedWithUnsigned::default().descriptor(),
+                    ] {
+                        assert_eq!(
+                            WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
+                            Ok(WellFormedMessageDescriptor {
+                                inner: message_descriptor,
+                            })
+                        );
+                    }
+                }
+
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto::test_records_unsigned_3::v1::Fixed32UnsignedRecord;
+
+                    let message_descriptor = Fixed32UnsignedRecord::default().descriptor();
+                    assert_eq!(
+                        WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
+                        Ok(WellFormedMessageDescriptor {
+                            inner: message_descriptor,
+                        })
+                    );
+                }
+
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto::test_records_unsigned_4::v1::Fixed64UnsignedRecord;
+
+                    let message_descriptor = Fixed64UnsignedRecord::default().descriptor();
+                    assert_eq!(
+                        WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
+                        Ok(WellFormedMessageDescriptor {
+                            inner: message_descriptor,
+                        })
+                    );
+                }
+
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto::test_records_unsigned_5::v1::ReferencesUnsignedRecord;
+
+                    let message_descriptor = ReferencesUnsignedRecord::default().descriptor();
+                    assert_eq!(
+                        WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
+                        Ok(WellFormedMessageDescriptor {
+                            inner: message_descriptor,
+                        })
+                    );
+                }
+
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto::test_records_with_header::v1::{
+                        HeaderRecord, MyRecord,
+                    };
+
+                    for message_descriptor in vec![
+                        HeaderRecord::default().descriptor(),
+                        MyRecord::default().descriptor(),
+                    ] {
+                        assert_eq!(
+                            WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
+                            Ok(WellFormedMessageDescriptor {
+                                inner: message_descriptor,
+                            })
+                        );
+                    }
+                }
+
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto::test_records_with_union::v1::{
+                        MySimpleRecord, MySimpleRecord2, MySimpleRecord3, Nested, NotInUnion,
+                    };
+
+                    for message_descriptor in vec![
+                        MySimpleRecord::default().descriptor(),
+                        MySimpleRecord2::default().descriptor(),
+                        MySimpleRecord3::default().descriptor(),
+                        NotInUnion::default().descriptor(),
+                        Nested::default().descriptor(),
+                    ] {
+                        assert_eq!(
+                            WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
+                            Ok(WellFormedMessageDescriptor {
+                                inner: message_descriptor,
+                            })
+                        );
+                    }
+                }
             }
         }
     }

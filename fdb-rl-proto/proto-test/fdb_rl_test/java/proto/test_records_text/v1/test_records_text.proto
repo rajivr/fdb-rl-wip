@@ -1,0 +1,122 @@
+/*
+ * test_records_text.proto
+ *
+ * This source file is part of the FoundationDB open source project
+ *
+ * Copyright 2015-2018 Apple Inc. and the FoundationDB project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+syntax = "proto3";
+
+package fdb_rl_test.java.proto.test_records_text.v1;
+
+option java_outer_classname = "TestRecordsTextProto";
+option java_package = "com.apple.foundationdb.record";
+
+message SimpleDocument {
+  optional int64 doc_id = 1;
+  optional string text = 2;
+  optional int64 group = 3;
+}
+
+// The primary key is set in the test.
+message ComplexDocument {
+  message Header {
+    optional int64 header_id = 1;
+  }
+  optional Header header = 1;
+  optional int64 group = 2;
+  optional int64 doc_id = 3;
+  optional string text = 4;
+  repeated string tag = 5;
+  optional int32 score = 6;
+  optional string text2 = 7;
+  optional bool is_seen = 8;
+}
+
+message MapDocument {
+  optional int64 doc_id = 1;
+  message Entry {
+    optional string key = 1;
+    optional string value = 2;
+    optional string second_value = 3;
+    optional string third_value = 4;
+  }
+  repeated Entry entry = 2;
+  optional int64 group = 3;
+  optional string text2 = 4;
+}
+
+message MultiDocument {
+  optional int64 doc_id = 1;
+  repeated string text = 2;
+}
+
+message RecordTypeUnion {
+  optional SimpleDocument simple_document = 1;
+  optional ComplexDocument complex_document = 2;
+  optional MapDocument map_document = 3;
+  optional MultiDocument multi_document = 4;
+  optional ManyFieldsDocument many_fields_document = 5;
+}
+
+message NestedMapDocument {
+  optional int64 doc_id = 1;
+  message SubEntry {
+    optional string value = 2;
+    optional string second_value = 3;
+    optional string third_value = 4;
+  }
+  message Entry {
+    optional string key = 1;
+    optional SubEntry sub_entry = 2;
+  }
+  repeated Entry entry = 2;
+  optional int64 group = 3;
+  optional string text2 = 4;
+}
+
+message ManyFieldsDocument {
+  optional int64 doc_id = 1;
+  optional string text0 = 2;
+  optional string text1 = 3;
+  optional string text2 = 4;
+  optional string text3 = 5;
+  optional string text4 = 6;
+  optional string text5 = 7;
+  optional string text6 = 8;
+  optional string text7 = 9;
+  optional string text8 = 10;
+  optional string text9 = 11;
+  optional int64 long0 = 12;
+  optional int64 long1 = 13;
+  optional int64 long2 = 14;
+  optional int64 long3 = 15;
+  optional int64 long4 = 16;
+  optional int64 long5 = 17;
+  optional int64 long6 = 18;
+  optional int64 long7 = 19;
+  optional int64 long8 = 20;
+  optional int64 long9 = 21;
+  optional bool bool0 = 22;
+  optional bool bool1 = 23;
+  optional bool bool2 = 24;
+  optional bool bool3 = 25;
+  optional bool bool4 = 26;
+  optional bool bool5 = 27;
+  optional bool bool6 = 28;
+  optional bool bool7 = 29;
+  optional bool bool8 = 30;
+  optional bool bool9 = 31;
+}
