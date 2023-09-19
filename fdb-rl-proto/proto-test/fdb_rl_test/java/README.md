@@ -13,4 +13,9 @@ We are preserving the above directory structure. _However_ all files have been a
 
 The `package` name has also been adjusted. In the package name `proto`, `proto2`, `proto3` and `v1` has no significance. We need it to keep `buf` tool happy.
 
+`proto/evolution/test_header_as_group.proto` is not included as there
+is no concept of `group` in `proto3`.
 
+`proto2/test_records_nulls_3.proto` and
+`proto3/test_records_nulls_3.proto` is not included as we do not have
+`NullableInt32`, `NullableString` tuple fields.

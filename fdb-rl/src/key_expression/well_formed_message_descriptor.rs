@@ -381,7 +381,108 @@ mod tests {
                     })
                 );
 
-                // Java RecordLayer protos
+                // Java RecordLayer `proto`
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto::evolution::test_field_type_change::v1::MySimpleRecord;
+
+                    let message_descriptor = MySimpleRecord::default().descriptor();
+                    assert_eq!(
+                        WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
+                        Ok(WellFormedMessageDescriptor {
+                            inner: message_descriptor,
+                        })
+                    );
+                }
+
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto::evolution::test_merged_nested_types::v1::{OneTrueNested, MyRecord};
+
+                    for message_descriptor in vec![
+                        OneTrueNested::default().descriptor(),
+                        MyRecord::default().descriptor(),
+                    ] {
+                        assert_eq!(
+                            WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
+                            Ok(WellFormedMessageDescriptor {
+                                inner: message_descriptor,
+                            })
+                        );
+                    }
+                }
+
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto::evolution::test_new_record_type::v1::NewRecord;
+
+                    let message_descriptor = NewRecord::default().descriptor();
+                    assert_eq!(
+                        WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
+                        Ok(WellFormedMessageDescriptor {
+                            inner: message_descriptor,
+                        })
+                    );
+                }
+
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto::evolution::test_self_reference::v1::LinkedListRecord;
+
+                    let message_descriptor = LinkedListRecord::default().descriptor();
+                    assert_eq!(
+                        WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
+                        Ok(WellFormedMessageDescriptor {
+                            inner: message_descriptor,
+                        })
+                    );
+                }
+
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto::evolution::test_self_reference_unspooled::v1::{Node, LinkedListRecord};
+
+                    for message_descriptor in vec![
+                        Node::default().descriptor(),
+                        LinkedListRecord::default().descriptor(),
+                    ] {
+                        assert_eq!(
+                            WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
+                            Ok(WellFormedMessageDescriptor {
+                                inner: message_descriptor,
+                            })
+                        );
+                    }
+                }
+
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto::evolution::test_split_nested_types::v1::{NestedA, NestedB, MyRecord};
+
+                    for message_descriptor in vec![
+                        NestedA::default().descriptor(),
+                        NestedB::default().descriptor(),
+                        MyRecord::default().descriptor(),
+                    ] {
+                        assert_eq!(
+                            WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
+                            Ok(WellFormedMessageDescriptor {
+                                inner: message_descriptor,
+                            })
+                        );
+                    }
+                }
+
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto::evolution::test_unmerged_nested_types::v1::{NestedA, NestedB, MyRecord};
+
+                    for message_descriptor in vec![
+                        NestedA::default().descriptor(),
+                        NestedB::default().descriptor(),
+                        MyRecord::default().descriptor(),
+                    ] {
+                        assert_eq!(
+                            WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
+                            Ok(WellFormedMessageDescriptor {
+                                inner: message_descriptor,
+                            })
+                        );
+                    }
+                }
 
                 {
                     use fdb_rl_proto::fdb_rl_test::java::proto::expression_tests::v1::{
@@ -1285,6 +1386,102 @@ mod tests {
                             Ok(WellFormedMessageDescriptor {
                                 inner: message_descriptor,
                             })
+                        );
+                    }
+                }
+
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto2::test_records_maps::v1::{
+                        StringToInt, StringToString,
+                    };
+
+                    for message_descriptor in vec![
+                        StringToString::default().descriptor(),
+                        StringToInt::default().descriptor(),
+                    ] {
+                        assert_eq!(
+                            WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
+                            Ok(WellFormedMessageDescriptor {
+                                inner: message_descriptor,
+                            })
+                        );
+                    }
+                }
+
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto3::evolution::test_nested_proto2::v1::NestedRecord;
+
+                    let message_descriptor = NestedRecord::default().descriptor();
+                    assert_eq!(
+                        WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
+                        Ok(WellFormedMessageDescriptor {
+                            inner: message_descriptor,
+                        })
+                    );
+                }
+
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto3::evolution::test_nested_proto3::v1::NestedRecord;
+
+                    let message_descriptor = NestedRecord::default().descriptor();
+                    assert_eq!(
+                        WellFormedMessageDescriptor::try_from(message_descriptor),
+                        Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                    );
+                }
+
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto3::evolution::test_records_3_proto3::v1::MyHierarchicalRecord;
+
+                    let message_descriptor = MyHierarchicalRecord::default().descriptor();
+                    assert_eq!(
+                        WellFormedMessageDescriptor::try_from(message_descriptor),
+                        Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                    );
+                }
+
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto3::evolution::test_records_enum_proto3::v1::MyShapeRecord;
+
+                    let message_descriptor = MyShapeRecord::default().descriptor();
+                    assert_eq!(
+                        WellFormedMessageDescriptor::try_from(message_descriptor),
+                        Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                    );
+                }
+
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto3::evolution::test_records_nested_proto2::v1::MyRecord;
+
+                    let message_descriptor = MyRecord::default().descriptor();
+                    assert_eq!(
+                        WellFormedMessageDescriptor::try_from(message_descriptor),
+                        Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                    );
+                }
+
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto3::evolution::test_records_nested_proto3::v1::MyRecord;
+
+                    let message_descriptor = MyRecord::default().descriptor();
+                    assert_eq!(
+                        WellFormedMessageDescriptor::try_from(message_descriptor),
+                        Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                    );
+                }
+
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto3::test_records_maps::v1::{
+                        StringToInt, StringToString,
+                    };
+
+                    for message_descriptor in vec![
+                        StringToString::default().descriptor(),
+                        StringToInt::default().descriptor(),
+                    ] {
+                        assert_eq!(
+                            WellFormedMessageDescriptor::try_from(message_descriptor),
+                            Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
                         );
                     }
                 }

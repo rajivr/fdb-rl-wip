@@ -68,6 +68,68 @@ pub mod fdb_rl_test {
 
     pub mod java {
         pub mod proto {
+            pub mod evolution {
+                pub mod test_field_type_change {
+                    pub mod v1 {
+                        include_proto!(
+                            "fdb_rl_test.java.proto.evolution.test_field_type_change.v1"
+                        );
+                    }
+                }
+
+                pub mod test_merged_nested_types {
+                    pub mod v1 {
+                        include_proto!(
+                            "fdb_rl_test.java.proto.evolution.test_merged_nested_types.v1"
+                        );
+                    }
+                }
+
+                pub mod test_new_record_type {
+                    pub mod v1 {
+                        include_proto!("fdb_rl_test.java.proto.evolution.test_new_record_type.v1");
+                    }
+                }
+
+                pub mod test_self_reference {
+                    pub mod v1 {
+                        include_proto!("fdb_rl_test.java.proto.evolution.test_self_reference.v1");
+                    }
+                }
+
+                pub mod test_self_reference_unspooled {
+                    pub mod v1 {
+                        include_proto!(
+                            "fdb_rl_test.java.proto.evolution.test_self_reference_unspooled.v1"
+                        );
+                    }
+                }
+
+                pub mod test_split_nested_types {
+                    pub mod v1 {
+                        include_proto!(
+                            "fdb_rl_test.java.proto.evolution.test_split_nested_types.v1"
+                        );
+                    }
+                }
+
+                pub mod test_swap_union_fields {
+                    pub mod v1 {
+                        include_proto!(
+                            "fdb_rl_test.java.proto.evolution.test_swap_union_fields.v1"
+                        );
+                    }
+                }
+
+                pub mod test_unmerged_nested_types {
+                    pub mod v1 {
+                        include_proto!(
+                            "fdb_rl_test.java.proto.evolution.test_unmerged_nested_types.v1"
+                        );
+                    }
+                }
+            }
+
             pub mod expression_tests {
                 pub mod v1 {
                     include_proto!("fdb_rl_test.java.proto.expression_tests.v1");
@@ -404,7 +466,9 @@ pub mod fdb_rl_test {
 
             pub mod test_records_union_with_imported_nested {
                 pub mod v1 {
-                    include_proto!("fdb_rl_test.java.proto.test_records_union_with_imported_nested.v1");
+                    include_proto!(
+                        "fdb_rl_test.java.proto.test_records_union_with_imported_nested.v1"
+                    );
                 }
             }
 
@@ -453,6 +517,76 @@ pub mod fdb_rl_test {
             pub mod test_records_with_union {
                 pub mod v1 {
                     include_proto!("fdb_rl_test.java.proto.test_records_with_union.v1");
+                }
+            }
+        }
+
+        pub mod proto2 {
+            pub mod test_records_maps {
+                pub mod v1 {
+                    include_proto!("fdb_rl_test.java.proto2.test_records_maps.v1");
+                }
+            }
+        }
+
+        pub mod proto3 {
+            pub mod evolution {
+                pub mod test_nested_proto2 {
+                    pub mod v1 {
+                        include_proto!("fdb_rl_test.java.proto3.evolution.test_nested_proto2.v1");
+                    }
+                }
+
+                pub mod test_nested_proto3 {
+                    pub mod v1 {
+                        include_proto!("fdb_rl_test.java.proto3.evolution.test_nested_proto3.v1");
+                    }
+                }
+
+                pub mod test_records_1_imported {
+                    pub mod v1 {
+                        include_proto!(
+                            "fdb_rl_test.java.proto3.evolution.test_records_1_imported.v1"
+                        );
+                    }
+                }
+
+                pub mod test_records_3_proto3 {
+                    pub mod v1 {
+                        include_proto!(
+                            "fdb_rl_test.java.proto3.evolution.test_records_3_proto3.v1"
+                        );
+                    }
+                }
+
+                pub mod test_records_enum_proto3 {
+                    pub mod v1 {
+                        include_proto!(
+                            "fdb_rl_test.java.proto3.evolution.test_records_enum_proto3.v1"
+                        );
+                    }
+                }
+
+                pub mod test_records_nested_proto2 {
+                    pub mod v1 {
+                        include_proto!(
+                            "fdb_rl_test.java.proto3.evolution.test_records_nested_proto2.v1"
+                        );
+                    }
+                }
+
+                pub mod test_records_nested_proto3 {
+                    pub mod v1 {
+                        include_proto!(
+                            "fdb_rl_test.java.proto3.evolution.test_records_nested_proto3.v1"
+                        );
+                    }
+                }
+            }
+
+            pub mod test_records_maps {
+                pub mod v1 {
+                    include_proto!("fdb_rl_test.java.proto3.test_records_maps.v1");
                 }
             }
         }

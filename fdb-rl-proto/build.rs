@@ -46,6 +46,14 @@ fn main() -> io::Result<()> {
             .compile_protos_with_config(
                 prost_build_config,
                 &[
+		    "proto-test/fdb_rl_test/java/proto/evolution/test_field_type_change/v1/test_field_type_change.proto",
+		    "proto-test/fdb_rl_test/java/proto/evolution/test_merged_nested_types/v1/test_merged_nested_types.proto",
+		    "proto-test/fdb_rl_test/java/proto/evolution/test_new_record_type/v1/test_new_record_type.proto",
+		    "proto-test/fdb_rl_test/java/proto/evolution/test_self_reference/v1/test_self_reference.proto",
+		    "proto-test/fdb_rl_test/java/proto/evolution/test_self_reference_unspooled/v1/test_self_reference_unspooled.proto",
+		    "proto-test/fdb_rl_test/java/proto/evolution/test_split_nested_types/v1/test_split_nested_types.proto",
+		    "proto-test/fdb_rl_test/java/proto/evolution/test_swap_union_fields/v1/test_swap_union_fields.proto",
+		    "proto-test/fdb_rl_test/java/proto/evolution/test_unmerged_nested_types/v1/test_unmerged_nested_types.proto",
                     "proto-test/fdb_rl_test/key_expression/well_formed_message_descriptor/bad/v1/version_2.proto",
 		    "proto-test/fdb_rl_test/key_expression/well_formed_message_descriptor/good/v1/version_3.proto",
 		    // Java RecordLayer Protos
@@ -113,6 +121,15 @@ fn main() -> io::Result<()> {
 		    "proto-test/fdb_rl_test/java/proto/test_records_unsigned_5/v1/test_records_unsigned_5.proto",
 		    "proto-test/fdb_rl_test/java/proto/test_records_with_header/v1/test_records_with_header.proto",
 		    "proto-test/fdb_rl_test/java/proto/test_records_with_union/v1/test_records_with_union.proto",
+		    "proto-test/fdb_rl_test/java/proto2/test_records_maps/v1/test_records_maps.proto",
+		    "proto-test/fdb_rl_test/java/proto3/evolution/test_nested_proto2/v1/test_nested_proto2.proto",
+		    "proto-test/fdb_rl_test/java/proto3/evolution/test_nested_proto3/v1/test_nested_proto3.proto",
+		    "proto-test/fdb_rl_test/java/proto3/evolution/test_records_1_imported/v1/test_records_1_imported.proto",
+		    "proto-test/fdb_rl_test/java/proto3/evolution/test_records_3_proto3/v1/test_records_3_proto3.proto",
+		    "proto-test/fdb_rl_test/java/proto3/evolution/test_records_enum_proto3/v1/test_records_enum_proto3.proto",
+		    "proto-test/fdb_rl_test/java/proto3/evolution/test_records_nested_proto2/v1/test_records_nested_proto2.proto",
+		    "proto-test/fdb_rl_test/java/proto3/evolution/test_records_nested_proto3/v1/test_records_nested_proto3.proto",
+		    "proto-test/fdb_rl_test/java/proto3/test_records_maps/v1/test_records_maps.proto",
                 ],
                 &[
 		    "proto",
