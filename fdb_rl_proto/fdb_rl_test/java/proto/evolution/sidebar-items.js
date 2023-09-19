@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["test_field_type_change","test_merged_nested_types","test_new_record_type","test_self_reference","test_self_reference_unspooled","test_split_nested_types","test_swap_union_fields","test_unmerged_nested_types"]};

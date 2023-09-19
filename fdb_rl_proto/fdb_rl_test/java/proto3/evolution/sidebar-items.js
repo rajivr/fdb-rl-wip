@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["test_nested_proto2","test_nested_proto3","test_records_1_imported","test_records_3_proto3","test_records_enum_proto3","test_records_nested_proto2","test_records_nested_proto3"]};
