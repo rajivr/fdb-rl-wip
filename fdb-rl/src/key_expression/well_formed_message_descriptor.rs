@@ -329,13 +329,8 @@ impl Visitor for MessageDescriptorValidatorVisitor {
 #[cfg(test)]
 mod tests {
     mod well_formed_message_descriptor {
-        use bytes::Bytes;
         use fdb::error::FdbError;
-        use fdb_rl_proto::fdb_rl::field::v1::Uuid as UuidProto;
-        use fdb_rl_proto::fdb_rl_test::key_expression::well_formed_message_descriptor::bad::v1::HelloWorld as HelloWorldProto2;
-        use fdb_rl_proto::fdb_rl_test::key_expression::well_formed_message_descriptor::good::v1::HelloWorld as HelloWorldProto3;
         use prost_reflect::ReflectMessage;
-        use uuid;
 
         use std::convert::TryFrom;
 
@@ -346,40 +341,116 @@ mod tests {
         fn try_from_message_descriptor_try_from() {
             // Invalid message descriptor
             {
-                let hello_world = HelloWorldProto2 {
-                    hello: "hello".to_string(),
-                    world: Some("world".to_string()),
-                };
+                {
+                    use fdb_rl_proto::fdb_rl_test::key_expression::well_formed_message_descriptor::bad::proto_2::v1::HelloWorld;
 
-                let message_descriptor = hello_world.descriptor();
-                assert_eq!(
-                    WellFormedMessageDescriptor::try_from(message_descriptor),
-                    Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
-                );
+                    let message_descriptor = HelloWorld::default().descriptor();
+                    assert_eq!(
+                        WellFormedMessageDescriptor::try_from(message_descriptor),
+                        Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                    )
+                }
+
+                {
+                    use fdb_rl_proto::fdb_rl_test::key_expression::well_formed_message_descriptor::bad::proto_3::v1::{RecursiveInner, RecursiveOuter};
+
+                    for message_descriptor in vec![
+                        RecursiveInner::default().descriptor(),
+                        RecursiveOuter::default().descriptor(),
+                    ] {
+                        assert_eq!(
+                            WellFormedMessageDescriptor::try_from(message_descriptor),
+                            Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                        );
+                    }
+                }
+
+                // Java RecordLayer `proto`
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto3::evolution::test_nested_proto3::v1::NestedRecord;
+
+                    let message_descriptor = NestedRecord::default().descriptor();
+                    assert_eq!(
+                        WellFormedMessageDescriptor::try_from(message_descriptor),
+                        Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                    );
+                }
+
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto3::evolution::test_records_3_proto3::v1::MyHierarchicalRecord;
+
+                    let message_descriptor = MyHierarchicalRecord::default().descriptor();
+                    assert_eq!(
+                        WellFormedMessageDescriptor::try_from(message_descriptor),
+                        Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                    );
+                }
+
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto3::evolution::test_records_enum_proto3::v1::MyShapeRecord;
+
+                    let message_descriptor = MyShapeRecord::default().descriptor();
+                    assert_eq!(
+                        WellFormedMessageDescriptor::try_from(message_descriptor),
+                        Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                    );
+                }
+
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto3::evolution::test_records_nested_proto2::v1::MyRecord;
+
+                    let message_descriptor = MyRecord::default().descriptor();
+                    assert_eq!(
+                        WellFormedMessageDescriptor::try_from(message_descriptor),
+                        Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                    );
+                }
+
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto3::evolution::test_records_nested_proto3::v1::MyRecord;
+
+                    let message_descriptor = MyRecord::default().descriptor();
+                    assert_eq!(
+                        WellFormedMessageDescriptor::try_from(message_descriptor),
+                        Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                    );
+                }
+
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto3::test_records_maps::v1::{
+                        StringToInt, StringToString,
+                    };
+
+                    for message_descriptor in vec![
+                        StringToString::default().descriptor(),
+                        StringToInt::default().descriptor(),
+                    ] {
+                        assert_eq!(
+                            WellFormedMessageDescriptor::try_from(message_descriptor),
+                            Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                        );
+                    }
+                }
             }
 
             // Valid Message descriptor
             {
-                let hello_world = HelloWorldProto3 {
-                    primary_key: Some(UuidProto {
-                        value: Bytes::from(
-                            uuid::Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
-                                .unwrap()
-                                .as_bytes()
-                                .to_vec(),
-                        ),
-                    }),
-                    hello: Some("hello".to_string()),
-                    world: Some("world".to_string()),
-                };
+                {
+                    use fdb_rl_proto::fdb_rl_test::key_expression::well_formed_message_descriptor::good::v1::{HelloWorld, RecursiveInner, RecursiveOuter};
 
-                let message_descriptor = hello_world.descriptor();
-                assert_eq!(
-                    WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
-                    Ok(WellFormedMessageDescriptor {
-                        inner: message_descriptor,
-                    })
-                );
+                    for message_descriptor in vec![
+                        HelloWorld::default().descriptor(),
+                        RecursiveInner::default().descriptor(),
+                        RecursiveOuter::default().descriptor(),
+                    ] {
+                        assert_eq!(
+                            WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
+                            Ok(WellFormedMessageDescriptor {
+                                inner: message_descriptor,
+                            })
+                        );
+                    }
+                }
 
                 // Java RecordLayer `proto`
                 {
@@ -1418,72 +1489,6 @@ mod tests {
                             inner: message_descriptor,
                         })
                     );
-                }
-
-                {
-                    use fdb_rl_proto::fdb_rl_test::java::proto3::evolution::test_nested_proto3::v1::NestedRecord;
-
-                    let message_descriptor = NestedRecord::default().descriptor();
-                    assert_eq!(
-                        WellFormedMessageDescriptor::try_from(message_descriptor),
-                        Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
-                    );
-                }
-
-                {
-                    use fdb_rl_proto::fdb_rl_test::java::proto3::evolution::test_records_3_proto3::v1::MyHierarchicalRecord;
-
-                    let message_descriptor = MyHierarchicalRecord::default().descriptor();
-                    assert_eq!(
-                        WellFormedMessageDescriptor::try_from(message_descriptor),
-                        Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
-                    );
-                }
-
-                {
-                    use fdb_rl_proto::fdb_rl_test::java::proto3::evolution::test_records_enum_proto3::v1::MyShapeRecord;
-
-                    let message_descriptor = MyShapeRecord::default().descriptor();
-                    assert_eq!(
-                        WellFormedMessageDescriptor::try_from(message_descriptor),
-                        Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
-                    );
-                }
-
-                {
-                    use fdb_rl_proto::fdb_rl_test::java::proto3::evolution::test_records_nested_proto2::v1::MyRecord;
-
-                    let message_descriptor = MyRecord::default().descriptor();
-                    assert_eq!(
-                        WellFormedMessageDescriptor::try_from(message_descriptor),
-                        Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
-                    );
-                }
-
-                {
-                    use fdb_rl_proto::fdb_rl_test::java::proto3::evolution::test_records_nested_proto3::v1::MyRecord;
-
-                    let message_descriptor = MyRecord::default().descriptor();
-                    assert_eq!(
-                        WellFormedMessageDescriptor::try_from(message_descriptor),
-                        Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
-                    );
-                }
-
-                {
-                    use fdb_rl_proto::fdb_rl_test::java::proto3::test_records_maps::v1::{
-                        StringToInt, StringToString,
-                    };
-
-                    for message_descriptor in vec![
-                        StringToString::default().descriptor(),
-                        StringToInt::default().descriptor(),
-                    ] {
-                        assert_eq!(
-                            WellFormedMessageDescriptor::try_from(message_descriptor),
-                            Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
-                        );
-                    }
                 }
             }
         }

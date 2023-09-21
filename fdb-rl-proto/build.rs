@@ -46,6 +46,10 @@ fn main() -> io::Result<()> {
             .compile_protos_with_config(
                 prost_build_config,
                 &[
+                    "proto-test/fdb_rl_test/key_expression/well_formed_message_descriptor/bad/proto_2/v1/proto_2.proto",
+		    "proto-test/fdb_rl_test/key_expression/well_formed_message_descriptor/bad/proto_3/v1/proto_3.proto",
+		    "proto-test/fdb_rl_test/key_expression/well_formed_message_descriptor/good/v1/proto_3.proto",
+		    // Java RecordLayer Protos
 		    "proto-test/fdb_rl_test/java/proto/evolution/test_field_type_change/v1/test_field_type_change.proto",
 		    "proto-test/fdb_rl_test/java/proto/evolution/test_merged_nested_types/v1/test_merged_nested_types.proto",
 		    "proto-test/fdb_rl_test/java/proto/evolution/test_new_record_type/v1/test_new_record_type.proto",
@@ -54,9 +58,6 @@ fn main() -> io::Result<()> {
 		    "proto-test/fdb_rl_test/java/proto/evolution/test_split_nested_types/v1/test_split_nested_types.proto",
 		    "proto-test/fdb_rl_test/java/proto/evolution/test_swap_union_fields/v1/test_swap_union_fields.proto",
 		    "proto-test/fdb_rl_test/java/proto/evolution/test_unmerged_nested_types/v1/test_unmerged_nested_types.proto",
-                    "proto-test/fdb_rl_test/key_expression/well_formed_message_descriptor/bad/v1/version_2.proto",
-		    "proto-test/fdb_rl_test/key_expression/well_formed_message_descriptor/good/v1/version_3.proto",
-		    // Java RecordLayer Protos
 		    "proto-test/fdb_rl_test/java/proto/expression_tests/v1/expression_tests.proto",
 		    "proto-test/fdb_rl_test/java/proto/test_no_indexes/v1/test_no_indexes.proto",
 		    "proto-test/fdb_rl_test/java/proto/test_no_record_types/v1/test_no_record_types.proto",

@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package fdb_rl_test.key_expression.well_formed_message_descriptor.bad.proto_3.v1;
+
+message RecursiveInner {
+  optional RecursiveOuter recursive_outer = 1;
+  optional string hello = 2;
+}
+
+message RecursiveOuter {
+  optional RecursiveInner recursive_inner = 1;
+  string world = 2;
+}
