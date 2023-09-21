@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["HelloWorld"]};
+window.SIDEBAR_ITEMS = {"struct":["HelloWorld","RecursiveInner","RecursiveOuter"]};

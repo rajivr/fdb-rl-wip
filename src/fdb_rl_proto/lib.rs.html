@@ -592,6 +592,16 @@
 <a href="#592" id="592">592</a>
 <a href="#593" id="593">593</a>
 <a href="#594" id="594">594</a>
+<a href="#595" id="595">595</a>
+<a href="#596" id="596">596</a>
+<a href="#597" id="597">597</a>
+<a href="#598" id="598">598</a>
+<a href="#599" id="599">599</a>
+<a href="#600" id="600">600</a>
+<a href="#601" id="601">601</a>
+<a href="#602" id="602">602</a>
+<a href="#603" id="603">603</a>
+<a href="#604" id="604">604</a>
 </pre></div><pre class="rust"><code><span class="attr">#![warn(missing_debug_implementations, rust_2018_idioms, unreachable_pub)]
 
 </span><span class="comment">// `tonic::include_proto`
@@ -643,10 +653,20 @@
     <span class="kw">pub mod </span>key_expression {
         <span class="kw">pub mod </span>well_formed_message_descriptor {
             <span class="kw">pub mod </span>bad {
-                <span class="kw">pub mod </span>v1 {
-                    <span class="macro">include_proto!</span>(
-                        <span class="string">&quot;fdb_rl_test.key_expression.well_formed_message_descriptor.bad.v1&quot;
-                    </span>);
+                <span class="kw">pub mod </span>proto_2 {
+                    <span class="kw">pub mod </span>v1 {
+                        <span class="macro">include_proto!</span>(
+                            <span class="string">&quot;fdb_rl_test.key_expression.well_formed_message_descriptor.bad.proto_2.v1&quot;
+			</span>);
+                    }
+                }
+
+                <span class="kw">pub mod </span>proto_3 {
+                    <span class="kw">pub mod </span>v1 {
+                        <span class="macro">include_proto!</span>(
+			    <span class="string">&quot;fdb_rl_test.key_expression.well_formed_message_descriptor.bad.proto_3.v1&quot;
+			</span>);
+                    }
                 }
             }
 
