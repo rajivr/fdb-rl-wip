@@ -10,3 +10,12 @@
 // give the value of type `RecordTypeKeyExpression` a value of `T
 // where T: Message + Default` (a prost struct), and you will get a
 // value of `Tuple` back.
+
+use super::well_formed_message_descriptor::WellFormedMessageDescriptor;
+use super::KeyExpression;
+
+/// TODO
+pub(crate) struct RecordTypeKeyExpression {
+    key_expression: KeyExpression,
+    well_formed_message_descriptor: WellFormedMessageDescriptor,
+}

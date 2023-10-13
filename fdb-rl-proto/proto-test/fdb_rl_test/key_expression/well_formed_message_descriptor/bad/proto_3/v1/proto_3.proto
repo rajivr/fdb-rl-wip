@@ -11,3 +11,13 @@ message RecursiveOuter {
   optional RecursiveInner recursive_inner = 1;
   string world = 2;
 }
+
+// `GeneratedMapEntry` is valid, but we are testing the protobuf
+// compiler generated message type for `hello_world`.
+message GeneratedMapEntry {
+  map<string, string> hello_world = 1;
+}
+
+message InvalidMap {
+  map<int32, string> hello_world = 1;
+}

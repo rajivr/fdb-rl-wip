@@ -19,3 +19,15 @@ message RecursiveOuter {
   optional RecursiveInner recursive_inner = 1;
   optional string world = 2;
 }
+
+message HelloWorldOneof {
+  optional fdb_rl.field.v1.UUID primary_key = 1;
+  oneof hello_world {
+    string hello = 2;
+    string world = 3;
+  }
+}
+
+message HelloWorldMap {
+  map<string, HelloWorld> hello_world_map = 1;
+}

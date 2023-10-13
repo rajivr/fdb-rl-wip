@@ -412,6 +412,61 @@ pub(crate) mod pb {
     }
 }
 
+/// TODO
+///
+/// **Note:** There is *no* `ListOfMessageDescriptor`.
+enum KeyExpressionSchemaScalarPrimitive {
+    Bytes,
+    String,
+    Integer,
+    Float,
+    Double,
+    Boolean,
+    Uuid,
+    MessageDescriptor,
+    DistinctNullableBytes,
+    DistinctNullableString,
+    DistinctNullableInteger,
+    DistinctNullableFloat,
+    DistinctNullableDouble,
+    DistinctNullableBoolean,
+    DistinctNullableUuid,
+    DistinctNullableMessageDescriptor,
+    NotDistinctNullableBytes,
+    NotDistinctNullableString,
+    NotDistinctNullableInteger,
+    NotDistinctNullableFloat,
+    NotDistinctNullableDouble,
+    NotDistinctNullableBoolean,
+    NotDistinctNullableUuid,
+    NotDistinctNullableMessageDescriptor,
+    ListOfBytes,
+    ListOfString,
+    ListOfInteger,
+    ListOfFloat,
+    ListOfDouble,
+    ListOfBoolean,
+    ListOfUuid,
+}
+
+/// TODO
+enum KeyExpressionSchemaVectorPrimitive {
+    Bytes,
+    String,
+    Integer,
+    Float,
+    Double,
+    Boolean,
+    Uuid,
+    MessageDescriptor,
+}
+
+/// TODO
+enum KeyExpressionSchema {
+    Scalar(KeyExpressionSchemaScalarPrimitive),
+    Vector(KeyExpressionSchemaVectorPrimitive),
+}
+
 /// Internal representation of [`KeyExpression`].
 ///
 /// If we need to introduce a new version of `key_expression.proto`,
@@ -485,16 +540,30 @@ impl From<FieldFanType> for pb::FieldFanTypeInternalV1 {
 pub(crate) enum FieldNullInterpretation {
     /// Missing value (`NULL`) are allowed multiple times in unique
     /// index (PostgreSQL `NULLS DISTINCT`, Java RecordLayer
-    /// `NOT_UNIQUE`).
+    /// `Evaluated.Nullstandin.NULL`,
+    /// `RecordMetaDataProto.Field.NullInterpretation.NOT_UNIQUE`).
     ///
     /// This is the default for PostgreSQL and Java RecordLayer.
     Distinct,
     /// Missing value (`NULL`) *cannot* be repeated in a unique
-    /// index. This is very restrictive as a column can have only one
-    /// `NULL` value. (PostgreSQL `NULLS NOT DISTINCT`, Java
-    /// RecordLayer `UNIQUE`).
+    /// index (PostgreSQL `NULLS NOT DISTINCT`, Java
+    /// RecordLayer `Evaluated.Nullstandin.NULL_UNIQUE`,
+    /// `RecordMetaDataProto.Field.NullInterpretation.UNIQUE`).
+    ///
+    /// This is very restrictive as a column can have only one `NULL`
+    /// value.
     NotDistinct,
-    /// Field is not `NULL`.
+    /// Field is not `NULL` (PostgreSQL `NOT NULL`).
+    ///
+    /// **Note:** Here we are following PostgreSQL semantics and *not*
+    /// Java RecordLayer semantics. In Java RecordLayer
+    /// `Evaluated.Nullstandin.NOT_NULL` and
+    /// `RecordMetaDataProto.Field.NullInterpretation.NOT_NULL` means
+    /// when a field is missing, the Protobuf default value for that
+    /// field is returned. In our case, all fields have presence
+    /// information. The field *must* be present, and we return that
+    /// value. When `NotNull` variant is specified, and the field is
+    /// not present, it is an error.
     NotNull,
 }
 
