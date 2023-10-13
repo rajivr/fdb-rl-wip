@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["HelloWorld","RecursiveInner","RecursiveOuter"]};
+window.SIDEBAR_ITEMS = {"mod":["hello_world_oneof"],"struct":["HelloWorld","HelloWorldMap","HelloWorldOneof","RecursiveInner","RecursiveOuter"]};

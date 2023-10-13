@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["RecursiveInner","RecursiveOuter"]};
+window.SIDEBAR_ITEMS = {"struct":["GeneratedMapEntry","InvalidMap","RecursiveInner","RecursiveOuter"]};

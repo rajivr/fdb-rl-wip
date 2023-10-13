@@ -10,6 +10,15 @@
 <a href="#10" id="10">10</a>
 <a href="#11" id="11">11</a>
 <a href="#12" id="12">12</a>
+<a href="#13" id="13">13</a>
+<a href="#14" id="14">14</a>
+<a href="#15" id="15">15</a>
+<a href="#16" id="16">16</a>
+<a href="#17" id="17">17</a>
+<a href="#18" id="18">18</a>
+<a href="#19" id="19">19</a>
+<a href="#20" id="20">20</a>
+<a href="#21" id="21">21</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! TODO
 </span><span class="comment">//
 // Takes `KeyExpression` and `WellFormedMessageDescriptor` and
@@ -22,4 +31,13 @@
 // give the value of type `RecordTypeKeyExpression` a value of `T
 // where T: Message + Default` (a prost struct), and you will get a
 // value of `Tuple` back.
-</span></code></pre></div></section></main></body></html>
+
+</span><span class="kw">use </span><span class="kw">super</span>::well_formed_message_descriptor::WellFormedMessageDescriptor;
+<span class="kw">use </span><span class="kw">super</span>::KeyExpression;
+
+<span class="doccomment">/// TODO
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>RecordTypeKeyExpression {
+    key_expression: KeyExpression,
+    well_formed_message_descriptor: WellFormedMessageDescriptor,
+}
+</code></pre></div></section></main></body></html>
