@@ -21,6 +21,14 @@ bytes = "1"
 fdb = { git = "https://github.com/rajivr/fdb-wip", branch = "main" }
 fdb-rl-proto = { version = "0.1.0", path = "../fdb-rl-proto", default-features = false }
 num-bigint = "0.4"
+partiql-parser = { git = "https://github.com/rajivr/partiql-lang-rust.git", rev = "2c5d3e14f6" }
+partiql-catalog = { git = "https://github.com/rajivr/partiql-lang-rust.git", rev = "2c5d3e14f6" }
+partiql-source-map = { git = "https://github.com/rajivr/partiql-lang-rust.git", rev = "2c5d3e14f6" }
+partiql-ast = { git = "https://github.com/rajivr/partiql-lang-rust.git", rev = "2c5d3e14f6" }
+partiql-logical-planner = { git = "https://github.com/rajivr/partiql-lang-rust.git", rev = "2c5d3e14f6" }
+partiql-logical = { git = "https://github.com/rajivr/partiql-lang-rust.git", rev = "2c5d3e14f6" }
+partiql-value = { git = "https://github.com/rajivr/partiql-lang-rust.git", rev = "2c5d3e14f6" }
+partiql-eval = { git = "https://github.com/rajivr/partiql-lang-rust.git", rev = "2c5d3e14f6" }
 prost = "0.12"
 prost-reflect = "0.12"
 tokio-stream = "0.1"

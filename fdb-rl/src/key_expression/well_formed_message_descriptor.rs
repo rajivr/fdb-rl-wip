@@ -16,9 +16,6 @@ use super::error::KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR;
 static FDB_RL_WKT: LazyLock<Vec<MessageDescriptor>> =
     LazyLock::new(|| vec![FdbRLWktUuidProto::default().descriptor()]);
 
-// TODO: Remove later
-//
-
 /// Describes a valid `MessageDescriptor`.
 ///
 /// We a `prost_reflect::MessageDescriptor`, and performs checks to
