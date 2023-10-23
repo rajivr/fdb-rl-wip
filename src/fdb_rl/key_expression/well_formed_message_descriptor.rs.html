@@ -1730,9 +1730,6 @@
 <a href="#1730" id="1730">1730</a>
 <a href="#1731" id="1731">1731</a>
 <a href="#1732" id="1732">1732</a>
-<a href="#1733" id="1733">1733</a>
-<a href="#1734" id="1734">1734</a>
-<a href="#1735" id="1735">1735</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! TODO
 
 </span><span class="kw">use </span>fdb::error::{FdbError, FdbResult};
@@ -1884,7 +1881,8 @@
 }
 
 <span class="doccomment">/// There are five valid forms of field descriptor that we want. They
-/// are numbered (1), (2), (a), (b.i), (b.ii).
+/// are numbered (1), (2), (a), (b.i), (b.ii). We also follow Java
+/// RecordLayer restrictions on unsigned types.
 ///
 /// The form (a) is a special case of form (2).
 ///
@@ -2029,10 +2027,14 @@
 /// checking field descriptor with name `value` ((b.ii) above) is
 /// implemented in `visit_map_entry_value_type_field_descriptor`.
 ///
+/// Unsigned types (`uint32`, `uint64`, `fixed32` and `fixed64`) are
+/// invalid [5].
+///
 /// [1]: https://github.com/protocolbuffers/protobuf/issues/10489
 /// [2]: https://protobuf.com/docs/language-spec#fully-qualified-names
 /// [3]: https://protobuf.dev/programming-guides/proto3/#using-oneof
 /// [4]: https://protobuf.dev/programming-guides/proto3/#maps
+/// [5]: https://github.com/FoundationDB/fdb-record-layer/blob/3.2.283.0/fdb-record-layer-core/src/main/java/com/apple/foundationdb/record/RecordMetaDataBuilder.java#L603-L610
 </span><span class="attr">#[derive(Debug)]
 </span><span class="kw">struct </span>MessageDescriptorValidatorVisitor {
     walked_message_descriptor: Vec&lt;MessageDescriptor&gt;,
@@ -2104,16 +2106,13 @@
                         Kind::Message(inner_message_descriptor) =&gt; {
                             walk_message_descriptor(<span class="self">self</span>, <span class="kw-2">&amp;</span>inner_message_descriptor)
                         }
+                        Kind::Uint32 | Kind::Uint64 | Kind::Fixed32 | Kind::Fixed64 =&gt; <span class="bool-val">false</span>,
                         Kind::Double
                         | Kind::Float
                         | Kind::Int32
                         | Kind::Int64
-                        | Kind::Uint32
-                        | Kind::Uint64
                         | Kind::Sint32
                         | Kind::Sint64
-                        | Kind::Fixed32
-                        | Kind::Fixed64
                         | Kind::Sfixed32
                         | Kind::Sfixed64
                         | Kind::Bool
@@ -2139,16 +2138,13 @@
                         Kind::Message(inner_message_descriptor) =&gt; {
                             walk_message_descriptor(<span class="self">self</span>, <span class="kw-2">&amp;</span>inner_message_descriptor)
                         }
+                        Kind::Uint32 | Kind::Uint64 | Kind::Fixed32 | Kind::Fixed64 =&gt; <span class="bool-val">false</span>,
                         Kind::Double
                         | Kind::Float
                         | Kind::Int32
                         | Kind::Int64
-                        | Kind::Uint32
-                        | Kind::Uint64
                         | Kind::Sint32
                         | Kind::Sint64
-                        | Kind::Fixed32
-                        | Kind::Fixed64
                         | Kind::Sfixed32
                         | Kind::Sfixed64
                         | Kind::Bool
@@ -2309,12 +2305,20 @@
                 }
 
                 {
-                    <span class="kw">use </span>fdb_rl_proto::fdb_rl_test::key_expression::well_formed_message_descriptor::bad::proto_3::v1::{RecursiveInner, RecursiveOuter, GeneratedMapEntry, InvalidMap};
+                    <span class="kw">use </span>fdb_rl_proto::fdb_rl_test::key_expression::well_formed_message_descriptor::bad::proto_3::v1::{RecursiveInner, RecursiveOuter, GeneratedMapEntry, InvalidMap, UnsignedRecordUint32, UnsignedRecordRepeatedUint32, UnsignedRecordUint64, UnsignedRecordRepeatedUint64, UnsignedRecordFixed32, UnsignedRecordRepeatedFixed32, UnsignedRecordFixed64, UnsignedRecordRepeatedFixed64};
 
                     <span class="kw">for </span>message_descriptor <span class="kw">in </span><span class="macro">vec!</span>[
                         InvalidMap::default().descriptor(),
                         RecursiveInner::default().descriptor(),
                         RecursiveOuter::default().descriptor(),
+                        UnsignedRecordUint32::default().descriptor(),
+                        UnsignedRecordRepeatedUint32::default().descriptor(),
+                        UnsignedRecordUint64::default().descriptor(),
+                        UnsignedRecordRepeatedUint64::default().descriptor(),
+                        UnsignedRecordFixed32::default().descriptor(),
+                        UnsignedRecordRepeatedFixed32::default().descriptor(),
+                        UnsignedRecordFixed64::default().descriptor(),
+                        UnsignedRecordRepeatedFixed64::default().descriptor(),
                     ] {
                         <span class="macro">assert_eq!</span>(
                             WellFormedMessageDescriptor::try_from(message_descriptor),
@@ -2337,6 +2341,62 @@
 
                 <span class="comment">// Java RecordLayer `proto`
                 </span>{
+                    <span class="kw">use </span>fdb_rl_proto::fdb_rl_test::java::proto::test_records_unsigned_1::v1::SimpleUnsignedRecord;
+
+                    <span class="kw">let </span>message_descriptor = SimpleUnsignedRecord::default().descriptor();
+                    <span class="macro">assert_eq!</span>(
+                        WellFormedMessageDescriptor::try_from(message_descriptor),
+                        <span class="prelude-val">Err</span>(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                    );
+                }
+
+                {
+                    <span class="kw">use </span>fdb_rl_proto::fdb_rl_test::java::proto::test_records_unsigned_2::v1::{
+                        NestedWithUnsigned, UnsignedInNestedRecord,
+                    };
+
+                    <span class="kw">for </span>message_descriptor <span class="kw">in </span><span class="macro">vec!</span>[
+                        UnsignedInNestedRecord::default().descriptor(),
+                        NestedWithUnsigned::default().descriptor(),
+                    ] {
+                        <span class="macro">assert_eq!</span>(
+                            WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
+                            <span class="prelude-val">Err</span>(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                        );
+                    }
+                }
+
+                {
+                    <span class="kw">use </span>fdb_rl_proto::fdb_rl_test::java::proto::test_records_unsigned_3::v1::Fixed32UnsignedRecord;
+
+                    <span class="kw">let </span>message_descriptor = Fixed32UnsignedRecord::default().descriptor();
+                    <span class="macro">assert_eq!</span>(
+                        WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
+                        <span class="prelude-val">Err</span>(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                    );
+                }
+
+                {
+                    <span class="kw">use </span>fdb_rl_proto::fdb_rl_test::java::proto::test_records_unsigned_4::v1::Fixed64UnsignedRecord;
+
+                    <span class="kw">let </span>message_descriptor = Fixed64UnsignedRecord::default().descriptor();
+                    <span class="macro">assert_eq!</span>(
+                        WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
+                        <span class="prelude-val">Err</span>(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                    );
+                }
+
+                {
+                    <span class="kw">use </span>fdb_rl_proto::fdb_rl_test::java::proto::test_records_unsigned_5::v1::ReferencesUnsignedRecord;
+
+                    <span class="kw">let </span>message_descriptor = ReferencesUnsignedRecord::default().descriptor();
+                    <span class="macro">assert_eq!</span>(
+                        WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
+                        <span class="prelude-val">Err</span>(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                    );
+                }
+
+                {
                     <span class="kw">use </span>fdb_rl_proto::fdb_rl_test::java::proto3::evolution::test_nested_proto3::v1::NestedRecord;
 
                     <span class="kw">let </span>message_descriptor = NestedRecord::default().descriptor();
@@ -3310,72 +3370,6 @@
                             })
                         );
                     }
-                }
-
-                {
-                    <span class="kw">use </span>fdb_rl_proto::fdb_rl_test::java::proto::test_records_unsigned_1::v1::SimpleUnsignedRecord;
-
-                    <span class="kw">let </span>message_descriptor = SimpleUnsignedRecord::default().descriptor();
-                    <span class="macro">assert_eq!</span>(
-                        WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
-                        <span class="prelude-val">Ok</span>(WellFormedMessageDescriptor {
-                            inner: message_descriptor,
-                        })
-                    );
-                }
-
-                {
-                    <span class="kw">use </span>fdb_rl_proto::fdb_rl_test::java::proto::test_records_unsigned_2::v1::{
-                        NestedWithUnsigned, UnsignedInNestedRecord,
-                    };
-
-                    <span class="kw">for </span>message_descriptor <span class="kw">in </span><span class="macro">vec!</span>[
-                        UnsignedInNestedRecord::default().descriptor(),
-                        NestedWithUnsigned::default().descriptor(),
-                    ] {
-                        <span class="macro">assert_eq!</span>(
-                            WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
-                            <span class="prelude-val">Ok</span>(WellFormedMessageDescriptor {
-                                inner: message_descriptor,
-                            })
-                        );
-                    }
-                }
-
-                {
-                    <span class="kw">use </span>fdb_rl_proto::fdb_rl_test::java::proto::test_records_unsigned_3::v1::Fixed32UnsignedRecord;
-
-                    <span class="kw">let </span>message_descriptor = Fixed32UnsignedRecord::default().descriptor();
-                    <span class="macro">assert_eq!</span>(
-                        WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
-                        <span class="prelude-val">Ok</span>(WellFormedMessageDescriptor {
-                            inner: message_descriptor,
-                        })
-                    );
-                }
-
-                {
-                    <span class="kw">use </span>fdb_rl_proto::fdb_rl_test::java::proto::test_records_unsigned_4::v1::Fixed64UnsignedRecord;
-
-                    <span class="kw">let </span>message_descriptor = Fixed64UnsignedRecord::default().descriptor();
-                    <span class="macro">assert_eq!</span>(
-                        WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
-                        <span class="prelude-val">Ok</span>(WellFormedMessageDescriptor {
-                            inner: message_descriptor,
-                        })
-                    );
-                }
-
-                {
-                    <span class="kw">use </span>fdb_rl_proto::fdb_rl_test::java::proto::test_records_unsigned_5::v1::ReferencesUnsignedRecord;
-
-                    <span class="kw">let </span>message_descriptor = ReferencesUnsignedRecord::default().descriptor();
-                    <span class="macro">assert_eq!</span>(
-                        WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
-                        <span class="prelude-val">Ok</span>(WellFormedMessageDescriptor {
-                            inner: message_descriptor,
-                        })
-                    );
                 }
 
                 {
