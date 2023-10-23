@@ -21,3 +21,35 @@ message GeneratedMapEntry {
 message InvalidMap {
   map<int32, string> hello_world = 1;
 }
+
+message UnsignedRecordUint32 {
+  optional uint32 rec = 1;
+}
+
+message UnsignedRecordRepeatedUint32 {
+  repeated uint32 rec = 1;
+}
+
+message UnsignedRecordUint64 {
+  optional uint64 rec = 1;
+}
+
+message UnsignedRecordRepeatedUint64 {
+  repeated uint64 rec = 1;
+}
+
+message UnsignedRecordFixed32 {
+  optional fixed32 rec = 1;
+}
+
+message UnsignedRecordRepeatedFixed32 {
+  repeated fixed32 rec = 1;
+}
+
+message UnsignedRecordFixed64 {
+  optional fixed64 rec = 1;
+}
+
+message UnsignedRecordRepeatedFixed64 {
+  repeated fixed64 rec = 1;
+}

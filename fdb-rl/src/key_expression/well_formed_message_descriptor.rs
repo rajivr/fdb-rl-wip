@@ -149,7 +149,8 @@ fn walk_message_descriptor(
 }
 
 /// There are five valid forms of field descriptor that we want. They
-/// are numbered (1), (2), (a), (b.i), (b.ii).
+/// are numbered (1), (2), (a), (b.i), (b.ii). We also follow Java
+/// RecordLayer restrictions on unsigned types.
 ///
 /// The form (a) is a special case of form (2).
 ///
@@ -294,10 +295,14 @@ fn walk_message_descriptor(
 /// checking field descriptor with name `value` ((b.ii) above) is
 /// implemented in `visit_map_entry_value_type_field_descriptor`.
 ///
+/// Unsigned types (`uint32`, `uint64`, `fixed32` and `fixed64`) are
+/// invalid [5].
+///
 /// [1]: https://github.com/protocolbuffers/protobuf/issues/10489
 /// [2]: https://protobuf.com/docs/language-spec#fully-qualified-names
 /// [3]: https://protobuf.dev/programming-guides/proto3/#using-oneof
 /// [4]: https://protobuf.dev/programming-guides/proto3/#maps
+/// [5]: https://github.com/FoundationDB/fdb-record-layer/blob/3.2.283.0/fdb-record-layer-core/src/main/java/com/apple/foundationdb/record/RecordMetaDataBuilder.java#L603-L610
 #[derive(Debug)]
 struct MessageDescriptorValidatorVisitor {
     walked_message_descriptor: Vec<MessageDescriptor>,
@@ -369,16 +374,13 @@ impl Visitor for MessageDescriptorValidatorVisitor {
                         Kind::Message(inner_message_descriptor) => {
                             walk_message_descriptor(self, &inner_message_descriptor)
                         }
+                        Kind::Uint32 | Kind::Uint64 | Kind::Fixed32 | Kind::Fixed64 => false,
                         Kind::Double
                         | Kind::Float
                         | Kind::Int32
                         | Kind::Int64
-                        | Kind::Uint32
-                        | Kind::Uint64
                         | Kind::Sint32
                         | Kind::Sint64
-                        | Kind::Fixed32
-                        | Kind::Fixed64
                         | Kind::Sfixed32
                         | Kind::Sfixed64
                         | Kind::Bool
@@ -404,16 +406,13 @@ impl Visitor for MessageDescriptorValidatorVisitor {
                         Kind::Message(inner_message_descriptor) => {
                             walk_message_descriptor(self, &inner_message_descriptor)
                         }
+                        Kind::Uint32 | Kind::Uint64 | Kind::Fixed32 | Kind::Fixed64 => false,
                         Kind::Double
                         | Kind::Float
                         | Kind::Int32
                         | Kind::Int64
-                        | Kind::Uint32
-                        | Kind::Uint64
                         | Kind::Sint32
                         | Kind::Sint64
-                        | Kind::Fixed32
-                        | Kind::Fixed64
                         | Kind::Sfixed32
                         | Kind::Sfixed64
                         | Kind::Bool
@@ -574,12 +573,20 @@ mod tests {
                 }
 
                 {
-                    use fdb_rl_proto::fdb_rl_test::key_expression::well_formed_message_descriptor::bad::proto_3::v1::{RecursiveInner, RecursiveOuter, GeneratedMapEntry, InvalidMap};
+                    use fdb_rl_proto::fdb_rl_test::key_expression::well_formed_message_descriptor::bad::proto_3::v1::{RecursiveInner, RecursiveOuter, GeneratedMapEntry, InvalidMap, UnsignedRecordUint32, UnsignedRecordRepeatedUint32, UnsignedRecordUint64, UnsignedRecordRepeatedUint64, UnsignedRecordFixed32, UnsignedRecordRepeatedFixed32, UnsignedRecordFixed64, UnsignedRecordRepeatedFixed64};
 
                     for message_descriptor in vec![
                         InvalidMap::default().descriptor(),
                         RecursiveInner::default().descriptor(),
                         RecursiveOuter::default().descriptor(),
+                        UnsignedRecordUint32::default().descriptor(),
+                        UnsignedRecordRepeatedUint32::default().descriptor(),
+                        UnsignedRecordUint64::default().descriptor(),
+                        UnsignedRecordRepeatedUint64::default().descriptor(),
+                        UnsignedRecordFixed32::default().descriptor(),
+                        UnsignedRecordRepeatedFixed32::default().descriptor(),
+                        UnsignedRecordFixed64::default().descriptor(),
+                        UnsignedRecordRepeatedFixed64::default().descriptor(),
                     ] {
                         assert_eq!(
                             WellFormedMessageDescriptor::try_from(message_descriptor),
@@ -601,6 +608,62 @@ mod tests {
                 }
 
                 // Java RecordLayer `proto`
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto::test_records_unsigned_1::v1::SimpleUnsignedRecord;
+
+                    let message_descriptor = SimpleUnsignedRecord::default().descriptor();
+                    assert_eq!(
+                        WellFormedMessageDescriptor::try_from(message_descriptor),
+                        Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                    );
+                }
+
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto::test_records_unsigned_2::v1::{
+                        NestedWithUnsigned, UnsignedInNestedRecord,
+                    };
+
+                    for message_descriptor in vec![
+                        UnsignedInNestedRecord::default().descriptor(),
+                        NestedWithUnsigned::default().descriptor(),
+                    ] {
+                        assert_eq!(
+                            WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
+                            Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                        );
+                    }
+                }
+
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto::test_records_unsigned_3::v1::Fixed32UnsignedRecord;
+
+                    let message_descriptor = Fixed32UnsignedRecord::default().descriptor();
+                    assert_eq!(
+                        WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
+                        Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                    );
+                }
+
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto::test_records_unsigned_4::v1::Fixed64UnsignedRecord;
+
+                    let message_descriptor = Fixed64UnsignedRecord::default().descriptor();
+                    assert_eq!(
+                        WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
+                        Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                    );
+                }
+
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto::test_records_unsigned_5::v1::ReferencesUnsignedRecord;
+
+                    let message_descriptor = ReferencesUnsignedRecord::default().descriptor();
+                    assert_eq!(
+                        WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
+                        Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                    );
+                }
+
                 {
                     use fdb_rl_proto::fdb_rl_test::java::proto3::evolution::test_nested_proto3::v1::NestedRecord;
 
@@ -1575,72 +1638,6 @@ mod tests {
                             })
                         );
                     }
-                }
-
-                {
-                    use fdb_rl_proto::fdb_rl_test::java::proto::test_records_unsigned_1::v1::SimpleUnsignedRecord;
-
-                    let message_descriptor = SimpleUnsignedRecord::default().descriptor();
-                    assert_eq!(
-                        WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
-                        Ok(WellFormedMessageDescriptor {
-                            inner: message_descriptor,
-                        })
-                    );
-                }
-
-                {
-                    use fdb_rl_proto::fdb_rl_test::java::proto::test_records_unsigned_2::v1::{
-                        NestedWithUnsigned, UnsignedInNestedRecord,
-                    };
-
-                    for message_descriptor in vec![
-                        UnsignedInNestedRecord::default().descriptor(),
-                        NestedWithUnsigned::default().descriptor(),
-                    ] {
-                        assert_eq!(
-                            WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
-                            Ok(WellFormedMessageDescriptor {
-                                inner: message_descriptor,
-                            })
-                        );
-                    }
-                }
-
-                {
-                    use fdb_rl_proto::fdb_rl_test::java::proto::test_records_unsigned_3::v1::Fixed32UnsignedRecord;
-
-                    let message_descriptor = Fixed32UnsignedRecord::default().descriptor();
-                    assert_eq!(
-                        WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
-                        Ok(WellFormedMessageDescriptor {
-                            inner: message_descriptor,
-                        })
-                    );
-                }
-
-                {
-                    use fdb_rl_proto::fdb_rl_test::java::proto::test_records_unsigned_4::v1::Fixed64UnsignedRecord;
-
-                    let message_descriptor = Fixed64UnsignedRecord::default().descriptor();
-                    assert_eq!(
-                        WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
-                        Ok(WellFormedMessageDescriptor {
-                            inner: message_descriptor,
-                        })
-                    );
-                }
-
-                {
-                    use fdb_rl_proto::fdb_rl_test::java::proto::test_records_unsigned_5::v1::ReferencesUnsignedRecord;
-
-                    let message_descriptor = ReferencesUnsignedRecord::default().descriptor();
-                    assert_eq!(
-                        WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
-                        Ok(WellFormedMessageDescriptor {
-                            inner: message_descriptor,
-                        })
-                    );
                 }
 
                 {
