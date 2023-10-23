@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["Int","IonType","Mantissa","Precision","Sign","UInt"],"struct":["Blob","Bytes","Clob","Coefficient","DaySetter","Decimal","FractionalSecondSetter","HourAndMinuteSetter","List","MonthSetter","SExp","SecondSetter","Sequence","Str","Struct","Symbol","Timestamp"],"trait":["IntAccess"],"type":["SymbolId"]};

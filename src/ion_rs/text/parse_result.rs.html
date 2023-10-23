@@ -1,0 +1,573 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ion-rs-0.18.1/src/text/parse_result.rs`."><title>parse_result.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-07416f8512e0e04c.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="ion_rs" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0-nightly (da6b55cc5 2023-07-17)" data-channel="nightly" data-search-js="search-f6292fe389d70017.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-6d2c9675f3d09c26.css" data-theme-dark-css="dark-45ceb8f2e522f4d1.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../static.files/light-6d2c9675f3d09c26.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../static.files/dark-45ceb8f2e522f4d1.css"><link rel="stylesheet" href="../../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../ion_rs/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<a href="#2" id="2">2</a>
+<a href="#3" id="3">3</a>
+<a href="#4" id="4">4</a>
+<a href="#5" id="5">5</a>
+<a href="#6" id="6">6</a>
+<a href="#7" id="7">7</a>
+<a href="#8" id="8">8</a>
+<a href="#9" id="9">9</a>
+<a href="#10" id="10">10</a>
+<a href="#11" id="11">11</a>
+<a href="#12" id="12">12</a>
+<a href="#13" id="13">13</a>
+<a href="#14" id="14">14</a>
+<a href="#15" id="15">15</a>
+<a href="#16" id="16">16</a>
+<a href="#17" id="17">17</a>
+<a href="#18" id="18">18</a>
+<a href="#19" id="19">19</a>
+<a href="#20" id="20">20</a>
+<a href="#21" id="21">21</a>
+<a href="#22" id="22">22</a>
+<a href="#23" id="23">23</a>
+<a href="#24" id="24">24</a>
+<a href="#25" id="25">25</a>
+<a href="#26" id="26">26</a>
+<a href="#27" id="27">27</a>
+<a href="#28" id="28">28</a>
+<a href="#29" id="29">29</a>
+<a href="#30" id="30">30</a>
+<a href="#31" id="31">31</a>
+<a href="#32" id="32">32</a>
+<a href="#33" id="33">33</a>
+<a href="#34" id="34">34</a>
+<a href="#35" id="35">35</a>
+<a href="#36" id="36">36</a>
+<a href="#37" id="37">37</a>
+<a href="#38" id="38">38</a>
+<a href="#39" id="39">39</a>
+<a href="#40" id="40">40</a>
+<a href="#41" id="41">41</a>
+<a href="#42" id="42">42</a>
+<a href="#43" id="43">43</a>
+<a href="#44" id="44">44</a>
+<a href="#45" id="45">45</a>
+<a href="#46" id="46">46</a>
+<a href="#47" id="47">47</a>
+<a href="#48" id="48">48</a>
+<a href="#49" id="49">49</a>
+<a href="#50" id="50">50</a>
+<a href="#51" id="51">51</a>
+<a href="#52" id="52">52</a>
+<a href="#53" id="53">53</a>
+<a href="#54" id="54">54</a>
+<a href="#55" id="55">55</a>
+<a href="#56" id="56">56</a>
+<a href="#57" id="57">57</a>
+<a href="#58" id="58">58</a>
+<a href="#59" id="59">59</a>
+<a href="#60" id="60">60</a>
+<a href="#61" id="61">61</a>
+<a href="#62" id="62">62</a>
+<a href="#63" id="63">63</a>
+<a href="#64" id="64">64</a>
+<a href="#65" id="65">65</a>
+<a href="#66" id="66">66</a>
+<a href="#67" id="67">67</a>
+<a href="#68" id="68">68</a>
+<a href="#69" id="69">69</a>
+<a href="#70" id="70">70</a>
+<a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a>
+<a href="#73" id="73">73</a>
+<a href="#74" id="74">74</a>
+<a href="#75" id="75">75</a>
+<a href="#76" id="76">76</a>
+<a href="#77" id="77">77</a>
+<a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
+<a href="#208" id="208">208</a>
+<a href="#209" id="209">209</a>
+<a href="#210" id="210">210</a>
+<a href="#211" id="211">211</a>
+<a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
+<a href="#233" id="233">233</a>
+<a href="#234" id="234">234</a>
+<a href="#235" id="235">235</a>
+<a href="#236" id="236">236</a>
+<a href="#237" id="237">237</a>
+<a href="#238" id="238">238</a>
+<a href="#239" id="239">239</a>
+<a href="#240" id="240">240</a>
+<a href="#241" id="241">241</a>
+<a href="#242" id="242">242</a>
+<a href="#243" id="243">243</a>
+<a href="#244" id="244">244</a>
+<a href="#245" id="245">245</a>
+<a href="#246" id="246">246</a>
+<a href="#247" id="247">247</a>
+<a href="#248" id="248">248</a>
+<a href="#249" id="249">249</a>
+<a href="#250" id="250">250</a>
+<a href="#251" id="251">251</a>
+<a href="#252" id="252">252</a>
+<a href="#253" id="253">253</a>
+<a href="#254" id="254">254</a>
+<a href="#255" id="255">255</a>
+<a href="#256" id="256">256</a>
+<a href="#257" id="257">257</a>
+<a href="#258" id="258">258</a>
+<a href="#259" id="259">259</a>
+<a href="#260" id="260">260</a>
+<a href="#261" id="261">261</a>
+<a href="#262" id="262">262</a>
+<a href="#263" id="263">263</a>
+<a href="#264" id="264">264</a>
+<a href="#265" id="265">265</a>
+<a href="#266" id="266">266</a>
+<a href="#267" id="267">267</a>
+<a href="#268" id="268">268</a>
+<a href="#269" id="269">269</a>
+<a href="#270" id="270">270</a>
+<a href="#271" id="271">271</a>
+<a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
+<a href="#276" id="276">276</a>
+<a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a>
+<a href="#279" id="279">279</a>
+<a href="#280" id="280">280</a>
+<a href="#281" id="281">281</a>
+<a href="#282" id="282">282</a>
+<a href="#283" id="283">283</a>
+<a href="#284" id="284">284</a>
+<a href="#285" id="285">285</a>
+<a href="#286" id="286">286</a>
+</pre></div><pre class="rust"><code><span class="doccomment">//! The [`nom` parser combinator crate](https://docs.rs/nom/latest/nom/) intentionally provides
+//! bare-bones error reporting by default. Each error contains only a `&amp;str` representing the input
+//! that could not be matched and an [`ErrorKind`] enum variant indicating which `nom` parser produced
+//! the error. This stack-allocated type is very cheap to create, which is important because a
+//! typical parse will require creating large numbers of short-lived error values.
+//!
+//! This module defines [`IonParseError`], a custom error type that can capture more information than is
+//! supported by [`nom::error::Error`], as well as traits and functions for upgrading an `Error` into
+//! an [`IonParseError`]. The module also defines [`IonParseResult`], a type alias for a [`IResult`]
+//! that parses `&amp;str`s and produces [`IonParseError`]s if something goes wrong.
+//!
+//! Two new extension traits are also provided to facilitate combining core `nom` parsers that
+//! return an `IResult` (for example: `one_of`, `opt`, or `alt`) with higher-level parsers that
+//! return an `IonParseResult` (for example: `parse_timestamp` or `parse_decimal`).
+//!
+//! 1. [`UpgradeIResult`] adds an `.upgrade()` method to every `IResult` that cheaply converts it into
+//! an `IonParseResult`.
+//! 2. [`UpgradeParser`] adds an `.upgrade()` method to every implementation of [`Parser`] that
+//! causes it to return an `IonParseResult` instead of an `IResult`.
+
+</span><span class="kw">use </span>nom::error::{Error <span class="kw">as </span>NomError, ErrorKind, ParseError};
+<span class="kw">use </span>nom::{<span class="prelude-val">Err</span>, IResult, Parser};
+<span class="kw">use </span>std::fmt::Debug;
+
+<span class="doccomment">/// A type alias for a [`IResult`] whose input is a `&amp;str` and whose error type is an
+/// [`IonParseError`]. All of the Ion parsers in the `text::parsers` module return an
+/// [`IonParseResult`].
+///
+/// If the parser is successful, it will return `Ok(output_value)`. If it encounters a problem,
+/// it will return a `nom::Err&lt;IonParseError&gt;`. [nom::Err] is a generic enum with three possible
+/// variants:
+/// 1. `Incomplete(_)` indicates that there wasn&#39;t enough input data to determine whether the
+///    parser should match or not.
+/// 2. `Error(ion_parse_error)` indicates that the parser did not match the input text.
+/// 3. `Failure(ion_parse_error)` indicates that the parser matched the text but encountered
+///    a problem when trying to materialize it into the `output_value`. In such cases, returning a
+///    `Failure` signals that this was the correct parser to handle the input but it could not
+///    be processed successfully for some reason. For example, a parser trying to match a number of
+///    hours and minutes might match the text `11:71`, but fail when it tries to turn `71` into a
+///    number of minutes because it&#39;s `&gt;=60`. We know this was the right parser, but it wasn&#39;t
+///    able to process it. (This is slightly contrived; it would be possible to write a parser
+///    that rejected `71` as a number of minutes based on syntax alone.)
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">type </span>IonParseResult&lt;<span class="lifetime">&#39;a</span>, O&gt; = IResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str, O, IonParseError&lt;<span class="lifetime">&#39;a</span>&gt;&gt;;
+<span class="comment">// Functions that return IonParseResult parse text  -^   ^     ^
+//                    ...return a value of type `O` -----+     |
+// ...or a nom::Err&lt;IonParseError&gt; if something goes wrong ----+
+
+</span><span class="doccomment">/// An extension trait that allows an [IResult] to be converted to an [IonParseResult].
+///
+/// If you write a parser by combining core `nom` parsers, the new parser will return [IResult].
+/// If you&#39;d like your parser to return an [IonParseResult] instead to improve its interoperability
+/// with other parsers that return `IonParseResult`, you can call `upgrade()` on your parser&#39;s
+/// output before returning it.
+///
+/// ```ignore // Doc tests cannot use internal APIs
+/// use nom::bytes::streaming::tag;
+/// use nom::sequence::terminated;
+/// use nom::Parser; // trait provides the method `or`
+/// use self::UpgradeIResult;
+///
+/// // Matches a prefix at the head of `input` that looks like an Ion boolean value followed
+/// // by a space.
+/// fn recognize_boolean(input: &amp;str) -&gt; IonParseResult&lt;&amp;str&gt; {
+///     // This syntax is idiomatic, but a bit tough for the uninitiated to interpret.
+///     // A more verbose/explicit version of the same function is provided below.
+///     terminated(tag(&quot;true&quot;).or(tag(&quot;false&quot;)), tag(&quot; &quot;))(input).upgrade()
+/// }
+///
+/// use nom::IResult;
+///
+/// // The same function as above, but spelled out a bit more explicitly
+/// fn verbose_recognize_boolean(input: &amp;str) -&gt; IonParseResult&lt;&amp;str&gt; {
+///     // Combine several core `nom` parsers to make a new parser with the desired logic
+///     let parser = terminated(          // &lt;-- Takes two parsers; if both succeed, returns the output of the first
+///         tag(&quot;true&quot;).or(tag(&quot;false&quot;)), // &lt;-- Parser 1 matches the text `true` or the text `false`
+///         tag(&quot; &quot;)                      // &lt;-- Parser 2 matches a single space
+///     );
+///
+///     // Use our new parser to parse the provided text
+///     let i_result: IResult&lt;&amp;str, &amp;str, nom::error::Error&lt;&amp;str&gt;&gt; = parser(input);
+///
+///     // Upgrade the IResult our parser produced to make an IonParseResult
+///     let ion_parse_result: IonParseResult&lt;&amp;str&gt; = i_result.upgrade();
+///
+///     // Return the IonParseResult
+///     ion_parse_result
+/// }
+/// ```
+/// This is defined as an extension trait (rather than a [std::convert::From] implementation)
+/// because both `IResult` and `IonParseResult` are just type aliases for different configurations
+/// of [std::result::Result]. In order to implement `From`, your crate must own the concrete
+/// type for which it is being implemented.
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">trait </span>UpgradeIResult&lt;<span class="lifetime">&#39;a</span>, O&gt; {
+    <span class="doccomment">/// Consumes the [IResult] and returns an [IonParseResult]. This is guaranteed not to require
+    /// heap allocations.
+    </span><span class="kw">fn </span>upgrade(<span class="self">self</span>) -&gt; IonParseResult&lt;<span class="lifetime">&#39;a</span>, O&gt;;
+}
+
+<span class="doccomment">/// This implementation makes it possible to call `.upgrade()` on an IResult, converting it into an
+/// IonParseResult.
+</span><span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, O&gt; UpgradeIResult&lt;<span class="lifetime">&#39;a</span>, O&gt; <span class="kw">for </span>IResult&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str, O&gt; {
+    <span class="kw">fn </span>upgrade(<span class="self">self</span>) -&gt; IonParseResult&lt;<span class="lifetime">&#39;a</span>, O&gt; {
+        <span class="kw">match </span><span class="self">self </span>{
+            <span class="prelude-val">Ok</span>(matched) =&gt; <span class="prelude-val">Ok</span>(matched),
+            <span class="prelude-val">Err</span>(Err::Incomplete(e)) =&gt; <span class="prelude-val">Err</span>(Err::Incomplete(e)),
+            <span class="comment">// Convert the `nom::Error` into an `IonParseError` using its `From` implementation.
+            </span><span class="prelude-val">Err</span>(Err::Error(e)) =&gt; <span class="prelude-val">Err</span>(Err::Error(e.into())),
+            <span class="prelude-val">Err</span>(Err::Failure(e)) =&gt; <span class="prelude-val">Err</span>(Err::Failure(e.into())),
+        }
+    }
+}
+
+<span class="doccomment">/// Describes a problem that occurred while trying to parse a given input `&amp;str`.
+///
+/// When returned as part of an [IonParseResult], an `IonParseError` is always wrapped in
+/// a [nom::Err] (see [IonParseResult]&#39;s documentation for details). If the `nom::Err` is
+/// a non-fatal `Error`, the `IonParseError`&#39;s `description` will be `None`. If the `nom::Err` is
+/// a fatal `Failure`, the `description` will be `Some(String)`. In this way, using an
+/// `IonParseError` only incurs heap allocation costs when parsing is coming to an end.
+</span><span class="attr">#[derive(Debug, PartialEq)]
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>IonParseError&lt;<span class="lifetime">&#39;a</span>&gt; {
+    input: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str,
+    description: <span class="prelude-ty">Option</span>&lt;String&gt;,
+}
+
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; IonParseError&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="doccomment">/// Constructs a new `IonParseError` from the provided `input` text.
+    </span><span class="kw">pub fn </span>new(input: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str) -&gt; <span class="self">Self </span>{
+        IonParseError {
+            input,
+            description: <span class="prelude-val">None</span>,
+        }
+    }
+
+    <span class="doccomment">/// Constructs a new `IonParseError` from the provided `input` text and `description`.
+    </span><span class="kw">pub fn </span>with_description&lt;D: Into&lt;String&gt;&gt;(input: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str, description: D) -&gt; <span class="self">Self </span>{
+        IonParseError {
+            input,
+            description: <span class="prelude-val">Some</span>(description.into()),
+        }
+    }
+
+    <span class="doccomment">/// Returns a reference to the `description` text, if any.
+    </span><span class="kw">pub fn </span>description(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>str&gt; {
+        <span class="self">self</span>.description.as_deref()
+    }
+
+    <span class="doccomment">/// Consumes the `IonParseError` and returns a new one with a lifetime tied to the provided
+    /// `input`.
+    ///
+    /// This is useful in situations where the input text had to be sanitized before parsing could
+    /// be attempted. An IonParseError tied to the (locally constructed) sanitized text
+    /// cannot be returned. In such cases, the IonParseError can be replaced by one that is tied
+    /// to the original input text and which retains the original description.
+    </span><span class="kw">pub fn </span>replace_input(<span class="self">self</span>, input: <span class="kw-2">&amp;</span>str) -&gt; IonParseError {
+        IonParseError {
+            input,
+            description: <span class="self">self</span>.description,
+        }
+    }
+}
+
+<span class="doccomment">/// Allows an `IonParseError` to be constructed from a `(&amp;str, ErrorKind)` tuple, which is the
+/// data provided by core `nom` parsers if they do not match the input.
+</span><span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; From&lt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str, ErrorKind)&gt; <span class="kw">for </span>IonParseError&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">fn </span>from((input, _error_kind): (<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str, ErrorKind)) -&gt; <span class="self">Self </span>{
+        IonParseError::new(input)
+    }
+}
+
+<span class="doccomment">/// Allows a [nom::error::Error] to be converted into an [IonParseError] by calling `.into()`.
+</span><span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; From&lt;nom::error::Error&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str&gt;&gt; <span class="kw">for </span>IonParseError&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">fn </span>from(nom_error: NomError&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str&gt;) -&gt; <span class="self">Self </span>{
+        IonParseError::new(nom_error.input)
+    }
+}
+
+<span class="doccomment">/// Allows `IonParseError` to be used as the error type in various `nom` functions.
+</span><span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; ParseError&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str&gt; <span class="kw">for </span>IonParseError&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">fn </span>from_error_kind(input: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str, _error_kind: ErrorKind) -&gt; <span class="self">Self </span>{
+        IonParseError::new(input)
+    }
+
+    <span class="kw">fn </span>append(_input: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str, _kind: ErrorKind, other: <span class="self">Self</span>) -&gt; <span class="self">Self </span>{
+        <span class="comment">// When an error stack is being built, this method is called to give the error
+        // type an opportunity to aggregate the errors into a collection or a more descriptive
+        // message. For now, we simply allow the most recent error to take precedence.
+        </span>other
+    }
+}
+
+<span class="doccomment">/// Constructs a `nom::Err::Failure` that contains an `IonParseError` describing the problem
+/// that was encountered.
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>fatal_parse_error&lt;D: Into&lt;String&gt;, O&gt;(
+    input: <span class="kw-2">&amp;</span>str,
+    description: D,
+) -&gt; IonParseResult&lt;O&gt; {
+    <span class="prelude-val">Err</span>(nom::Err::Failure(IonParseError::with_description(
+        input,
+        description,
+    )))
+}
+
+<span class="doccomment">/// An extension trait that allows a [std::result::Result] of any kind to be mapped to an
+/// `IonParseResult` concisely.
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">trait </span>OrFatalParseError&lt;T&gt; {
+    <span class="kw">fn </span>or_fatal_parse_error&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="self">self</span>, input: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str, label: <span class="kw-2">&amp;</span>str) -&gt; IonParseResult&lt;<span class="lifetime">&#39;a</span>, T&gt;;
+}
+
+<span class="doccomment">/// See the documentation for [OrFatalParseError].
+</span><span class="kw">impl</span>&lt;T, E&gt; OrFatalParseError&lt;T&gt; <span class="kw">for </span><span class="prelude-ty">Result</span>&lt;T, E&gt;
+<span class="kw">where
+    </span>E: Debug,
+{
+    <span class="kw">fn </span>or_fatal_parse_error&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="self">self</span>, input: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str, label: <span class="kw-2">&amp;</span>str) -&gt; IonParseResult&lt;<span class="lifetime">&#39;a</span>, T&gt; {
+        <span class="kw">match </span><span class="self">self </span>{
+            <span class="prelude-val">Ok</span>(value) =&gt; <span class="prelude-val">Ok</span>((<span class="string">&quot;&quot;</span>, value)),
+            <span class="prelude-val">Err</span>(error) =&gt; fatal_parse_error(input, <span class="macro">format!</span>(<span class="string">&quot;{label}: {error:?}&quot;</span>)),
+        }
+    }
+}
+
+<span class="doccomment">/// An extension trait that allows any parser that returns a [nom::IResult] to be converted into
+/// a parser that returns an [IonParseResult] instead.
+///
+/// ```ignore // Doc tests cannot use internal APIs
+/// use nom::bytes::streaming::tag;
+/// use nom::sequence::tuple;
+/// use nom::Parser; // trait provides the method `or`
+/// use self::UpgradeIResult;
+///
+/// // Parser that matches a list start, an Ion value, and a list end
+/// fn parse_list_with_one_value(input: &amp;str) -&gt; IonParseResult&lt;TextValue&gt; {
+///     // Broken example:
+///     //
+///     //     tuple(               // &lt;-- Expects all parameter parsers to use the same Error type
+///     //         tag(&quot;[&quot;),        // &lt;-- returns `IResult`
+///     //         top_level_value, // &lt;-- returns `IonParseResult`
+///     //         tag(&quot;]&quot;)         // &lt;-- returns `IResult`
+///     //      )(input)            // &lt;- ERROR!
+///     //
+///     // You can&#39;t mix `IResult` parsers like `tag(&quot;[&quot;)` and `tag(&quot;]&quot;)` with
+///     // `IonParseResult` parsers like `top_level_value` inside of many nom
+///     // parsers like `tuple`. Solution:
+///
+///     tuple(
+///         tag(&quot;[&quot;).upgrade(), // &lt;-- now this returns `IonParseResult`
+///         top_level_value,    // &lt;-- returns `IonParseResult`
+///         tag(&quot;]&quot;).upgrade()  // &lt;-- now this returns `IonParseResult
+///     )(input)                // &lt;- OK!
+/// }
+/// ```
+/// This conversion is essentially free; `upgrade()` produces a stack-allocated [`UpgradedParser`]
+/// whose only field is the wrapped parser; this means that its size and layout are identical
+/// to the original parser. The only cost is the trivial expense of converting the parser&#39;s
+/// output from an `IResult` to an [`IonParseResult`].
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">trait </span>UpgradeParser&lt;O&gt; {
+    <span class="kw">fn </span>upgrade(<span class="self">self</span>) -&gt; UpgradedParser&lt;<span class="self">Self</span>&gt;;
+}
+
+<span class="doccomment">/// Wraps a parser that returns an [IResult], causing it to return an [IonParseResult] instead.
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>UpgradedParser&lt;P: <span class="question-mark">?</span>Sized&gt; {
+    base_parser: P,
+}
+
+<span class="doccomment">/// Allows any type that implements `nom`&#39;s [nom::Parser] trait to call [UpgradeParser::upgrade].
+</span><span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, P, O&gt; UpgradeParser&lt;O&gt; <span class="kw">for </span>P
+<span class="kw">where
+    </span>P: Parser&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str, O, NomError&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str&gt;&gt;,
+{
+    <span class="kw">fn </span>upgrade(<span class="self">self</span>) -&gt; UpgradedParser&lt;<span class="self">Self</span>&gt; {
+        UpgradedParser { base_parser: <span class="self">self </span>}
+    }
+}
+
+<span class="doccomment">/// Implements `nom`&#39;s `[nom::Parser] trait for [UpgradedParser], allowing instances of that type
+/// to be passed to `nom` functions.
+</span><span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, P, O&gt; Parser&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str, O, IonParseError&lt;<span class="lifetime">&#39;a</span>&gt;&gt; <span class="kw">for </span>UpgradedParser&lt;P&gt;
+<span class="kw">where
+    </span>P: Parser&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str, O, NomError&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str&gt;&gt;,
+{
+    <span class="kw">fn </span>parse(<span class="kw-2">&amp;mut </span><span class="self">self</span>, input: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str) -&gt; IonParseResult&lt;<span class="lifetime">&#39;a</span>, O&gt; {
+        <span class="kw">let </span>result = <span class="self">self</span>.base_parser.parse(input);
+        UpgradeIResult::upgrade(result)
+    }
+}
+</code></pre></div></section></main></body></html>

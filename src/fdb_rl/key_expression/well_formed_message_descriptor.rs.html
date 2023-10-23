@@ -1727,9 +1727,6 @@
 <a href="#1727" id="1727">1727</a>
 <a href="#1728" id="1728">1728</a>
 <a href="#1729" id="1729">1729</a>
-<a href="#1730" id="1730">1730</a>
-<a href="#1731" id="1731">1731</a>
-<a href="#1732" id="1732">1732</a>
 </pre></div><pre class="rust"><code><span class="doccomment">//! TODO
 
 </span><span class="kw">use </span>fdb::error::{FdbError, FdbResult};
@@ -1748,10 +1745,7 @@
 </span><span class="kw">static </span>FDB_RL_WKT: LazyLock&lt;Vec&lt;MessageDescriptor&gt;&gt; =
     LazyLock::new(|| <span class="macro">vec!</span>[FdbRLWktUuidProto::default().descriptor()]);
 
-<span class="comment">// TODO: Remove later
-//
-
-</span><span class="doccomment">/// Describes a valid `MessageDescriptor`.
+<span class="doccomment">/// Describes a valid `MessageDescriptor`.
 ///
 /// We a `prost_reflect::MessageDescriptor`, and performs checks to
 /// ensure that message descriptor is well formed. If it is well

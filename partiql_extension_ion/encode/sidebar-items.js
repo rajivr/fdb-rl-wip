@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["IonEncodeError"],"struct":["IonEncoderBuilder","IonEncoderConfig"],"trait":["ValueEncoder"],"type":["IonEncodeResult"]};

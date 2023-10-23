@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["IonError"],"fn":["decoding_error","decoding_error_raw","encoding_error","encoding_error_raw","illegal_operation","illegal_operation_raw","incomplete_data_error","incomplete_data_error_raw","incomplete_text_error","incomplete_text_error_raw"],"struct":["Position"],"type":["IonResult"]};

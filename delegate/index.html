@@ -1,0 +1,246 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="This crate removes some boilerplate for structs that simply delegate some of their methods to one or more of their fields."><title>delegate - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../static.files/rustdoc-07416f8512e0e04c.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="delegate" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0-nightly (da6b55cc5 2023-07-17)" data-channel="nightly" data-search-js="search-f6292fe389d70017.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-6d2c9675f3d09c26.css" data-theme-dark-css="dark-45ceb8f2e522f4d1.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../static.files/light-6d2c9675f3d09c26.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../static.files/dark-45ceb8f2e522f4d1.css"><link rel="stylesheet" href="../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="logo-container" href="../delegate/index.html"><img class="rust-logo" src="../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><h2></h2></nav><nav class="sidebar"><a class="logo-container" href="../delegate/index.html"><img class="rust-logo" src="../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><h2 class="location"><a href="#">Crate delegate</a></h2><div class="sidebar-elems"><ul class="block"><li class="version">Version 0.9.0</li><li><a id="all-types" href="all.html">All Items</a></li></ul><section><ul class="block"><li><a href="#macros">Macros</a></li></ul></section></div></nav><main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1>Crate <a class="mod" href="#">delegate</a><button id="copy-path" title="Copy item path to clipboard"><img src="../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><a class="src" href="../src/delegate/lib.rs.html#1-869">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>This crate removes some boilerplate for structs that simply delegate
+some of their methods to one or more of their fields.</p>
+<p>It gives you the <code>delegate!</code> macro, which delegates method calls to selected expressions (usually inner fields).</p>
+<h3 id="features"><a href="#features">Features:</a></h3>
+<ul>
+<li>Delegate to a method with a different name</li>
+</ul>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>delegate::delegate;
+
+<span class="kw">struct </span>Stack { inner: Vec&lt;u32&gt; }
+<span class="kw">impl </span>Stack {
+    <span class="macro">delegate! </span>{
+        to <span class="self">self</span>.inner {
+            <span class="attr">#[call(push)]
+            </span><span class="kw">pub fn </span>add(<span class="kw-2">&amp;mut </span><span class="self">self</span>, value: u32);
+        }
+    }
+}</code></pre></div>
+<ul>
+<li>Use an arbitrary inner field expression</li>
+</ul>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>delegate::delegate;
+
+<span class="kw">use </span>std::rc::Rc;
+<span class="kw">use </span>std::cell::RefCell;
+<span class="kw">use </span>std::ops::Deref;
+
+<span class="kw">struct </span>Wrapper { inner: Rc&lt;RefCell&lt;Vec&lt;u32&gt;&gt;&gt; }
+<span class="kw">impl </span>Wrapper {
+    <span class="macro">delegate! </span>{
+        to <span class="self">self</span>.inner.deref().borrow_mut() {
+            <span class="kw">pub fn </span>push(<span class="kw-2">&amp;mut </span><span class="self">self</span>, val: u32);
+        }
+    }
+}</code></pre></div>
+<ul>
+<li>Delegate to enum variants</li>
+</ul>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>delegate::delegate;
+
+<span class="kw">enum </span>Enum {
+    A(A),
+    B(B),
+    C { v: C },
+}
+
+<span class="kw">struct </span>A {
+    val: usize,
+}
+
+<span class="kw">impl </span>A {
+    <span class="kw">fn </span>dbg_inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="macro">dbg!</span>(<span class="self">self</span>.val);
+        <span class="number">1
+    </span>}
+}
+<span class="kw">struct </span>B {
+    val_a: String,
+}
+
+<span class="kw">impl </span>B {
+    <span class="kw">fn </span>dbg_inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="macro">dbg!</span>(<span class="self">self</span>.val_a.clone());
+        <span class="number">2
+    </span>}
+}
+
+<span class="kw">struct </span>C {
+    val_c: f64,
+}
+
+<span class="kw">impl </span>C {
+    <span class="kw">fn </span>dbg_inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="macro">dbg!</span>(<span class="self">self</span>.val_c);
+        <span class="number">3
+    </span>}
+}
+
+<span class="kw">impl </span>Enum {
+    <span class="macro">delegate! </span>{
+        <span class="comment">// transformed to
+        //
+        // ```rust
+        // match self {
+        //     Enum::A(a) =&gt; a.dbg_inner(),
+        //     Enum::B(b) =&gt; { println!(&quot;i am b&quot;); b }.dbg_inner(),
+        //     Enum::C { v: c } =&gt; { c }.dbg_inner(),
+        // }
+        // ```
+        </span>to <span class="kw">match </span><span class="self">self </span>{
+            Enum::A(a) =&gt; a,
+            Enum::B(b) =&gt; { <span class="macro">println!</span>(<span class="string">&quot;i am b&quot;</span>); b },
+            Enum::C { v: c } =&gt; { c },
+        } {
+            <span class="kw">fn </span>dbg_inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize;
+        }
+    }
+}</code></pre></div>
+<ul>
+<li>Change the return type of the delegated method using a <code>From</code> or <code>TryFrom</code> impl or omit it altogether</li>
+</ul>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>delegate::delegate;
+<span class="kw">struct </span>Inner;
+<span class="kw">impl </span>Inner {
+    <span class="kw">pub fn </span>method(<span class="kw-2">&amp;</span><span class="self">self</span>, num: u32) -&gt; u32 { num }
+}
+<span class="kw">struct </span>Wrapper { inner: Inner }
+<span class="kw">impl </span>Wrapper {
+    <span class="macro">delegate! </span>{
+        to <span class="self">self</span>.inner {
+            <span class="comment">// calls method, converts result to u64 using `From`
+            </span><span class="attr">#[into]
+            </span><span class="kw">pub fn </span>method(<span class="kw-2">&amp;</span><span class="self">self</span>, num: u32) -&gt; u64;
+
+            <span class="comment">// calls method, returns ()
+            </span><span class="attr">#[call(method)]
+            </span><span class="kw">pub fn </span>method_noreturn(<span class="kw-2">&amp;</span><span class="self">self</span>, num: u32);
+
+            <span class="comment">// calls method, converts result to i6 using `TryFrom`
+            </span><span class="attr">#[try_into]
+            #[call(method)]
+            </span><span class="kw">pub fn </span>method2(<span class="kw-2">&amp;</span><span class="self">self</span>, num: u32) -&gt; <span class="prelude-ty">Result</span>&lt;u16, std::num::TryFromIntError&gt;;
+
+            <span class="comment">// calls method, converts result to i6 using `TryFrom`, unwrap the result
+            </span><span class="attr">#[try_into(unwrap)]
+            #[call(method)]
+            </span><span class="kw">pub fn </span>method3(<span class="kw-2">&amp;</span><span class="self">self</span>, num: u32) -&gt; u16;
+        }
+    }
+}</code></pre></div>
+<ul>
+<li>Call <code>await</code> on async functions</li>
+</ul>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>delegate::delegate;
+
+<span class="kw">struct </span>Inner;
+<span class="kw">impl </span>Inner {
+    <span class="kw">pub async fn </span>method(<span class="kw-2">&amp;</span><span class="self">self</span>, num: u32) -&gt; u32 { num }
+}
+<span class="kw">struct </span>Wrapper { inner: Inner }
+<span class="kw">impl </span>Wrapper {
+    <span class="macro">delegate! </span>{
+        to <span class="self">self</span>.inner {
+            <span class="comment">// calls method(num).await, returns impl Future&lt;Output = u32&gt;
+            </span><span class="kw">pub async fn </span>method(<span class="kw-2">&amp;</span><span class="self">self</span>, num: u32) -&gt; u32;
+
+            <span class="comment">// calls method(num).await.into(), returns impl Future&lt;Output = u64&gt;
+            </span><span class="attr">#[into]
+            #[call(method)]
+            </span><span class="kw">pub async fn </span>method_into(<span class="kw-2">&amp;</span><span class="self">self</span>, num: u32) -&gt; u64;
+        }
+    }
+}</code></pre></div>
+<p>You can use the <code>#[await(true/false)]</code> attribute on delegated methods to specify if <code>.await</code> should
+be generated after the delegated expression. It will be generated by default if the delegated
+method is <code>async</code>.</p>
+<ul>
+<li>Delegate to multiple fields</li>
+</ul>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>delegate::delegate;
+
+<span class="kw">struct </span>MultiStack {
+    left: Vec&lt;u32&gt;,
+    right: Vec&lt;u32&gt;,
+}
+<span class="kw">impl </span>MultiStack {
+    <span class="macro">delegate! </span>{
+        to <span class="self">self</span>.left {
+            <span class="comment">// Push an item to the top of the left stack
+            </span><span class="attr">#[call(push)]
+            </span><span class="kw">pub fn </span>push_left(<span class="kw-2">&amp;mut </span><span class="self">self</span>, value: u32);
+        }
+        to <span class="self">self</span>.right {
+            <span class="comment">// Push an item to the top of the right stack
+            </span><span class="attr">#[call(push)]
+            </span><span class="kw">pub fn </span>push_right(<span class="kw-2">&amp;mut </span><span class="self">self</span>, value: u32);
+        }
+    }
+}</code></pre></div>
+<ul>
+<li>Inserts <code>#[inline(always)]</code> automatically (unless you specify <code>#[inline]</code> manually on the method)</li>
+<li>Specify expressions in the signature that will be used as delegated arguments</li>
+</ul>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>delegate::delegate;
+<span class="kw">struct </span>Inner;
+<span class="kw">impl </span>Inner {
+    <span class="kw">pub fn </span>polynomial(<span class="kw-2">&amp;</span><span class="self">self</span>, a: i32, x: i32, b: i32, y: i32, c: i32) -&gt; i32 {
+        a + x * x + b * y + c
+    }
+}
+<span class="kw">struct </span>Wrapper { inner: Inner, a: i32, b: i32, c: i32 }
+<span class="kw">impl </span>Wrapper {
+    <span class="macro">delegate! </span>{
+        to <span class="self">self</span>.inner {
+            <span class="comment">// Calls `polynomial` on `inner` with `self.a`, `self.b` and
+            // `self.c` passed as arguments `a`, `b`, and `c`, effectively
+            // calling `polynomial(self.a, x, self.b, y, self.c)`.
+            </span><span class="kw">pub fn </span>polynomial(<span class="kw-2">&amp;</span><span class="self">self</span>, [ <span class="self">self</span>.a ], x: i32, [ <span class="self">self</span>.b ], y: i32, [ <span class="self">self</span>.c ]) -&gt; i32 ;
+            <span class="comment">// Calls `polynomial` on `inner` with `0`s passed for arguments
+            // `a` and `x`, and `self.b` and `self.c` for `b` and `c`,
+            // effectively calling `polynomial(0, 0, self.b, y, self.c)`.
+            </span><span class="attr">#[call(polynomial)]
+            </span><span class="kw">pub fn </span>linear(<span class="kw-2">&amp;</span><span class="self">self</span>, [ <span class="number">0 </span>], [ <span class="number">0 </span>], [ <span class="self">self</span>.b ], y: i32, [ <span class="self">self</span>.c ]) -&gt; i32 ;
+        }
+    }
+}</code></pre></div>
+<ul>
+<li>Modify how will an input parameter be passed to the delegated method with parameter attribute modifiers.
+Currently, the following modifiers are supported:
+<ul>
+<li><code>#[into]</code>: Calls <code>.into()</code> on the parameter passed to the delegated method.</li>
+<li><code>#[as_ref]</code>: Calls <code>.as_ref()</code> on the parameter passed to the delegated method.</li>
+</ul>
+</li>
+</ul>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>delegate::delegate;
+
+<span class="kw">struct </span>InnerType {}
+<span class="kw">impl </span>InnerType {
+    <span class="kw">fn </span>foo(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="self">Self</span>) {}
+}
+
+<span class="kw">impl </span>From&lt;Wrapper&gt; <span class="kw">for </span>InnerType {
+    <span class="kw">fn </span>from(wrapper: Wrapper) -&gt; <span class="self">Self </span>{
+        wrapper.<span class="number">0
+    </span>}
+}
+
+<span class="kw">struct </span>Wrapper(InnerType);
+<span class="kw">impl </span>Wrapper {
+    <span class="macro">delegate! </span>{
+        to <span class="self">self</span>.<span class="number">0 </span>{
+            <span class="comment">// Calls `self.0.foo(other.into());`
+            </span><span class="kw">pub fn </span>foo(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="attr">#[into] </span>other: <span class="self">Self</span>);
+        }
+    }
+}</code></pre></div>
+</div></details><h2 id="macros" class="small-section-header"><a href="#macros">Macros</a></h2><ul class="item-table"><li><div class="item-name"><a class="macro" href="macro.delegate.html" title="macro delegate::delegate">delegate</a></div></li></ul></section></div></main></body></html>

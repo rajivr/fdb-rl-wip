@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["raw_text_reader","text_buffer"]};

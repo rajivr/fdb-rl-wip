@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["UIntBeBytes"],"fn":["encode_u64","encode_uint"],"struct":["DecodedUInt","EncodedUInt"]};

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":["private"],"type":["FmtResult","Formatter","Span","TokenStream","TokenStream2","bool","str"]};

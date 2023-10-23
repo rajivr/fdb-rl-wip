@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["CatalogErrorKind","FunctionEntryFunction"],"mod":["call_defs"],"struct":["CatalogError","FunctionEntry","ObjectId","PartiqlCatalog","TableFunction","TypeEntry","TypeEnvEntry"],"trait":["BaseTableExpr","BaseTableFunctionInfo","Catalog","Extension"],"type":["BaseTableExprResult","BaseTableExprResultError","BaseTableExprResultValueIter"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["IonTypeCode"],"mod":["binary_writer","constants","decimal","int","non_blocking","raw_binary_writer","timestamp","uint","var_int","var_uint"]};

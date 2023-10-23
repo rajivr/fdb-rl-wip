@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["ByteOffset","BytePosition","CharOffset","LineAndCharPosition","LineAndColumn","LineOffset","Located","Location"],"trait":["ToLocated"]};
