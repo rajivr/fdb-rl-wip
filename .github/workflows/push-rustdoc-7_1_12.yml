@@ -2,7 +2,7 @@ name: push-rustdoc-7_1_12
 
 env:
   image_version: 7_1_12
-  image_tag: 97ba47796408
+  image_tag: 6e8cf17eb9fb
 
 on:
   push:
