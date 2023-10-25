@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"attr":["main","main_fail","main_rt","test","test_fail","test_rt"],"macro":["select_priv_clean_pattern","select_priv_declare_output_enum"]};
+window.SIDEBAR_ITEMS = {"attr":["main","main_fail","main_rt","test","test_fail","test_rt"]};

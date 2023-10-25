@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["encode","encode_packed","encode_repeated","encoded_len","encoded_len_packed","encoded_len_repeated","merge","merge_repeated"]};

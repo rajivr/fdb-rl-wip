@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"derive":["Default"],"enum":["NestedMeta","Option","Result"],"struct":["Vec"],"trait":["Default","From","ToString"]};

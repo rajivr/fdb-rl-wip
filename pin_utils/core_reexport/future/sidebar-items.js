@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["get_context","pending","poll_fn","ready"],"macro":["join"],"struct":["Pending","PollFn","Ready","ResumeTy"],"trait":["Future","IntoFuture"]};

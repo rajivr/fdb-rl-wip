@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["compute_error","compute_error_scaled","compute_float","lemire"]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["__internal"]};
+window.SIDEBAR_ITEMS = {};

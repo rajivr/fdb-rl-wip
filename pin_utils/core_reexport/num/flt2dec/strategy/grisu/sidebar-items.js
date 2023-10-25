@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"constant":["ALPHA","CACHED_POW10_FIRST_E","CACHED_POW10_LAST_E","GAMMA"],"fn":["cached_power","format_exact","format_exact_opt","format_shortest","format_shortest_opt","max_pow10_no_more_than"],"static":["CACHED_POW10"]};

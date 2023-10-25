@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["cursor","error","key_expression","range","raw_record","record_context","record_version","scan","split_helper","test"],"struct":["RecordContext","RecordVersion"]};
+window.SIDEBAR_ITEMS = {"mod":["cursor","error","key_expression","range","raw_record","record_context","record_version","scan","split_helper"],"struct":["RecordContext","RecordVersion"]};

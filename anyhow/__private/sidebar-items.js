@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["format_err","must_use"],"mod":["kind"]};

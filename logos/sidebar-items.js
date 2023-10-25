@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"derive":["Logos"],"enum":["Filter","FilterResult"],"fn":["skip"],"mod":["internal","source"],"struct":["Lexer","Skip","SpannedIter"],"trait":["Logos"],"type":["Span"]};
+window.SIDEBAR_ITEMS = {"derive":["Logos"],"enum":["Filter","FilterResult"],"fn":["skip"],"mod":["source"],"struct":["Lexer","Skip","SpannedIter"],"trait":["Logos"],"type":["Span"]};

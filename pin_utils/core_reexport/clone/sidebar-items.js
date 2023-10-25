@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"derive":["Clone"],"struct":["AssertParamIsClone","AssertParamIsCopy"],"trait":["Clone"]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["StreamItem"],"mod":["integration_testing"],"struct":["ReaderBuilder","UserReader"],"type":["Reader"]};
+window.SIDEBAR_ITEMS = {"enum":["StreamItem"],"struct":["ReaderBuilder","UserReader"],"type":["Reader"]};

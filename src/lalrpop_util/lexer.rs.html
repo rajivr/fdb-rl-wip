@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/lalrpop-util-0.20.1/src/lexer.rs`."><title>lexer.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-07416f8512e0e04c.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="lalrpop_util" data-themes="" data-resource-suffix="" data-rustdoc-version="1.73.0-nightly (da6b55cc5 2023-07-17)" data-channel="nightly" data-search-js="search-f6292fe389d70017.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-6d2c9675f3d09c26.css" data-theme-dark-css="dark-45ceb8f2e522f4d1.css" data-theme-ayu-css="ayu-fd19013d6ce078bf.css" ><script src="../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-0795b7d26be81095.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../static.files/light-6d2c9675f3d09c26.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../static.files/dark-45ceb8f2e522f4d1.css"><link rel="stylesheet" href="../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../lalrpop_util/index.html"><img class="rust-logo" src="../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/index.crates.io-6f17d22bba15001f/lalrpop-util-0.20.0/src/lexer.rs`."><title>lexer.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="lalrpop_util" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (df871fbf0 2023-10-24)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -126,27 +126,9 @@
 <a href="#126" id="126">126</a>
 <a href="#127" id="127">127</a>
 <a href="#128" id="128">128</a>
-<a href="#129" id="129">129</a>
-<a href="#130" id="130">130</a>
-<a href="#131" id="131">131</a>
-<a href="#132" id="132">132</a>
-<a href="#133" id="133">133</a>
-<a href="#134" id="134">134</a>
-<a href="#135" id="135">135</a>
-<a href="#136" id="136">136</a>
-<a href="#137" id="137">137</a>
-<a href="#138" id="138">138</a>
-<a href="#139" id="139">139</a>
-<a href="#140" id="140">140</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>std::{fmt, marker::PhantomData};
 
 <span class="kw">use </span><span class="kw">crate</span>::ParseError;
-
-<span class="kw">use </span>regex_automata::hybrid::dfa::{Cache, DFA};
-<span class="kw">use </span>regex_automata::hybrid::{BuildError, LazyStateID};
-<span class="kw">use </span>regex_automata::nfa::thompson::Config <span class="kw">as </span>NfaConfig;
-<span class="kw">use </span>regex_automata::util::syntax::Config <span class="kw">as </span>SyntaxConfig;
-<span class="kw">use </span>regex_automata::{Anchored, Input, MatchKind};
 
 <span class="attr">#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 </span><span class="kw">pub struct </span>Token&lt;<span class="lifetime">&#39;input</span>&gt;(<span class="kw">pub </span>usize, <span class="kw">pub </span><span class="kw-2">&amp;</span><span class="lifetime">&#39;input </span>str);
@@ -156,53 +138,56 @@
     }
 }
 
+<span class="kw">struct </span>RegexEntry {
+    regex: regex::Regex,
+    skip: bool,
+}
+
 <span class="kw">pub struct </span>MatcherBuilder {
-    dfa: DFA,
-    skip_vec: Vec&lt;bool&gt;,
+    regex_set: regex::RegexSet,
+    regex_vec: Vec&lt;RegexEntry&gt;,
 }
 
 <span class="kw">impl </span>MatcherBuilder {
-    <span class="attr">#[allow(clippy::result_large_err)]
-    </span><span class="kw">pub fn </span>new&lt;S&gt;(exprs: <span class="kw">impl </span>IntoIterator&lt;Item = (S, bool)&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;MatcherBuilder, BuildError&gt;
+    <span class="kw">pub fn </span>new&lt;S&gt;(
+        exprs: <span class="kw">impl </span>IntoIterator&lt;Item = (S, bool)&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;MatcherBuilder, regex::Error&gt;
     <span class="kw">where
         </span>S: AsRef&lt;str&gt;,
     {
         <span class="kw">let </span>exprs = exprs.into_iter();
         <span class="kw">let </span><span class="kw-2">mut </span>regex_vec = Vec::with_capacity(exprs.size_hint().<span class="number">0</span>);
-        <span class="kw">let </span><span class="kw-2">mut </span>skip_vec = Vec::with_capacity(exprs.size_hint().<span class="number">0</span>);
-        <span class="kw">for </span>(regex, skip) <span class="kw">in </span>exprs {
-            regex_vec.push(regex);
-            skip_vec.push(skip);
+        <span class="kw">let </span><span class="kw-2">mut </span>first_error = <span class="prelude-val">None</span>;
+        <span class="kw">let </span>regex_set_result = regex::RegexSet::new(exprs.scan((), |<span class="kw">_</span>, (s, skip)| {
+            regex_vec.push(<span class="kw">match </span>regex::Regex::new(s.as_ref()) {
+                <span class="prelude-val">Ok</span>(regex) =&gt; RegexEntry { regex, skip },
+                <span class="prelude-val">Err</span>(err) =&gt; {
+                    first_error = <span class="prelude-val">Some</span>(err);
+                    <span class="kw">return </span><span class="prelude-val">None</span>;
+                }
+            });
+            <span class="prelude-val">Some</span>(s)
+        }));
+
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(err) = first_error {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(err);
         }
+        <span class="kw">let </span>regex_set = regex_set_result<span class="question-mark">?</span>;
 
-        <span class="kw">let </span>enable_unicode = <span class="macro">cfg!</span>(feature = <span class="string">&quot;unicode&quot;</span>);
-        <span class="kw">let </span>dfa = DFA::builder()
-            .configure(DFA::config().match_kind(MatchKind::All))
-            .syntax(
-                SyntaxConfig::new()
-                    .unicode(enable_unicode)
-                    .utf8(enable_unicode),
-            )
-            .thompson(NfaConfig::new().utf8(enable_unicode).shrink(<span class="bool-val">true</span>))
-            .build_many(<span class="kw-2">&amp;</span>regex_vec)<span class="question-mark">?</span>;
-
-        <span class="prelude-val">Ok</span>(MatcherBuilder { dfa, skip_vec })
+        <span class="prelude-val">Ok</span>(MatcherBuilder {
+            regex_set,
+            regex_vec,
+        })
     }
-
     <span class="kw">pub fn </span>matcher&lt;<span class="lifetime">&#39;input</span>, <span class="lifetime">&#39;builder</span>, E&gt;(
         <span class="kw-2">&amp;</span><span class="lifetime">&#39;builder </span><span class="self">self</span>,
-        text: <span class="kw-2">&amp;</span><span class="lifetime">&#39;input </span>str,
+        s: <span class="kw-2">&amp;</span><span class="lifetime">&#39;input </span>str,
     ) -&gt; Matcher&lt;<span class="lifetime">&#39;input</span>, <span class="lifetime">&#39;builder</span>, E&gt; {
-        <span class="kw">let </span>input = Input::new(text).anchored(Anchored::Yes);
-        <span class="kw">let </span><span class="kw-2">mut </span>cache = <span class="self">self</span>.dfa.create_cache();
-        <span class="kw">let </span>start = <span class="self">self</span>.dfa.start_state_forward(<span class="kw-2">&amp;mut </span>cache, <span class="kw-2">&amp;</span>input).unwrap();
         Matcher {
-            text,
+            text: s,
             consumed: <span class="number">0</span>,
-            cache,
-            start,
-            dfa: <span class="kw-2">&amp;</span><span class="self">self</span>.dfa,
-            skip_vec: <span class="kw-2">&amp;</span><span class="self">self</span>.skip_vec,
+            regex_set: <span class="kw-2">&amp;</span><span class="self">self</span>.regex_set,
+            regex_vec: <span class="kw-2">&amp;</span><span class="self">self</span>.regex_vec,
             _marker: PhantomData,
         }
     }
@@ -211,10 +196,8 @@
 <span class="kw">pub struct </span>Matcher&lt;<span class="lifetime">&#39;input</span>, <span class="lifetime">&#39;builder</span>, E&gt; {
     text: <span class="kw-2">&amp;</span><span class="lifetime">&#39;input </span>str,
     consumed: usize,
-    cache: Cache,
-    start: LazyStateID,
-    dfa: <span class="kw-2">&amp;</span><span class="lifetime">&#39;builder </span>DFA,
-    skip_vec: <span class="kw-2">&amp;</span><span class="lifetime">&#39;builder </span>[bool],
+    regex_set: <span class="kw-2">&amp;</span><span class="lifetime">&#39;builder </span>regex::RegexSet,
+    regex_vec: <span class="kw-2">&amp;</span><span class="lifetime">&#39;builder </span>Vec&lt;RegexEntry&gt;,
     _marker: PhantomData&lt;<span class="kw">fn</span>() -&gt; E&gt;,
 }
 
@@ -228,53 +211,46 @@
             <span class="kw">if </span>text.is_empty() {
                 <span class="self">self</span>.consumed = start_offset;
                 <span class="kw">return </span><span class="prelude-val">None</span>;
-            }
-
-            <span class="kw">let </span><span class="kw-2">mut </span>match_ = <span class="prelude-val">None</span>;
-            <span class="lifetime">&#39;search</span>: {
-                <span class="kw">let </span><span class="kw-2">mut </span>state = <span class="self">self</span>.start;
-                <span class="kw">for </span>(i, byte) <span class="kw">in </span>text.bytes().enumerate() {
-                    state = <span class="self">self</span>.dfa.next_state(<span class="kw-2">&amp;mut </span><span class="self">self</span>.cache, state, byte).unwrap();
-                    <span class="kw">if </span>state.is_match() {
-                        match_ = <span class="prelude-val">Some</span>((state, i));
-                    } <span class="kw">else if </span>state.is_dead() {
-                        <span class="kw">break </span><span class="lifetime">&#39;search</span>;
-                    }
-                }
-                state = <span class="self">self</span>.dfa.next_eoi_state(<span class="kw-2">&amp;mut </span><span class="self">self</span>.cache, state).unwrap();
-                <span class="kw">if </span>state.is_match() {
-                    match_ = <span class="prelude-val">Some</span>((state, text.len()));
-                }
-            }
-
-            <span class="kw">let </span>(match_state, longest_match) = <span class="kw">match </span>match_ {
-                <span class="prelude-val">Some</span>(match_) =&gt; match_,
-                <span class="prelude-val">None </span>=&gt; {
+            } <span class="kw">else </span>{
+                <span class="kw">let </span>matches = <span class="self">self</span>.regex_set.matches(text);
+                <span class="kw">if </span>!matches.matched_any() {
                     <span class="kw">return </span><span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(ParseError::InvalidToken {
                         location: start_offset,
-                    }))
+                    }));
+                } <span class="kw">else </span>{
+                    <span class="kw">let </span><span class="kw-2">mut </span>longest_match = <span class="number">0</span>;
+                    <span class="kw">let </span><span class="kw-2">mut </span>index = <span class="number">0</span>;
+                    <span class="kw">let </span><span class="kw-2">mut </span>skip = <span class="bool-val">false</span>;
+                    <span class="kw">for </span>i <span class="kw">in </span>matches.iter() {
+                        <span class="kw">let </span>entry = <span class="kw-2">&amp;</span><span class="self">self</span>.regex_vec[i];
+                        <span class="kw">let </span>match_ = entry.regex.find(text).unwrap();
+                        <span class="kw">let </span>len = match_.end();
+                        <span class="kw">if </span>len &gt;= longest_match {
+                            longest_match = len;
+                            index = i;
+                            skip = entry.skip;
+                        }
+                    }
+
+                    <span class="kw">let </span>result = <span class="kw-2">&amp;</span>text[..longest_match];
+                    <span class="kw">let </span>remaining = <span class="kw-2">&amp;</span>text[longest_match..];
+                    <span class="kw">let </span>end_offset = start_offset + longest_match;
+                    <span class="self">self</span>.text = remaining;
+                    <span class="self">self</span>.consumed = end_offset;
+
+                    <span class="comment">// Skip any whitespace matches
+                    </span><span class="kw">if </span>skip {
+                        <span class="kw">if </span>longest_match == <span class="number">0 </span>{
+                            <span class="kw">return </span><span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(ParseError::InvalidToken {
+                                location: start_offset,
+                            }));
+                        }
+                        <span class="kw">continue</span>;
+                    }
+
+                    <span class="kw">return </span><span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>((start_offset, Token(index, result), end_offset)));
                 }
-            };
-            <span class="kw">let </span>index = (<span class="number">0</span>..<span class="self">self</span>.dfa.match_len(<span class="kw-2">&amp;</span><span class="self">self</span>.cache, match_state))
-                .map(|n| {
-                    <span class="self">self</span>.dfa
-                        .match_pattern(<span class="kw-2">&amp;</span><span class="self">self</span>.cache, match_state, n)
-                        .as_usize()
-                })
-                .max()
-                .unwrap();
-
-            <span class="kw">let </span>result = <span class="kw-2">&amp;</span>text[..longest_match];
-            <span class="kw">let </span>remaining = <span class="kw-2">&amp;</span>text[longest_match..];
-            <span class="kw">let </span>end_offset = start_offset + longest_match;
-            <span class="self">self</span>.text = remaining;
-            <span class="self">self</span>.consumed = end_offset;
-
-            <span class="kw">if </span><span class="self">self</span>.skip_vec[index] {
-                <span class="kw">continue</span>;
             }
-
-            <span class="kw">return </span><span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>((start_offset, Token(index, result), end_offset)));
         }
     }
 }

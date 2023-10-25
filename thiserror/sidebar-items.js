@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"derive":["Error"],"mod":["__private"]};
+window.SIDEBAR_ITEMS = {"derive":["Error"]};

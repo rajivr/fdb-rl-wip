@@ -97,7 +97,7 @@ var srcIndex = JSON.parse('{\
 "smallvec":["",[],["lib.rs"]],\
 "socket2":["",[["sys",[],["unix.rs"]]],["lib.rs","sockaddr.rs","socket.rs","sockref.rs"]],\
 "strsim":["",[],["lib.rs"]],\
-"thiserror":["",[],["aserror.rs","display.rs","lib.rs"]],\
+"thiserror":["",[],["aserror.rs","display.rs","lib.rs","provide.rs"]],\
 "thiserror_impl":["",[],["ast.rs","attr.rs","expand.rs","fmt.rs","generics.rs","lib.rs","prop.rs","span.rs","valid.rs"]],\
 "time":["",[["error",[],["component_range.rs","conversion_range.rs","different_variant.rs","invalid_variant.rs","mod.rs"]],["sys",[],["mod.rs"]]],["date.rs","date_time.rs","duration.rs","ext.rs","instant.rs","internal_macros.rs","lib.rs","macros.rs","month.rs","offset_date_time.rs","primitive_date_time.rs","time.rs","utc_offset.rs","util.rs","weekday.rs"]],\
 "time_core":["",[],["convert.rs","lib.rs","util.rs"]],\

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["FORBIDDEN"],"fn":["register","register_sigaction","register_signal_unchecked","register_unchecked","unregister","unregister_signal"],"struct":["SigId"]};
+window.SIDEBAR_ITEMS = {"constant":["FORBIDDEN"],"fn":["register","register_sigaction","register_signal_unchecked","register_unchecked","unregister"],"struct":["SigId"]};

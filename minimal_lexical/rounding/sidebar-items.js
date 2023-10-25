@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["round","round_down","round_nearest_tie_even"]};

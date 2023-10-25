@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["parse_float"],"mod":["bigint","extended_float","lemire","mask","num","number","parse","rounding","slow","stackvec","table"],"trait":["Float"]};
+window.SIDEBAR_ITEMS = {"fn":["parse_float"],"trait":["Float"]};

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"macro":["padded_width_of"],"mod":["buf","ext","smart_display"]};
+window.SIDEBAR_ITEMS = {"mod":["buf","ext","smart_display"]};

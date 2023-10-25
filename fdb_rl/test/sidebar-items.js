@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["cursor","raw_record","split_helper"]};
