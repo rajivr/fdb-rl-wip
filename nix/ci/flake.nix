@@ -123,7 +123,7 @@
           openssl
           pkgconfig
           protobuf3_21
-          (rust-bin.nightly."2023-07-18".default.override {
+          (rust-bin.nightly."2023-10-25".default.override {
             extensions = [
               "llvm-tools-preview"
             ];
