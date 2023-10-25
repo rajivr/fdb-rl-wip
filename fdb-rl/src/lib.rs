@@ -6,7 +6,6 @@
     unreachable_pub
 )]
 #![feature(arc_unwrap_or_clone)]
-#![feature(async_fn_in_trait)]
 #![feature(lazy_cell)]
 #![feature(trait_upcasting)]
 #![feature(type_alias_impl_trait)]

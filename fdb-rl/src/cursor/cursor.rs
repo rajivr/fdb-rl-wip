@@ -12,9 +12,19 @@ mod private {
 
     pub trait Sealed {}
 
-    impl<T, C, F> Sealed for CursorMap<T, C, F> where C: Cursor<T> {}
+    impl<T, C, F> Sealed for CursorMap<T, C, F>
+    where
+        T: Send,
+        C: Cursor<T>,
+    {
+    }
 
-    impl<T, C, F> Sealed for CursorFilter<T, C, F> where C: Cursor<T> {}
+    impl<T, C, F> Sealed for CursorFilter<T, C, F>
+    where
+        T: Send,
+        C: Cursor<T>,
+    {
+    }
 
     impl Sealed for KeyValueCursor {}
 
@@ -56,23 +66,28 @@ mod private {
 // parallel cursors in subtle ways. Once we have a good handle on
 // these issues, we can explore how to add methods for cursor
 // composition.
-pub trait Cursor<T>: private::Sealed {
+pub trait Cursor<T>: private::Sealed
+where
+    T: Send,
+{
     /// Asynchronously return the next result from this cursor.
-    async fn next(&mut self) -> CursorResult<T>;
+    fn next(&mut self) -> impl Future<Output = CursorResult<T>> + Send;
 
     /// Drain the cursor pushing all emitted values into a collection.
-    async fn collect(mut self) -> (Vec<T>, CursorError)
+    fn collect(mut self) -> impl Future<Output = (Vec<T>, CursorError)> + Send
     where
-        Self: Sized,
+        Self: Sized + Send,
     {
-        let mut v = Vec::new();
+        async move {
+            let mut v = Vec::new();
 
-        let iter = &mut self;
+            let iter = &mut self;
 
-        loop {
-            match iter.next().await {
-                Ok(t) => v.push(t.into_value()),
-                Err(err) => return (v, err),
+            loop {
+                match iter.next().await {
+                    Ok(t) => v.push(t.into_value()),
+                    Err(err) => return (v, err),
+                }
             }
         }
     }
@@ -116,16 +131,18 @@ pub trait Cursor<T>: private::Sealed {
     //         method implementation and in the builder type for the
     //         `Cursor`. It won't be generic, but will get the job
     //         done.
-    async fn filter<F, Fut>(self, f: F) -> CursorFilter<T, Self, F>
+    fn filter<F, Fut>(self, f: F) -> impl Future<Output = CursorFilter<T, Self, F>> + Send
     where
-        Self: Sized,
-        F: FnMut(&T) -> Fut,
+        Self: Sized + Send,
+        F: FnMut(&T) -> Fut + Send,
         Fut: Future<Output = bool>,
     {
-        CursorFilter {
-            cursor: self,
-            f,
-            phantom: PhantomData,
+        async {
+            CursorFilter {
+                cursor: self,
+                f,
+                phantom: PhantomData,
+            }
         }
     }
 
@@ -148,16 +165,19 @@ pub trait Cursor<T>: private::Sealed {
     /// primarily meant for types defined in this crate.
     //
     // *Note:* See the comment mentioned in `filter`.
-    async fn map<U, F, Fut>(self, f: F) -> CursorMap<T, Self, F>
+    fn map<U, F, Fut>(self, f: F) -> impl Future<Output = CursorMap<T, Self, F>> + Send
     where
-        Self: Sized,
-        F: FnMut(T) -> Fut,
+        U: Send,
+        Self: Sized + Send,
+        F: FnMut(T) -> Fut + Send,
         Fut: Future<Output = U>,
     {
-        CursorMap {
-            cursor: self,
-            f,
-            phantom: PhantomData,
+        async {
+            CursorMap {
+                cursor: self,
+                f,
+                phantom: PhantomData,
+            }
         }
     }
 }
@@ -166,6 +186,7 @@ pub trait Cursor<T>: private::Sealed {
 #[derive(Debug)]
 pub struct CursorFilter<T, C, F>
 where
+    T: Send,
     C: Cursor<T>,
 {
     cursor: C,
@@ -175,9 +196,10 @@ where
 
 impl<T, C, F, Fut> Cursor<T> for CursorFilter<T, C, F>
 where
-    C: Cursor<T>,
-    F: FnMut(&T) -> Fut,
-    Fut: Future<Output = bool>,
+    T: Send,
+    C: Cursor<T> + Send,
+    F: FnMut(&T) -> Fut + Send,
+    Fut: Future<Output = bool> + Send,
 {
     async fn next(&mut self) -> CursorResult<T> {
         loop {
@@ -201,6 +223,7 @@ where
 #[derive(Debug)]
 pub struct CursorMap<T, C, F>
 where
+    T: Send,
     C: Cursor<T>,
 {
     cursor: C,
@@ -210,9 +233,11 @@ where
 
 impl<U, T, C, F, Fut> Cursor<U> for CursorMap<T, C, F>
 where
-    C: Cursor<T>,
-    F: FnMut(T) -> Fut,
-    Fut: Future<Output = U>,
+    U: Send,
+    T: Send,
+    C: Cursor<T> + Send,
+    F: FnMut(T) -> Fut + Send,
+    Fut: Future<Output = U> + Send,
 {
     async fn next(&mut self) -> CursorResult<U> {
         let item = self.cursor.next().await;
