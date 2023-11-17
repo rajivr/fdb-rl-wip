@@ -22,6 +22,22 @@ message InvalidMap {
   map<int32, string> hello_world = 1;
 }
 
+message InvalidMapUnsignedRecordUint32 {
+  map<string, uint32> hello_world = 1;
+}
+
+message InvalidMapUnsignedRecordUint64 {
+  map<string, uint64> hello_world = 1;
+}
+
+message InvalidMapUnsignedRecordFixed32 {
+  map<string, fixed32> hello_world = 1;
+}
+
+message InvalidMapUnsignedRecordFixed64 {
+  map<string, fixed64> hello_world = 1;
+}
+
 message UnsignedRecordUint32 {
   optional uint32 rec = 1;
 }
@@ -52,4 +68,8 @@ message UnsignedRecordFixed64 {
 
 message UnsignedRecordRepeatedFixed64 {
   repeated fixed64 rec = 1;
+}
+
+message InvalidFieldName {
+  optional string fdb_rec = 1;
 }

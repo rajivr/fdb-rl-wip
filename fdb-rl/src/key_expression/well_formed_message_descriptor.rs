@@ -292,6 +292,10 @@ fn walk_message_descriptor(
 /// checking field descriptor with name `value` ((b.ii) above) is
 /// implemented in `visit_map_entry_value_type_field_descriptor`.
 ///
+/// We do not allow field names to begin with `fdb_`. This is because
+/// field names starting with `fdb_` is used to represent metadata
+/// when converting to PartiQL.
+///
 /// Unsigned types (`uint32`, `uint64`, `fixed32` and `fixed64`) are
 /// invalid [5].
 ///
@@ -354,6 +358,10 @@ impl Visitor for MessageDescriptorValidatorVisitor {
                 .default_value
                 .is_some()
         {
+            return false;
+        }
+
+        if field_descriptor.name().starts_with("fdb_") {
             return false;
         }
 
@@ -518,16 +526,13 @@ impl Visitor for MessageDescriptorValidatorVisitor {
                                 walk_message_descriptor(self, &inner_message_descriptor)
                             }
                         }
+                        Kind::Uint32 | Kind::Uint64 | Kind::Fixed32 | Kind::Fixed64 => false,
                         Kind::Double
                         | Kind::Float
                         | Kind::Int32
                         | Kind::Int64
-                        | Kind::Uint32
-                        | Kind::Uint64
                         | Kind::Sint32
                         | Kind::Sint64
-                        | Kind::Fixed32
-                        | Kind::Fixed64
                         | Kind::Sfixed32
                         | Kind::Sfixed64
                         | Kind::Bool
@@ -570,7 +575,7 @@ mod tests {
                 }
 
                 {
-                    use fdb_rl_proto::fdb_rl_test::key_expression::well_formed_message_descriptor::bad::proto_3::v1::{RecursiveInner, RecursiveOuter, GeneratedMapEntry, InvalidMap, UnsignedRecordUint32, UnsignedRecordRepeatedUint32, UnsignedRecordUint64, UnsignedRecordRepeatedUint64, UnsignedRecordFixed32, UnsignedRecordRepeatedFixed32, UnsignedRecordFixed64, UnsignedRecordRepeatedFixed64};
+                    use fdb_rl_proto::fdb_rl_test::key_expression::well_formed_message_descriptor::bad::proto_3::v1::{RecursiveInner, RecursiveOuter, GeneratedMapEntry, InvalidMap, UnsignedRecordUint32, UnsignedRecordRepeatedUint32, UnsignedRecordUint64, UnsignedRecordRepeatedUint64, UnsignedRecordFixed32, UnsignedRecordRepeatedFixed32, UnsignedRecordFixed64, UnsignedRecordRepeatedFixed64, InvalidFieldName, InvalidMapUnsignedRecordUint32, InvalidMapUnsignedRecordUint64, InvalidMapUnsignedRecordFixed32, InvalidMapUnsignedRecordFixed64};
 
                     for message_descriptor in vec![
                         InvalidMap::default().descriptor(),
@@ -584,6 +589,11 @@ mod tests {
                         UnsignedRecordRepeatedFixed32::default().descriptor(),
                         UnsignedRecordFixed64::default().descriptor(),
                         UnsignedRecordRepeatedFixed64::default().descriptor(),
+                        InvalidFieldName::default().descriptor(),
+                        InvalidMapUnsignedRecordUint32::default().descriptor(),
+                        InvalidMapUnsignedRecordUint64::default().descriptor(),
+                        InvalidMapUnsignedRecordFixed32::default().descriptor(),
+                        InvalidMapUnsignedRecordFixed64::default().descriptor(),
                     ] {
                         assert_eq!(
                             WellFormedMessageDescriptor::try_from(message_descriptor),
