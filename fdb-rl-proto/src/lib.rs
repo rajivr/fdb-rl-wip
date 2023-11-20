@@ -46,13 +46,13 @@ pub(crate) const TEST_FILE_DESCRIPTOR_SET: &[u8] =
     include_file_descriptor_set!("test_file_descriptor_set");
 
 pub mod fdb_rl_test {
-    pub mod key_expression {
+    pub mod protobuf {
         pub mod well_formed_message_descriptor {
             pub mod bad {
                 pub mod proto_2 {
                     pub mod v1 {
                         include_proto!(
-                            "fdb_rl_test.key_expression.well_formed_message_descriptor.bad.proto_2.v1"
+                            "fdb_rl_test.protobuf.well_formed_message_descriptor.bad.proto_2.v1"
 			);
                     }
                 }
@@ -60,7 +60,7 @@ pub mod fdb_rl_test {
                 pub mod proto_3 {
                     pub mod v1 {
                         include_proto!(
-			    "fdb_rl_test.key_expression.well_formed_message_descriptor.bad.proto_3.v1"
+			    "fdb_rl_test.protobuf.well_formed_message_descriptor.bad.proto_3.v1"
 			);
                     }
                 }
@@ -69,7 +69,7 @@ pub mod fdb_rl_test {
             pub mod good {
                 pub mod v1 {
                     include_proto!(
-                        "fdb_rl_test.key_expression.well_formed_message_descriptor.good.v1"
+                        "fdb_rl_test.protobuf.well_formed_message_descriptor.good.v1"
                     );
                 }
             }

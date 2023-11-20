@@ -1,6 +1,6 @@
 syntax = "proto2";
 
-package fdb_rl_test.key_expression.well_formed_message_descriptor.bad.proto_2.v1;
+package fdb_rl_test.protobuf.well_formed_message_descriptor.bad.proto_2.v1;
 
 // We do not support `proto2`.
 message HelloWorld {

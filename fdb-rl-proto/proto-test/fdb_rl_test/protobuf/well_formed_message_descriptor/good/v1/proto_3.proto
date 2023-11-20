@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package fdb_rl_test.key_expression.well_formed_message_descriptor.good.v1;
+package fdb_rl_test.protobuf.well_formed_message_descriptor.good.v1;
 
 import "fdb_rl/field/v1/field.proto";
 

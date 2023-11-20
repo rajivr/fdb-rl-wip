@@ -4,3 +4,6 @@
 
 /// TODO
 pub(crate) const PROTOBUF_ILL_FORMED_MESSAGE_DESCRIPTOR: i32 = 250;
+
+/// TODO
+pub(crate) const PROTOBUF_ILL_FORMED_MESSAGE: i32 = 251;

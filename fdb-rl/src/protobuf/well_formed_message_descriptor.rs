@@ -31,6 +31,14 @@ pub(crate) struct WellFormedMessageDescriptor {
     inner: MessageDescriptor,
 }
 
+impl From<WellFormedMessageDescriptor> for MessageDescriptor {
+    fn from(well_formed_message_descriptor: WellFormedMessageDescriptor) -> MessageDescriptor {
+        let WellFormedMessageDescriptor { inner } = well_formed_message_descriptor;
+
+        inner
+    }
+}
+
 impl TryFrom<MessageDescriptor> for WellFormedMessageDescriptor {
     type Error = FdbError;
 
@@ -565,7 +573,7 @@ mod tests {
             // Invalid message descriptor
             {
                 {
-                    use fdb_rl_proto::fdb_rl_test::key_expression::well_formed_message_descriptor::bad::proto_2::v1::HelloWorld;
+                    use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_message_descriptor::bad::proto_2::v1::HelloWorld;
 
                     let message_descriptor = HelloWorld::default().descriptor();
                     assert_eq!(
@@ -575,7 +583,7 @@ mod tests {
                 }
 
                 {
-                    use fdb_rl_proto::fdb_rl_test::key_expression::well_formed_message_descriptor::bad::proto_3::v1::{RecursiveInner, RecursiveOuter, GeneratedMapEntry, InvalidMap, UnsignedRecordUint32, UnsignedRecordRepeatedUint32, UnsignedRecordUint64, UnsignedRecordRepeatedUint64, UnsignedRecordFixed32, UnsignedRecordRepeatedFixed32, UnsignedRecordFixed64, UnsignedRecordRepeatedFixed64, InvalidFieldName, InvalidMapUnsignedRecordUint32, InvalidMapUnsignedRecordUint64, InvalidMapUnsignedRecordFixed32, InvalidMapUnsignedRecordFixed64};
+                    use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_message_descriptor::bad::proto_3::v1::{RecursiveInner, RecursiveOuter, GeneratedMapEntry, InvalidMap, UnsignedRecordUint32, UnsignedRecordRepeatedUint32, UnsignedRecordUint64, UnsignedRecordRepeatedUint64, UnsignedRecordFixed32, UnsignedRecordRepeatedFixed32, UnsignedRecordFixed64, UnsignedRecordRepeatedFixed64, InvalidFieldName, InvalidMapUnsignedRecordUint32, InvalidMapUnsignedRecordUint64, InvalidMapUnsignedRecordFixed32, InvalidMapUnsignedRecordFixed64};
 
                     for message_descriptor in vec![
                         InvalidMap::default().descriptor(),
@@ -605,7 +613,7 @@ mod tests {
                     let message_descriptor = GeneratedMapEntry::default()
 			.descriptor()
 			.parent_pool()
-			.get_message_by_name("fdb_rl_test.key_expression.well_formed_message_descriptor.bad.proto_3.v1.GeneratedMapEntry.HelloWorldEntry")
+			.get_message_by_name("fdb_rl_test.protobuf.well_formed_message_descriptor.bad.proto_3.v1.GeneratedMapEntry.HelloWorldEntry")
 			.unwrap();
 
                     assert_eq!(
@@ -725,7 +733,7 @@ mod tests {
             // Valid Message descriptor
             {
                 {
-                    use fdb_rl_proto::fdb_rl_test::key_expression::well_formed_message_descriptor::good::v1::{HelloWorld, RecursiveInner, RecursiveOuter, HelloWorldOneof, HelloWorldMap};
+                    use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_message_descriptor::good::v1::{HelloWorld, RecursiveInner, RecursiveOuter, HelloWorldOneof, HelloWorldMap};
 
                     for message_descriptor in vec![
                         HelloWorld::default().descriptor(),

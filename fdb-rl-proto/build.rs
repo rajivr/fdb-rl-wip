@@ -46,9 +46,9 @@ fn main() -> io::Result<()> {
             .compile_protos_with_config(
                 prost_build_config,
                 &[
-                    "proto-test/fdb_rl_test/key_expression/well_formed_message_descriptor/bad/proto_2/v1/proto_2.proto",
-		    "proto-test/fdb_rl_test/key_expression/well_formed_message_descriptor/bad/proto_3/v1/proto_3.proto",
-		    "proto-test/fdb_rl_test/key_expression/well_formed_message_descriptor/good/v1/proto_3.proto",
+                    "proto-test/fdb_rl_test/protobuf/well_formed_message_descriptor/bad/proto_2/v1/proto_2.proto",
+		    "proto-test/fdb_rl_test/protobuf/well_formed_message_descriptor/bad/proto_3/v1/proto_3.proto",
+		    "proto-test/fdb_rl_test/protobuf/well_formed_message_descriptor/good/v1/proto_3.proto",
 		    // Java RecordLayer Protos
 		    "proto-test/fdb_rl_test/java/proto/evolution/test_field_type_change/v1/test_field_type_change.proto",
 		    "proto-test/fdb_rl_test/java/proto/evolution/test_merged_nested_types/v1/test_merged_nested_types.proto",
