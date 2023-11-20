@@ -16,6 +16,8 @@ macro_rules! include_file_descriptor_set {
 
 pub(crate) const FILE_DESCRIPTOR_SET: &[u8] = include_file_descriptor_set!("file_descriptor_set");
 
+pub mod error;
+
 pub mod fdb_rl {
     pub mod cursor {
         pub mod v1 {
@@ -25,7 +27,35 @@ pub mod fdb_rl {
 
     pub mod field {
         pub mod v1 {
+            use std::convert::TryFrom;
+
             include_proto!("fdb_rl.field.v1");
+
+            impl From<uuid::Uuid> for crate::fdb_rl::field::v1::Uuid {
+                fn from(uuid: uuid::Uuid) -> crate::fdb_rl::field::v1::Uuid {
+                    crate::fdb_rl::field::v1::Uuid {
+                        value: bytes::Bytes::from(uuid.as_bytes().to_vec()),
+                    }
+                }
+            }
+
+            impl TryFrom<crate::fdb_rl::field::v1::Uuid> for uuid::Uuid {
+                type Error = fdb::error::FdbError;
+
+                fn try_from(
+                    uuid: crate::fdb_rl::field::v1::Uuid,
+                ) -> fdb::error::FdbResult<uuid::Uuid> {
+                    uuid::Uuid::from_slice(uuid.value.as_ref())
+                        .map_err(|_| fdb::error::FdbError::new(crate::error::FIELD_V1_INVALID_UUID))
+                }
+            }
+
+	    #[cfg(test)]
+	    mod tests {
+		mod uuid {
+		    // TODO: continue from here.
+		}
+	    }
         }
     }
 
@@ -53,24 +83,22 @@ pub mod fdb_rl_test {
                     pub mod v1 {
                         include_proto!(
                             "fdb_rl_test.protobuf.well_formed_message_descriptor.bad.proto_2.v1"
-			);
+                        );
                     }
                 }
 
                 pub mod proto_3 {
                     pub mod v1 {
                         include_proto!(
-			    "fdb_rl_test.protobuf.well_formed_message_descriptor.bad.proto_3.v1"
-			);
+                            "fdb_rl_test.protobuf.well_formed_message_descriptor.bad.proto_3.v1"
+                        );
                     }
                 }
             }
 
             pub mod good {
                 pub mod v1 {
-                    include_proto!(
-                        "fdb_rl_test.protobuf.well_formed_message_descriptor.good.v1"
-                    );
+                    include_proto!("fdb_rl_test.protobuf.well_formed_message_descriptor.good.v1");
                 }
             }
         }

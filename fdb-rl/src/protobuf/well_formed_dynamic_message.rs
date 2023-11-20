@@ -37,3 +37,21 @@ where
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    mod well_formed_dynamic_message {
+	#[test]
+	fn try_from_well_formed_message_descriptor_ref_t_try_from() {
+	    // Valid message
+	    {
+		use fdb_rl_proto::fdb_rl::field::v1::Uuid as FdbRLWktUuidProto;
+		use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_message_descriptor::good::v1::HelloWorld;
+
+		// TODO: continue from here.
+		// let hello_world =
+	    }
+	    println!("todo");
+	}
+    }
+}
