@@ -2,7 +2,6 @@
 
 pub(crate) mod error;
 pub(crate) mod record_type_key_expression;
-pub(crate) mod well_formed_message_descriptor;
 
 use fdb::error::{FdbError, FdbResult};
 

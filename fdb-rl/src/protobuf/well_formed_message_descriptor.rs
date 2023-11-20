@@ -10,7 +10,7 @@ use std::convert::TryFrom;
 use std::ops::Deref;
 use std::sync::LazyLock;
 
-use super::error::KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR;
+use super::error::PROTOBUF_ILL_FORMED_MESSAGE_DESCRIPTOR;
 
 /// Well known types that are known to FDB Record Layer.
 static FDB_RL_WKT: LazyLock<Vec<MessageDescriptor>> =
@@ -41,7 +41,7 @@ impl TryFrom<MessageDescriptor> for WellFormedMessageDescriptor {
         // if the user is trying to use Protobuf generated map entry
         // as a record, then something is amiss.
         if message_descriptor.is_map_entry() {
-            return Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR));
+            return Err(FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE_DESCRIPTOR));
         }
 
         let mut message_descriptor_validator_visitor = MessageDescriptorValidatorVisitor::new();
@@ -54,7 +54,7 @@ impl TryFrom<MessageDescriptor> for WellFormedMessageDescriptor {
                 inner: message_descriptor,
             })
         } else {
-            Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
+            Err(FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE_DESCRIPTOR))
         }
     }
 }
@@ -557,7 +557,7 @@ mod tests {
 
         use std::convert::TryFrom;
 
-        use super::super::super::error::KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR;
+        use super::super::super::error::PROTOBUF_ILL_FORMED_MESSAGE_DESCRIPTOR;
         use super::super::WellFormedMessageDescriptor;
 
         #[test]
@@ -570,7 +570,7 @@ mod tests {
                     let message_descriptor = HelloWorld::default().descriptor();
                     assert_eq!(
                         WellFormedMessageDescriptor::try_from(message_descriptor),
-                        Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                        Err(FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE_DESCRIPTOR))
                     )
                 }
 
@@ -597,7 +597,7 @@ mod tests {
                     ] {
                         assert_eq!(
                             WellFormedMessageDescriptor::try_from(message_descriptor),
-                            Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                            Err(FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE_DESCRIPTOR))
                         );
                     }
 
@@ -610,7 +610,7 @@ mod tests {
 
                     assert_eq!(
                         WellFormedMessageDescriptor::try_from(message_descriptor),
-                        Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                        Err(FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE_DESCRIPTOR))
                     );
                 }
 
@@ -621,7 +621,7 @@ mod tests {
                     let message_descriptor = SimpleUnsignedRecord::default().descriptor();
                     assert_eq!(
                         WellFormedMessageDescriptor::try_from(message_descriptor),
-                        Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                        Err(FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE_DESCRIPTOR))
                     );
                 }
 
@@ -636,7 +636,7 @@ mod tests {
                     ] {
                         assert_eq!(
                             WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
-                            Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                            Err(FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE_DESCRIPTOR))
                         );
                     }
                 }
@@ -647,7 +647,7 @@ mod tests {
                     let message_descriptor = Fixed32UnsignedRecord::default().descriptor();
                     assert_eq!(
                         WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
-                        Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                        Err(FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE_DESCRIPTOR))
                     );
                 }
 
@@ -657,7 +657,7 @@ mod tests {
                     let message_descriptor = Fixed64UnsignedRecord::default().descriptor();
                     assert_eq!(
                         WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
-                        Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                        Err(FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE_DESCRIPTOR))
                     );
                 }
 
@@ -667,7 +667,7 @@ mod tests {
                     let message_descriptor = ReferencesUnsignedRecord::default().descriptor();
                     assert_eq!(
                         WellFormedMessageDescriptor::try_from(message_descriptor.clone()),
-                        Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                        Err(FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE_DESCRIPTOR))
                     );
                 }
 
@@ -677,7 +677,7 @@ mod tests {
                     let message_descriptor = NestedRecord::default().descriptor();
                     assert_eq!(
                         WellFormedMessageDescriptor::try_from(message_descriptor),
-                        Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                        Err(FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE_DESCRIPTOR))
                     );
                 }
 
@@ -687,7 +687,7 @@ mod tests {
                     let message_descriptor = MyHierarchicalRecord::default().descriptor();
                     assert_eq!(
                         WellFormedMessageDescriptor::try_from(message_descriptor),
-                        Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                        Err(FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE_DESCRIPTOR))
                     );
                 }
 
@@ -697,7 +697,7 @@ mod tests {
                     let message_descriptor = MyShapeRecord::default().descriptor();
                     assert_eq!(
                         WellFormedMessageDescriptor::try_from(message_descriptor),
-                        Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                        Err(FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE_DESCRIPTOR))
                     );
                 }
 
@@ -707,7 +707,7 @@ mod tests {
                     let message_descriptor = MyRecord::default().descriptor();
                     assert_eq!(
                         WellFormedMessageDescriptor::try_from(message_descriptor),
-                        Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                        Err(FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE_DESCRIPTOR))
                     );
                 }
 
@@ -717,7 +717,7 @@ mod tests {
                     let message_descriptor = MyRecord::default().descriptor();
                     assert_eq!(
                         WellFormedMessageDescriptor::try_from(message_descriptor),
-                        Err(FdbError::new(KEY_EXPRESSION_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                        Err(FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE_DESCRIPTOR))
                     );
                 }
             }

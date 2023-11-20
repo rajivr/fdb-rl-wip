@@ -11,8 +11,8 @@
 // where T: Message + Default` (a prost struct), and you will get a
 // value of `Tuple` back.
 
-use super::well_formed_message_descriptor::WellFormedMessageDescriptor;
 use super::KeyExpression;
+use crate::protobuf::WellFormedMessageDescriptor;
 
 /// TODO
 pub(crate) struct RecordTypeKeyExpression {
