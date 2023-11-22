@@ -50,12 +50,43 @@ pub mod fdb_rl {
                 }
             }
 
-	    #[cfg(test)]
-	    mod tests {
-		mod uuid {
-		    // TODO: continue from here.
-		}
-	    }
+            #[cfg(test)]
+            mod tests {
+                mod uuid {
+                    use bytes::Bytes;
+                    use fdb::error::FdbError;
+                    use uuid::Uuid;
+
+                    use std::convert::TryFrom;
+
+                    use crate::error::FIELD_V1_INVALID_UUID;
+
+                    use super::super::Uuid as FdbRLWktUuidProto;
+
+                    #[test]
+                    fn from_uuid_from() {
+                        let uuid = Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e").unwrap();
+
+                        let wkt_uuid_proto = FdbRLWktUuidProto::from(uuid.clone());
+
+                        assert_eq!(uuid, Uuid::try_from(wkt_uuid_proto).unwrap());
+                    }
+
+                    #[test]
+                    fn try_from_uuid_try_from() {
+                        // Valid case is checked in `From` trait unit
+                        // test. We check invalid case below.
+                        let wkt_uuid_proto = FdbRLWktUuidProto {
+                            value: Bytes::from([4, 54, 67, 12, 43, 2, 98, 76].as_ref()),
+                        };
+
+                        assert_eq!(
+                            Uuid::try_from(wkt_uuid_proto),
+                            Err(FdbError::new(FIELD_V1_INVALID_UUID))
+                        );
+                    }
+                }
+            }
         }
     }
 
