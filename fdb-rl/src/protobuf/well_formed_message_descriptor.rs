@@ -2,10 +2,12 @@
 
 use fdb::error::{FdbError, FdbResult};
 use fdb_rl_proto::fdb_rl::field::v1::Uuid as FdbRLWktUuidProto;
+use prost::Message;
 use prost_reflect::{
     Cardinality, FieldDescriptor, FileDescriptor, Kind, MessageDescriptor, ReflectMessage, Syntax,
 };
 
+use std::collections::HashSet;
 use std::convert::TryFrom;
 use std::ops::Deref;
 use std::sync::LazyLock;
@@ -15,6 +17,12 @@ use super::error::PROTOBUF_ILL_FORMED_MESSAGE_DESCRIPTOR;
 /// Well known types that are known to FDB Record Layer.
 static FDB_RL_WKT: LazyLock<Vec<MessageDescriptor>> =
     LazyLock::new(|| vec![FdbRLWktUuidProto::default().descriptor()]);
+
+#[derive(PartialEq, Eq, Hash)]
+struct OldMessageDescriptorProtoBytes(Vec<u8>);
+
+#[derive(PartialEq, Eq, Hash)]
+struct NewMessageDescriptorProtoBytes(Vec<u8>);
 
 /// Describes a valid `MessageDescriptor`.
 ///
@@ -29,6 +37,49 @@ static FDB_RL_WKT: LazyLock<Vec<MessageDescriptor>> =
 #[derive(Debug, PartialEq)]
 pub(crate) struct WellFormedMessageDescriptor {
     inner: MessageDescriptor,
+}
+
+impl WellFormedMessageDescriptor {
+    pub(crate) fn is_evolvable(
+        &self,
+        well_formed_message_descriptor: WellFormedMessageDescriptor,
+    ) -> bool {
+        todo!();
+    }
+
+    fn validate_message(
+        old_descriptor: MessageDescriptor,
+        new_descriptor: MessageDescriptor,
+        mut seen_descriptors: HashSet<(
+            OldMessageDescriptorProtoBytes,
+            NewMessageDescriptorProtoBytes,
+        )>,
+    ) -> bool {
+        if old_descriptor == new_descriptor {
+            return true;
+        }
+
+        let old_message_descriptor_proto_bytes =
+            OldMessageDescriptorProtoBytes(old_descriptor.descriptor_proto().encode_to_vec());
+        let new_message_descriptor_proto_bytes =
+            NewMessageDescriptorProtoBytes(new_descriptor.descriptor_proto().encode_to_vec());
+
+        if !seen_descriptors.insert((
+            old_message_descriptor_proto_bytes,
+            new_message_descriptor_proto_bytes,
+        )) {
+            // Note that because messages can contain fields that are
+            // of the same type as the containing message, if this
+            // check to make sure the pair hadn't already been
+            // validated weren't present, this might recurse
+            // infinitely on some inputs.
+            return true;
+        }
+
+        // TODO: Continue from here.
+
+        todo!();
+    }
 }
 
 impl From<WellFormedMessageDescriptor> for MessageDescriptor {
