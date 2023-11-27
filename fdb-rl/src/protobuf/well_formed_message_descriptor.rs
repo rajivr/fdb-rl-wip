@@ -4,7 +4,8 @@ use fdb::error::{FdbError, FdbResult};
 use fdb_rl_proto::fdb_rl::field::v1::Uuid as FdbRLWktUuidProto;
 use prost::Message;
 use prost_reflect::{
-    Cardinality, FieldDescriptor, FileDescriptor, Kind, MessageDescriptor, ReflectMessage, Syntax,
+    Cardinality, EnumDescriptor, FieldDescriptor, FileDescriptor, Kind, MessageDescriptor,
+    ReflectMessage, Syntax,
 };
 
 use std::collections::HashSet;
@@ -15,14 +16,34 @@ use std::sync::LazyLock;
 use super::error::PROTOBUF_ILL_FORMED_MESSAGE_DESCRIPTOR;
 
 /// Well known types that are known to FDB Record Layer.
-static FDB_RL_WKT: LazyLock<Vec<MessageDescriptor>> =
-    LazyLock::new(|| vec![FdbRLWktUuidProto::default().descriptor()]);
+///
+/// We check based on full name. This is so that we do not get an
+/// error in case `protoc` produces descriptor pool in sligtly
+/// different ways when different options are used.
+static FDB_RL_WKT_FULL_NAME: LazyLock<Vec<String>> = LazyLock::new(|| {
+    vec![FdbRLWktUuidProto::default()
+        .descriptor()
+        .full_name()
+        .to_string()]
+});
+
+// Wrapper types so we do not accidentally mixup old and new
+// descriptors.
 
 #[derive(PartialEq, Eq, Hash)]
 struct OldMessageDescriptorProtoBytes(Vec<u8>);
 
 #[derive(PartialEq, Eq, Hash)]
 struct NewMessageDescriptorProtoBytes(Vec<u8>);
+
+struct OldMessageDescriptor(MessageDescriptor);
+struct NewMessageDescriptor(MessageDescriptor);
+
+struct OldFieldDescriptor(FieldDescriptor);
+struct NewFieldDescriptor(FieldDescriptor);
+
+struct OldEnumDescriptor(EnumDescriptor);
+struct NewEnumDescriptor(EnumDescriptor);
 
 /// Describes a valid `MessageDescriptor`.
 ///
@@ -44,25 +65,30 @@ impl WellFormedMessageDescriptor {
         &self,
         well_formed_message_descriptor: WellFormedMessageDescriptor,
     ) -> bool {
+	// TODO: Continue from here.
         todo!();
     }
 
     fn validate_message(
-        old_descriptor: MessageDescriptor,
-        new_descriptor: MessageDescriptor,
-        mut seen_descriptors: HashSet<(
+        OldMessageDescriptor(old_message_descriptor): OldMessageDescriptor,
+        NewMessageDescriptor(new_message_descriptor): NewMessageDescriptor,
+        seen_descriptors: &mut HashSet<(
             OldMessageDescriptorProtoBytes,
             NewMessageDescriptorProtoBytes,
         )>,
     ) -> bool {
-        if old_descriptor == new_descriptor {
+        if old_message_descriptor == new_message_descriptor {
+            // Don't bother validating message types that are the
+            // same.
             return true;
         }
 
-        let old_message_descriptor_proto_bytes =
-            OldMessageDescriptorProtoBytes(old_descriptor.descriptor_proto().encode_to_vec());
-        let new_message_descriptor_proto_bytes =
-            NewMessageDescriptorProtoBytes(new_descriptor.descriptor_proto().encode_to_vec());
+        let old_message_descriptor_proto_bytes = OldMessageDescriptorProtoBytes(
+            old_message_descriptor.descriptor_proto().encode_to_vec(),
+        );
+        let new_message_descriptor_proto_bytes = NewMessageDescriptorProtoBytes(
+            new_message_descriptor.descriptor_proto().encode_to_vec(),
+        );
 
         if !seen_descriptors.insert((
             old_message_descriptor_proto_bytes,
@@ -76,9 +102,125 @@ impl WellFormedMessageDescriptor {
             return true;
         }
 
-        // TODO: Continue from here.
+        // We do not have to validate `proto2` or `proto3` because we
+        // only support `proto3`. A value of
+        // `WellFormedMessageDescriptor` type would not be `proto3`.
 
-        todo!();
+        // Validate that every field in the old descriptor is still in
+        // the new descriptor.
+        for old_field_descriptor in old_message_descriptor.fields() {
+            if let Some(new_field_descriptor) =
+                new_message_descriptor.get_field(old_field_descriptor.number())
+            {
+                if !Self::validate_field(
+                    OldFieldDescriptor(old_field_descriptor),
+                    NewFieldDescriptor(new_field_descriptor),
+                    seen_descriptors,
+                ) {
+                    return false;
+                }
+            } else {
+                return false;
+            }
+        }
+
+        // Since, we only support `proto3`, we also do not need to
+        // check if new fields are marked `required`.
+        true
+    }
+
+    fn validate_field(
+        OldFieldDescriptor(old_field_descriptor): OldFieldDescriptor,
+        NewFieldDescriptor(new_field_descriptor): NewFieldDescriptor,
+        seen_descriptors: &mut HashSet<(
+            OldMessageDescriptorProtoBytes,
+            NewMessageDescriptorProtoBytes,
+        )>,
+    ) -> bool {
+        // We do not allow field renaming.
+        if old_field_descriptor.name() != new_field_descriptor.name() {
+            return false;
+        }
+
+        let new_field_descriptor_kind = new_field_descriptor.kind();
+
+        // Match all kinds explicitly so that in the
+        // unlikely event a new kind gets introduced in
+        // the future, we do not miss it.
+        match old_field_descriptor.kind() {
+            // We are not suppose to see these types.
+            Kind::Uint32 | Kind::Uint64 | Kind::Fixed32 | Kind::Fixed64 => false,
+            t @ (Kind::Double
+            | Kind::Float
+            | Kind::Int32
+            | Kind::Int64
+            | Kind::Sint32
+            | Kind::Sint64
+            | Kind::Sfixed32
+            | Kind::Sfixed64
+            | Kind::Bool
+            | Kind::String
+            | Kind::Bytes) => matches!(new_field_descriptor_kind, t),
+            Kind::Message(old_inner_message_descriptor) => {
+                if let Kind::Message(new_inner_message_descriptor) = new_field_descriptor_kind {
+                    if FDB_RL_WKT_FULL_NAME
+                        .deref()
+                        .contains(&old_inner_message_descriptor.full_name().to_string())
+                    {
+                        // It looks like we have FDB Record Layer well
+                        // know type. Well known tyes cannot be
+                        // evolved. So, we check if their full names
+                        // match. If it does, then it is
+                        // okay. Otherwise it is an error.
+                        if old_inner_message_descriptor.full_name()
+                            == new_inner_message_descriptor.full_name()
+                        {
+                            true
+                        } else {
+                            false
+                        }
+                    } else {
+                        Self::validate_message(
+                            OldMessageDescriptor(old_inner_message_descriptor),
+                            NewMessageDescriptor(new_inner_message_descriptor),
+                            seen_descriptors,
+                        )
+                    }
+                } else {
+                    false
+                }
+            }
+            Kind::Enum(old_inner_enum_descriptor) => {
+                if let Kind::Enum(new_inner_enum_descriptor) = new_field_descriptor_kind {
+                    Self::validate_enum(
+                        OldEnumDescriptor(old_inner_enum_descriptor),
+                        NewEnumDescriptor(new_inner_enum_descriptor),
+                    )
+                } else {
+                    false
+                }
+            }
+        }
+    }
+
+    fn validate_enum(
+        OldEnumDescriptor(old_enum_descriptor): OldEnumDescriptor,
+        NewEnumDescriptor(new_enum_descriptor): NewEnumDescriptor,
+    ) -> bool {
+        for old_enum_value_descriptor in old_enum_descriptor.values() {
+            if let Some(new_enum_value_descriptor) =
+                new_enum_descriptor.get_value(old_enum_value_descriptor.number())
+            {
+                // Ensure that short names are the same.
+                if old_enum_value_descriptor.name() != new_enum_value_descriptor.name() {
+                    return false;
+                }
+            } else {
+                return false;
+            }
+        }
+
+        true
     }
 }
 
@@ -380,7 +522,9 @@ impl Visitor for MessageDescriptorValidatorVisitor {
     /// Checks if the message descriptor is a FDB Record Layer well
     /// known type.
     fn check_fdb_wkt(&self, message_descriptor: &MessageDescriptor) -> bool {
-        FDB_RL_WKT.deref().contains(message_descriptor)
+        FDB_RL_WKT_FULL_NAME
+            .deref()
+            .contains(&message_descriptor.full_name().to_string())
     }
 
     /// Checks if we have seen the message descriptor before. If not,
