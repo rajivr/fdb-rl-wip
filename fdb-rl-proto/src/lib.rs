@@ -245,6 +245,12 @@ pub mod fdb_rl_test {
                 pub mod v1 {
                     include_proto!("fdb_rl_test.java.proto.test_records_1.v1");
                 }
+                pub mod v2 {
+                    include_proto!("fdb_rl_test.java.proto.test_records_1.v2");
+                }
+                pub mod v3 {
+                    include_proto!("fdb_rl_test.java.proto.test_records_1.v3");
+                }
             }
 
             pub mod test_records_1_evolved {

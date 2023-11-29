@@ -47,7 +47,7 @@ struct NewEnumDescriptor(EnumDescriptor);
 
 /// Describes a valid `MessageDescriptor`.
 ///
-/// We a `prost_reflect::MessageDescriptor`, and performs checks to
+/// Takes a `prost_reflect::MessageDescriptor`, and performs checks to
 /// ensure that message descriptor is well formed. If it is well
 /// formed, it wraps the message descriptor and returns a value of
 /// type `WellFormedMessageDescriptor`.
@@ -61,14 +61,24 @@ pub(crate) struct WellFormedMessageDescriptor {
 }
 
 impl WellFormedMessageDescriptor {
-    pub(crate) fn is_evolvable(
+    pub(crate) fn is_evolvable_to(
         &self,
         well_formed_message_descriptor: WellFormedMessageDescriptor,
     ) -> bool {
-	// TODO: Continue from here.
-        todo!();
+        let old_message_descriptor = self.inner.clone();
+        let new_message_descriptor = well_formed_message_descriptor.into();
+        let mut seen_descriptors = HashSet::new();
+
+        Self::validate_message(
+            OldMessageDescriptor(old_message_descriptor),
+            NewMessageDescriptor(new_message_descriptor),
+            &mut seen_descriptors,
+        )
     }
 
+    // Adapted from [1].
+    //
+    // [1]: https://github.com/FoundationDB/fdb-record-layer/blob/3.3.433.0/fdb-record-layer-core/src/main/java/com/apple/foundationdb/record/metadata/MetaDataEvolutionValidator.java#L218
     fn validate_message(
         OldMessageDescriptor(old_message_descriptor): OldMessageDescriptor,
         NewMessageDescriptor(new_message_descriptor): NewMessageDescriptor,
@@ -77,10 +87,35 @@ impl WellFormedMessageDescriptor {
             NewMessageDescriptorProtoBytes,
         )>,
     ) -> bool {
-        if old_message_descriptor == new_message_descriptor {
-            // Don't bother validating message types that are the
-            // same.
-            return true;
+        // In Java RecordLayer there is the following code.
+        //
+        // ```java
+        // if (oldDescriptor == newDescriptor) {
+        //     // Don't bother validating message types that are the same.
+        //     return;
+        // }
+        // ```
+        //
+        // In our case, we do not have a `Hash` trait on
+        // `MessageDescriptor` and `PartiqlEq` is derived. It is not
+        // entirely clear if we did the following, we will get the
+        // required benefit as we could end up doing a deep
+        // comparison. For now we are not implementing this logic, and
+        // just letting `MessageDescriptor` comparisons happen using
+        // `FieldDescriptor`.
+        //
+        // ```rust
+        // if old_message_descriptor == new_message_descriptor {
+        //     // Don't bother validating message types that are the
+        //     // same.
+        //     return true;
+        // }
+        // ```
+
+        // Do not allow `MessageDescriptor` to be renamed. They can be
+        // in different packages.
+        if old_message_descriptor.name() != new_message_descriptor.name() {
+            return false;
         }
 
         let old_message_descriptor_proto_bytes = OldMessageDescriptorProtoBytes(
@@ -129,6 +164,9 @@ impl WellFormedMessageDescriptor {
         true
     }
 
+    // Adapted from [1].
+    //
+    // [1]: https://github.com/FoundationDB/fdb-record-layer/blob/3.3.433.0/fdb-record-layer-core/src/main/java/com/apple/foundationdb/record/metadata/MetaDataEvolutionValidator.java#L254
     fn validate_field(
         OldFieldDescriptor(old_field_descriptor): OldFieldDescriptor,
         NewFieldDescriptor(new_field_descriptor): NewFieldDescriptor,
@@ -168,7 +206,7 @@ impl WellFormedMessageDescriptor {
                         .contains(&old_inner_message_descriptor.full_name().to_string())
                     {
                         // It looks like we have FDB Record Layer well
-                        // know type. Well known tyes cannot be
+                        // know type. FDB well known types cannot be
                         // evolved. So, we check if their full names
                         // match. If it does, then it is
                         // okay. Otherwise it is an error.
@@ -203,6 +241,9 @@ impl WellFormedMessageDescriptor {
         }
     }
 
+    // Adapted from [1].
+    //
+    // [1]: https://github.com/FoundationDB/fdb-record-layer/blob/3.3.433.0/fdb-record-layer-core/src/main/java/com/apple/foundationdb/record/metadata/MetaDataEvolutionValidator.java#L299
     fn validate_enum(
         OldEnumDescriptor(old_enum_descriptor): OldEnumDescriptor,
         NewEnumDescriptor(new_enum_descriptor): NewEnumDescriptor,
@@ -762,6 +803,48 @@ mod tests {
 
         use super::super::super::error::PROTOBUF_ILL_FORMED_MESSAGE_DESCRIPTOR;
         use super::super::WellFormedMessageDescriptor;
+
+        #[test]
+        fn is_evolvable_to() {
+            // Java
+            {
+                // dropField()
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto::test_records_1::v1::MySimpleRecord as OldMySimpleRecord;
+                    use fdb_rl_proto::fdb_rl_test::java::proto::test_records_1::v2::MySimpleRecord as NewMySimpleRecord;
+
+                    let old_well_formed_message_descriptor = WellFormedMessageDescriptor::try_from(
+                        OldMySimpleRecord::default().descriptor(),
+                    )
+                    .unwrap();
+                    let new_well_formed_message_descriptor = WellFormedMessageDescriptor::try_from(
+                        NewMySimpleRecord::default().descriptor(),
+                    )
+                    .unwrap();
+
+                    assert!(!old_well_formed_message_descriptor
+                        .is_evolvable_to(new_well_formed_message_descriptor));
+                }
+                // renameField()
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto::test_records_1::v1::MySimpleRecord as OldMySimpleRecord;
+                    use fdb_rl_proto::fdb_rl_test::java::proto::test_records_1::v3::MySimpleRecord as NewMySimpleRecord;
+
+                    let old_well_formed_message_descriptor = WellFormedMessageDescriptor::try_from(
+                        OldMySimpleRecord::default().descriptor(),
+                    )
+                    .unwrap();
+                    let new_well_formed_message_descriptor = WellFormedMessageDescriptor::try_from(
+                        NewMySimpleRecord::default().descriptor(),
+                    )
+                    .unwrap();
+
+                    assert!(!old_well_formed_message_descriptor
+                        .is_evolvable_to(new_well_formed_message_descriptor));
+		}
+		// TODO: Continue from here.
+            }
+        }
 
         #[test]
         fn try_from_message_descriptor_try_from() {

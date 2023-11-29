@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package fdb_rl_test.java.proto.test_records_1.v3;
+
+// MetaDataEvolutionValidatorTest.java, renameField()
+message MySimpleRecord {
+  optional int64 rec_no = 1;
+  optional string str_value_indexed = 2;
+  optional int32 num_value_unique = 3;
+  optional int32 num_value_too = 4;
+  optional int32 num_value_3_indexed = 5;
+  repeated int32 repeater = 6;
+}

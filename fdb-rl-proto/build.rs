@@ -66,6 +66,8 @@ fn main() -> io::Result<()> {
 		    "proto-test/fdb_rl_test/java/proto/test_no_union_evolved_illegal/v1/test_no_union_evolved_illegal.proto",
 		    "proto-test/fdb_rl_test/java/proto/test_no_union_evolved_renamed_type/v1/test_no_union_evolved_renamed_type.proto",
 		    "proto-test/fdb_rl_test/java/proto/test_records_1/v1/test_records_1.proto",
+		    "proto-test/fdb_rl_test/java/proto/test_records_1/v2/test_records_1.proto",
+		    "proto-test/fdb_rl_test/java/proto/test_records_1/v3/test_records_1.proto",
 		    "proto-test/fdb_rl_test/java/proto/test_records_1_evolved/v1/test_records_1_evolved.proto",
 		    "proto-test/fdb_rl_test/java/proto/test_records_1_evolved_again/v1/test_records_1_evolved_again.proto",
 		    "proto-test/fdb_rl_test/java/proto/test_records_2/v1/test_records_2.proto",
