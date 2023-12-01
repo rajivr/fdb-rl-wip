@@ -198,7 +198,13 @@ impl WellFormedMessageDescriptor {
             | Kind::Sfixed64
             | Kind::Bool
             | Kind::String
-            | Kind::Bytes) => matches!(new_field_descriptor_kind, t),
+            | Kind::Bytes) => {
+                if t == new_field_descriptor_kind {
+                    true
+                } else {
+                    false
+                }
+            }
             Kind::Message(old_inner_message_descriptor) => {
                 if let Kind::Message(new_inner_message_descriptor) = new_field_descriptor_kind {
                     if FDB_RL_WKT_FULL_NAME
@@ -248,6 +254,12 @@ impl WellFormedMessageDescriptor {
         OldEnumDescriptor(old_enum_descriptor): OldEnumDescriptor,
         NewEnumDescriptor(new_enum_descriptor): NewEnumDescriptor,
     ) -> bool {
+        // Do not allow `EnumDescriptor` to be renamed. They can be in
+        // different packages.
+        if old_enum_descriptor.name() != new_enum_descriptor.name() {
+            return false;
+        }
+
         for old_enum_value_descriptor in old_enum_descriptor.values() {
             if let Some(new_enum_value_descriptor) =
                 new_enum_descriptor.get_value(old_enum_value_descriptor.number())
@@ -808,7 +820,7 @@ mod tests {
         fn is_evolvable_to() {
             // Java
             {
-                // dropField()
+                // `dropField()`
                 {
                     use fdb_rl_proto::fdb_rl_test::java::proto::test_records_1::v1::MySimpleRecord as OldMySimpleRecord;
                     use fdb_rl_proto::fdb_rl_test::java::proto::test_records_1::v2::MySimpleRecord as NewMySimpleRecord;
@@ -825,24 +837,156 @@ mod tests {
                     assert!(!old_well_formed_message_descriptor
                         .is_evolvable_to(new_well_formed_message_descriptor));
                 }
-                // renameField()
+                // `renameField()`
                 {
-                    use fdb_rl_proto::fdb_rl_test::java::proto::test_records_1::v1::MySimpleRecord as OldMySimpleRecord;
-                    use fdb_rl_proto::fdb_rl_test::java::proto::test_records_1::v3::MySimpleRecord as NewMySimpleRecord;
+                    {
+                        use fdb_rl_proto::fdb_rl_test::java::proto::test_records_1::v1::MySimpleRecord as OldMySimpleRecord;
+                        use fdb_rl_proto::fdb_rl_test::java::proto::test_records_1::v3::MySimpleRecord as NewMySimpleRecord;
 
-                    let old_well_formed_message_descriptor = WellFormedMessageDescriptor::try_from(
-                        OldMySimpleRecord::default().descriptor(),
-                    )
-                    .unwrap();
-                    let new_well_formed_message_descriptor = WellFormedMessageDescriptor::try_from(
-                        NewMySimpleRecord::default().descriptor(),
-                    )
-                    .unwrap();
+                        let old_well_formed_message_descriptor =
+                            WellFormedMessageDescriptor::try_from(
+                                OldMySimpleRecord::default().descriptor(),
+                            )
+                            .unwrap();
+                        let new_well_formed_message_descriptor =
+                            WellFormedMessageDescriptor::try_from(
+                                NewMySimpleRecord::default().descriptor(),
+                            )
+                            .unwrap();
 
-                    assert!(!old_well_formed_message_descriptor
-                        .is_evolvable_to(new_well_formed_message_descriptor));
-		}
-		// TODO: Continue from here.
+                        assert!(!old_well_formed_message_descriptor
+                            .is_evolvable_to(new_well_formed_message_descriptor));
+                    }
+                    {
+                        use fdb_rl_proto::fdb_rl_test::java::proto::test_records_1::v1::MySimpleRecord as OldMySimpleRecord;
+                        use fdb_rl_proto::fdb_rl_test::java::proto::test_records_1::v4::MySimpleRecord as NewMySimpleRecord;
+
+                        let old_well_formed_message_descriptor =
+                            WellFormedMessageDescriptor::try_from(
+                                OldMySimpleRecord::default().descriptor(),
+                            )
+                            .unwrap();
+                        let new_well_formed_message_descriptor =
+                            WellFormedMessageDescriptor::try_from(
+                                NewMySimpleRecord::default().descriptor(),
+                            )
+                            .unwrap();
+
+                        assert!(!old_well_formed_message_descriptor
+                            .is_evolvable_to(new_well_formed_message_descriptor));
+                    }
+                }
+                // `fieldTypeChanged()`
+                {
+                    {
+                        use fdb_rl_proto::fdb_rl_test::java::proto::test_records_1::v1::MySimpleRecord as OldMySimpleRecord;
+                        use fdb_rl_proto::fdb_rl_test::java::proto::test_records_1::v5::MySimpleRecord as NewMySimpleRecord;
+
+                        let old_well_formed_message_descriptor =
+                            WellFormedMessageDescriptor::try_from(
+                                OldMySimpleRecord::default().descriptor(),
+                            )
+                            .unwrap();
+                        let new_well_formed_message_descriptor =
+                            WellFormedMessageDescriptor::try_from(
+                                NewMySimpleRecord::default().descriptor(),
+                            )
+                            .unwrap();
+
+                        assert!(!old_well_formed_message_descriptor
+                            .is_evolvable_to(new_well_formed_message_descriptor));
+                    }
+                    // Unlike Java RecordLayer, we do not allow `int32
+                    // -> int64` conversion. Skipping tests for
+                    // `sint32 -> sint64`, `sfixed32 -> sfixed64` as
+                    // the code path is the same.
+                    {
+                        use fdb_rl_proto::fdb_rl_test::java::proto::test_records_1::v1::MySimpleRecord as OldMySimpleRecord;
+                        use fdb_rl_proto::fdb_rl_test::java::proto::test_records_1::v6::MySimpleRecord as NewMySimpleRecord;
+
+                        let old_well_formed_message_descriptor =
+                            WellFormedMessageDescriptor::try_from(
+                                OldMySimpleRecord::default().descriptor(),
+                            )
+                            .unwrap();
+                        let new_well_formed_message_descriptor =
+                            WellFormedMessageDescriptor::try_from(
+                                NewMySimpleRecord::default().descriptor(),
+                            )
+                            .unwrap();
+
+                        assert!(!old_well_formed_message_descriptor
+                            .is_evolvable_to(new_well_formed_message_descriptor));
+                    }
+                }
+                // There are not tests from
+                // `fieldChangedFromMessageToGroup()` as we do not
+                // have group in `proto3`.
+                //
+                // `enumFieldChanged()`
+                {
+                    {
+                        use fdb_rl_proto::fdb_rl_test::java::proto::test_records_enum::v1::MyShapeRecord as OldMyShapeRecord;
+                        use fdb_rl_proto::fdb_rl_test::java::proto::test_records_enum::v2::MyShapeRecord as NewMyShapeRecord;
+
+                        let old_well_formed_message_descriptor =
+                            WellFormedMessageDescriptor::try_from(
+                                OldMyShapeRecord::default().descriptor(),
+                            )
+                            .unwrap();
+                        let new_well_formed_message_descriptor =
+                            WellFormedMessageDescriptor::try_from(
+                                NewMyShapeRecord::default().descriptor(),
+                            )
+                            .unwrap();
+
+                        assert!(old_well_formed_message_descriptor
+                            .is_evolvable_to(new_well_formed_message_descriptor));
+                    }
+                    // The way to test dropping of enum field is to
+                    // reverse the message descriptor in the above
+                    // test. We would effectively be dropping
+                    // `SIZE_X_LARGE` variant.
+                    {
+                        use fdb_rl_proto::fdb_rl_test::java::proto::test_records_enum::v1::MyShapeRecord as OldMyShapeRecord;
+                        use fdb_rl_proto::fdb_rl_test::java::proto::test_records_enum::v2::MyShapeRecord as NewMyShapeRecord;
+
+                        let old_well_formed_message_descriptor =
+                            WellFormedMessageDescriptor::try_from(
+                                OldMyShapeRecord::default().descriptor(),
+                            )
+                            .unwrap();
+                        let new_well_formed_message_descriptor =
+                            WellFormedMessageDescriptor::try_from(
+                                NewMyShapeRecord::default().descriptor(),
+                            )
+                            .unwrap();
+
+                        assert!(!new_well_formed_message_descriptor
+                            .is_evolvable_to(old_well_formed_message_descriptor));
+                    }
+		    // Unlike Java RecordLayer, we do not allow
+		    // renaming `enum`.
+                    {
+                        use fdb_rl_proto::fdb_rl_test::java::proto::test_records_enum::v1::MyShapeRecord as OldMyShapeRecord;
+                        use fdb_rl_proto::fdb_rl_test::java::proto::test_records_enum::v3::MyShapeRecord as NewMyShapeRecord;
+
+                        let old_well_formed_message_descriptor =
+                            WellFormedMessageDescriptor::try_from(
+                                OldMyShapeRecord::default().descriptor(),
+                            )
+                            .unwrap();
+                        let new_well_formed_message_descriptor =
+                            WellFormedMessageDescriptor::try_from(
+                                NewMyShapeRecord::default().descriptor(),
+                            )
+                            .unwrap();
+
+                        assert!(!old_well_formed_message_descriptor
+                            .is_evolvable_to(new_well_formed_message_descriptor));
+                    }
+                }
+                // TODO: Continue from here.
             }
         }
 

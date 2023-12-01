@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package fdb_rl_test.java.proto.test_records_enum.v2;
+
+// MetaDataEvolutionValidatorTest.java, enumFieldChanged()
+message MyShapeRecord {
+  optional string rec_name = 1;
+  optional int32 rec_no = 2;
+  enum Size {
+    SIZE_UNSPECIFIED = 0;
+    SIZE_SMALL = 1;
+    SIZE_MEDIUM = 2;
+    SIZE_LARGE = 3;
+    SIZE_X_LARGE = 4;
+  }
+  optional Size size = 3;
+  enum Color {
+    COLOR_UNSPECIFIED = 0;
+    COLOR_RED = 10;
+    COLOR_GREEN = 20;
+    COLOR_BLUE = 30;
+  }
+  optional Color color = 4;
+  enum Shape {
+    SHAPE_UNSPECIFIED = 0;
+    SHAPE_SQUARE = 100;
+    SHAPE_CIRCLE = 200;
+    SHAPE_TRIANGLE = 300;
+  }
+  optional Shape shape = 5;
+}
