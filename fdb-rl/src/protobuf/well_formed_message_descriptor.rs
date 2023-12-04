@@ -965,8 +965,8 @@ mod tests {
                         assert!(!new_well_formed_message_descriptor
                             .is_evolvable_to(old_well_formed_message_descriptor));
                     }
-		    // Unlike Java RecordLayer, we do not allow
-		    // renaming `enum`.
+                    // Unlike Java RecordLayer, we do not allow
+                    // renaming `enum`.
                     {
                         use fdb_rl_proto::fdb_rl_test::java::proto::test_records_enum::v1::MyShapeRecord as OldMyShapeRecord;
                         use fdb_rl_proto::fdb_rl_test::java::proto::test_records_enum::v3::MyShapeRecord as NewMyShapeRecord;
@@ -985,6 +985,108 @@ mod tests {
                         assert!(!old_well_formed_message_descriptor
                             .is_evolvable_to(new_well_formed_message_descriptor));
                     }
+                }
+                // `selfReferenceChanged()`
+                {
+                    {
+                        use fdb_rl_proto::fdb_rl_test::java::proto::evolution::test_self_reference::v1::LinkedListRecord as OldLinkedListRecord;
+			use fdb_rl_proto::fdb_rl_test::java::proto::evolution::test_self_reference_unspooled::v1::LinkedListRecord as NewLinkedListRecord;
+
+                        let old_well_formed_message_descriptor =
+                            WellFormedMessageDescriptor::try_from(
+                                OldLinkedListRecord::default().descriptor(),
+                            )
+                            .unwrap();
+                        let new_well_formed_message_descriptor =
+                            WellFormedMessageDescriptor::try_from(
+                                NewLinkedListRecord::default().descriptor(),
+                            )
+                            .unwrap();
+
+                        assert!(!old_well_formed_message_descriptor
+                            .is_evolvable_to(new_well_formed_message_descriptor));
+                    }
+                    {
+                        use fdb_rl_proto::fdb_rl_test::java::proto::evolution::test_self_reference_unspooled::v1::LinkedListRecord as OldLinkedListRecord;
+			use fdb_rl_proto::fdb_rl_test::java::proto::evolution::test_self_reference_unspooled::v2::LinkedListRecord as NewLinkedListRecord;
+
+                        let old_well_formed_message_descriptor =
+                            WellFormedMessageDescriptor::try_from(
+                                OldLinkedListRecord::default().descriptor(),
+                            )
+                            .unwrap();
+                        let new_well_formed_message_descriptor =
+                            WellFormedMessageDescriptor::try_from(
+                                NewLinkedListRecord::default().descriptor(),
+                            )
+                            .unwrap();
+
+                        assert!(!old_well_formed_message_descriptor
+                            .is_evolvable_to(new_well_formed_message_descriptor));
+                    }
+                }
+                // Unlike Java RecordLayer, we do not allow renaming
+                // of types.
+                //
+                // `nestedTypeChangesName()`
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto::test_records_with_header::v1::MyRecord as OldMyRecord;
+                    use fdb_rl_proto::fdb_rl_test::java::proto::test_records_with_header::v2::MyRecord as NewMyRecord;
+
+                    let old_well_formed_message_descriptor =
+                        WellFormedMessageDescriptor::try_from(OldMyRecord::default().descriptor())
+                            .unwrap();
+                    let new_well_formed_message_descriptor =
+                        WellFormedMessageDescriptor::try_from(NewMyRecord::default().descriptor())
+                            .unwrap();
+
+                    assert!(!old_well_formed_message_descriptor
+                        .is_evolvable_to(new_well_formed_message_descriptor));
+                }
+                // `nestedTypeChangesFieldName()
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto::test_records_with_header::v1::MyRecord as OldMyRecord;
+                    use fdb_rl_proto::fdb_rl_test::java::proto::test_records_with_header::v3::MyRecord as NewMyRecord;
+
+                    let old_well_formed_message_descriptor =
+                        WellFormedMessageDescriptor::try_from(OldMyRecord::default().descriptor())
+                            .unwrap();
+                    let new_well_formed_message_descriptor =
+                        WellFormedMessageDescriptor::try_from(NewMyRecord::default().descriptor())
+                            .unwrap();
+
+                    assert!(!old_well_formed_message_descriptor
+                        .is_evolvable_to(new_well_formed_message_descriptor));
+                }
+                // `nestedTypeChangesFieldType()`
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto::test_records_with_header::v1::MyRecord as OldMyRecord;
+                    use fdb_rl_proto::fdb_rl_test::java::proto::test_records_with_header::v4::MyRecord as NewMyRecord;
+
+                    let old_well_formed_message_descriptor =
+                        WellFormedMessageDescriptor::try_from(OldMyRecord::default().descriptor())
+                            .unwrap();
+                    let new_well_formed_message_descriptor =
+                        WellFormedMessageDescriptor::try_from(NewMyRecord::default().descriptor())
+                            .unwrap();
+
+                    assert!(!old_well_formed_message_descriptor
+                        .is_evolvable_to(new_well_formed_message_descriptor));
+                }
+                // nestedTypesMerged()
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto::evolution::test_merged_nested_types::v1::MyRecord as OldMyRecord;
+		    use fdb_rl_proto::fdb_rl_test::java::proto::evolution::test_merged_nested_types::v2::MyRecord as NewMyRecord;
+
+                    let old_well_formed_message_descriptor =
+                        WellFormedMessageDescriptor::try_from(OldMyRecord::default().descriptor())
+                            .unwrap();
+                    let new_well_formed_message_descriptor =
+                        WellFormedMessageDescriptor::try_from(NewMyRecord::default().descriptor())
+                            .unwrap();
+
+                    assert!(!old_well_formed_message_descriptor
+                        .is_evolvable_to(new_well_formed_message_descriptor));
                 }
                 // TODO: Continue from here.
             }

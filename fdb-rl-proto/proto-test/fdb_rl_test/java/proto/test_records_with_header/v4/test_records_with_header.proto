@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package fdb_rl_test.java.proto.test_records_with_header.v4;
+
+message HeaderRecord {
+  optional int64 rec_no = 1;
+  optional string path = 2;
+  optional sfixed32 num = 3;
+}
+
+// MetaDataEvolutionValidatorTest.java, nestedTypeChangesFieldType()
+message MyRecord {
+  optional HeaderRecord header = 1;
+  optional string str_value = 2;
+  optional int64 repeated_int = 3;
+}

@@ -152,6 +152,11 @@ pub mod fdb_rl_test {
                             "fdb_rl_test.java.proto.evolution.test_merged_nested_types.v1"
                         );
                     }
+                    pub mod v2 {
+                        include_proto!(
+                            "fdb_rl_test.java.proto.evolution.test_merged_nested_types.v2"
+                        );
+                    }
                 }
 
                 pub mod test_new_record_type {
@@ -170,6 +175,11 @@ pub mod fdb_rl_test {
                     pub mod v1 {
                         include_proto!(
                             "fdb_rl_test.java.proto.evolution.test_self_reference_unspooled.v1"
+                        );
+                    }
+                    pub mod v2 {
+                        include_proto!(
+                            "fdb_rl_test.java.proto.evolution.test_self_reference_unspooled.v2"
                         );
                     }
                 }
@@ -601,6 +611,15 @@ pub mod fdb_rl_test {
             pub mod test_records_with_header {
                 pub mod v1 {
                     include_proto!("fdb_rl_test.java.proto.test_records_with_header.v1");
+                }
+                pub mod v2 {
+                    include_proto!("fdb_rl_test.java.proto.test_records_with_header.v2");
+                }
+                pub mod v3 {
+                    include_proto!("fdb_rl_test.java.proto.test_records_with_header.v3");
+                }
+                pub mod v4 {
+                    include_proto!("fdb_rl_test.java.proto.test_records_with_header.v4");
                 }
             }
 

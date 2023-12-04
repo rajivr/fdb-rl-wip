@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package fdb_rl_test.java.proto.evolution.test_self_reference_unspooled.v2;
+
+message Node {
+  optional int32 value = 2;
+  optional Node next = 3;
+}
+
+// MetaDataEvolutionValidatorTest.java, selfReferenceChanged()
+message LinkedListRecord {
+  optional int32 rec_no = 1;
+  optional int32 value = 2;
+  optional Node next = 3;
+  optional Node head = 4;
+}

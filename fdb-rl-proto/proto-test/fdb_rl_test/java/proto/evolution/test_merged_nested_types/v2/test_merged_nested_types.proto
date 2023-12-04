@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package fdb_rl_test.java.proto.evolution.test_merged_nested_types.v2;
+
+// This field was created by taking the fields of NestedA and
+// of NestedB and merging them together into a single message type.
+message OneTrueNested {
+  optional int32 a = 1;
+  optional int32 c = 2;
+}
+
+// MetaDataEvolutionValidatorTest.java, nestedTypesMerged()
+message MyRecord {
+  optional int64 rec_no = 1;
+  optional OneTrueNested a = 2;
+  optional OneTrueNested b = 3;
+}
