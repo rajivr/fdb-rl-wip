@@ -48,6 +48,9 @@ fn main() -> io::Result<()> {
                 &[
                     "proto-test/fdb_rl_test/protobuf/well_formed_message_descriptor/bad/proto_2/v1/proto_2.proto",
 		    "proto-test/fdb_rl_test/protobuf/well_formed_message_descriptor/bad/proto_3/v1/proto_3.proto",
+		    "proto-test/fdb_rl_test/protobuf/well_formed_message_descriptor/evolution/v1/proto_3.proto",
+		    "proto-test/fdb_rl_test/protobuf/well_formed_message_descriptor/evolution/v2/proto_3.proto",
+		    "proto-test/fdb_rl_test/protobuf/well_formed_message_descriptor/evolution/v3/proto_3.proto",
 		    "proto-test/fdb_rl_test/protobuf/well_formed_message_descriptor/good/v1/proto_3.proto",
 		    // Java RecordLayer Protos
 		    "proto-test/fdb_rl_test/java/proto/evolution/test_field_type_change/v1/test_field_type_change.proto",
@@ -58,6 +61,7 @@ fn main() -> io::Result<()> {
 		    "proto-test/fdb_rl_test/java/proto/evolution/test_self_reference_unspooled/v1/test_self_reference_unspooled.proto",
 		    "proto-test/fdb_rl_test/java/proto/evolution/test_self_reference_unspooled/v2/test_self_reference_unspooled.proto",
 		    "proto-test/fdb_rl_test/java/proto/evolution/test_split_nested_types/v1/test_split_nested_types.proto",
+		    "proto-test/fdb_rl_test/java/proto/evolution/test_split_nested_types/v2/test_split_nested_types.proto",
 		    "proto-test/fdb_rl_test/java/proto/evolution/test_swap_union_fields/v1/test_swap_union_fields.proto",
 		    "proto-test/fdb_rl_test/java/proto/evolution/test_unmerged_nested_types/v1/test_unmerged_nested_types.proto",
 		    "proto-test/fdb_rl_test/java/proto/expression_tests/v1/expression_tests.proto",
@@ -73,6 +77,9 @@ fn main() -> io::Result<()> {
 		    "proto-test/fdb_rl_test/java/proto/test_records_1/v4/test_records_1.proto",
 		    "proto-test/fdb_rl_test/java/proto/test_records_1/v5/test_records_1.proto",
 		    "proto-test/fdb_rl_test/java/proto/test_records_1/v6/test_records_1.proto",
+		    "proto-test/fdb_rl_test/java/proto/test_records_1/v7/test_records_1.proto",
+		    "proto-test/fdb_rl_test/java/proto/test_records_1/v8/test_records_1.proto",
+		    "proto-test/fdb_rl_test/java/proto/test_records_1/v9/test_records_1.proto",
 		    "proto-test/fdb_rl_test/java/proto/test_records_1_evolved/v1/test_records_1_evolved.proto",
 		    "proto-test/fdb_rl_test/java/proto/test_records_1_evolved_again/v1/test_records_1_evolved_again.proto",
 		    "proto-test/fdb_rl_test/java/proto/test_records_2/v1/test_records_2.proto",

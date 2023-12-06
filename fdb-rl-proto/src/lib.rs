@@ -127,6 +127,24 @@ pub mod fdb_rl_test {
                 }
             }
 
+            pub mod evolution {
+                pub mod v1 {
+                    include_proto!(
+                        "fdb_rl_test.protobuf.well_formed_message_descriptor.evolution.v1"
+                    );
+                }
+                pub mod v2 {
+                    include_proto!(
+                        "fdb_rl_test.protobuf.well_formed_message_descriptor.evolution.v2"
+                    );
+                }
+                pub mod v3 {
+                    include_proto!(
+                        "fdb_rl_test.protobuf.well_formed_message_descriptor.evolution.v3"
+                    );
+                }
+            }
+
             pub mod good {
                 pub mod v1 {
                     include_proto!("fdb_rl_test.protobuf.well_formed_message_descriptor.good.v1");
@@ -188,6 +206,11 @@ pub mod fdb_rl_test {
                     pub mod v1 {
                         include_proto!(
                             "fdb_rl_test.java.proto.evolution.test_split_nested_types.v1"
+                        );
+                    }
+                    pub mod v2 {
+                        include_proto!(
+                            "fdb_rl_test.java.proto.evolution.test_split_nested_types.v2"
                         );
                     }
                 }
@@ -269,6 +292,15 @@ pub mod fdb_rl_test {
                 }
                 pub mod v6 {
                     include_proto!("fdb_rl_test.java.proto.test_records_1.v6");
+                }
+                pub mod v7 {
+                    include_proto!("fdb_rl_test.java.proto.test_records_1.v7");
+                }
+                pub mod v8 {
+                    include_proto!("fdb_rl_test.java.proto.test_records_1.v8");
+                }
+                pub mod v9 {
+                    include_proto!("fdb_rl_test.java.proto.test_records_1.v9");
                 }
             }
 

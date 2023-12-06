@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package fdb_rl_test.protobuf.well_formed_message_descriptor.evolution.v2;
+
+import "fdb_rl/field/v1/field.proto";
+
+// Evolution when a WKT is present
+message HelloWorld {
+  optional fdb_rl.field.v1.UUID primary_key = 1;
+  optional string hello = 2;
+  optional string world = 3;
+}

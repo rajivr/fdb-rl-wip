@@ -180,6 +180,18 @@ impl WellFormedMessageDescriptor {
             return false;
         }
 
+        match old_field_descriptor.cardinality() {
+            t @ (Cardinality::Optional | Cardinality::Repeated) => {
+                if t != new_field_descriptor.cardinality() {
+                    return false;
+                }
+            }
+            Cardinality::Required => {
+                // We should not be seeing `Required`.
+                return false;
+            }
+        }
+
         let new_field_descriptor_kind = new_field_descriptor.kind();
 
         // Match all kinds explicitly so that in the
@@ -818,6 +830,44 @@ mod tests {
 
         #[test]
         fn is_evolvable_to() {
+            // Tests adapted from Java RecordLayer is reasonably
+            // exhaustive. So, our tests only test well known type
+            // evolution.
+
+            // Evolution when a well known type is present (in this
+            // case a UUID).
+            {
+                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_message_descriptor::evolution::v1::HelloWorld as OldHelloWorld;
+		use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_message_descriptor::evolution::v2::HelloWorld as NewHelloWorld;
+
+                let old_well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(OldHelloWorld::default().descriptor())
+                        .unwrap();
+                let new_well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(NewHelloWorld::default().descriptor())
+                        .unwrap();
+
+                assert!(old_well_formed_message_descriptor
+                    .is_evolvable_to(new_well_formed_message_descriptor));
+            }
+
+            // Evolution when well known type is replaced with a fake
+            // one.
+            {
+                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_message_descriptor::evolution::v1::HelloWorld as OldHelloWorld;
+		use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_message_descriptor::evolution::v3::HelloWorld as NewHelloWorld;
+
+                let old_well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(OldHelloWorld::default().descriptor())
+                        .unwrap();
+                let new_well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(NewHelloWorld::default().descriptor())
+                        .unwrap();
+
+                assert!(!old_well_formed_message_descriptor
+                    .is_evolvable_to(new_well_formed_message_descriptor));
+            }
+
             // Java
             {
                 // `dropField()`
@@ -1075,6 +1125,9 @@ mod tests {
                 }
                 // nestedTypesMerged()
                 {
+                    // In Java RecordLayer,
+                    // `TestUnmergedNestedTypesProto.getDescriptor()`
+                    // is used. Here we are using merged nested type.
                     use fdb_rl_proto::fdb_rl_test::java::proto::evolution::test_merged_nested_types::v1::MyRecord as OldMyRecord;
 		    use fdb_rl_proto::fdb_rl_test::java::proto::evolution::test_merged_nested_types::v2::MyRecord as NewMyRecord;
 
@@ -1088,7 +1141,118 @@ mod tests {
                     assert!(!old_well_formed_message_descriptor
                         .is_evolvable_to(new_well_formed_message_descriptor));
                 }
-                // TODO: Continue from here.
+                // nestedTypesSplit()
+                {
+                    {
+                        // In Java RecordLayer supports evolution of
+                        // `TestMergedNestedTypesProto.RecordTypeUnion.getDescriptor()`
+                        // as old and
+                        // `TestSplitNestedTypesProto.RecordTypeUnion.getDescriptor()`
+                        // as new. We do not support that.
+                        use fdb_rl_proto::fdb_rl_test::java::proto::evolution::test_merged_nested_types::v1::MyRecord as OldMyRecord;
+			use fdb_rl_proto::fdb_rl_test::java::proto::evolution::test_split_nested_types::v1::MyRecord as NewMyRecord;
+
+                        let old_well_formed_message_descriptor =
+                            WellFormedMessageDescriptor::try_from(
+                                OldMyRecord::default().descriptor(),
+                            )
+                            .unwrap();
+                        let new_well_formed_message_descriptor =
+                            WellFormedMessageDescriptor::try_from(
+                                NewMyRecord::default().descriptor(),
+                            )
+                            .unwrap();
+
+                        assert!(!old_well_formed_message_descriptor
+                            .is_evolvable_to(new_well_formed_message_descriptor));
+                    }
+                    {
+                        // In Java RecordLayer, the comparision is
+                        // between
+                        // `TestUnmergedNestedTypesProto.getDescriptor()`
+                        // and
+                        // `TestSplitNestedTypesProto.getDescriptor()`. In
+                        // our case, we compare
+                        // `TestSplitNestedTypesProto.getDescriptor()`
+                        // and the mutated
+                        // `TestSplitNestedTypesProto.getDescriptor()`.
+                        use fdb_rl_proto::fdb_rl_test::java::proto::evolution::test_split_nested_types::v1::MyRecord as OldMyRecord;
+			use fdb_rl_proto::fdb_rl_test::java::proto::evolution::test_split_nested_types::v2::MyRecord as NewMyRecord;
+
+                        let old_well_formed_message_descriptor =
+                            WellFormedMessageDescriptor::try_from(
+                                OldMyRecord::default().descriptor(),
+                            )
+                            .unwrap();
+                        let new_well_formed_message_descriptor =
+                            WellFormedMessageDescriptor::try_from(
+                                NewMyRecord::default().descriptor(),
+                            )
+                            .unwrap();
+
+                        assert!(!old_well_formed_message_descriptor
+                            .is_evolvable_to(new_well_formed_message_descriptor));
+                    }
+                }
+                // `fieldLabelChanged()`
+                {
+                    {
+                        use fdb_rl_proto::fdb_rl_test::java::proto::test_records_1::v1::MySimpleRecord as OldMySimpleRecord;
+                        use fdb_rl_proto::fdb_rl_test::java::proto::test_records_1::v7::MySimpleRecord as NewMySimpleRecord;
+
+                        let old_well_formed_message_descriptor =
+                            WellFormedMessageDescriptor::try_from(
+                                OldMySimpleRecord::default().descriptor(),
+                            )
+                            .unwrap();
+                        let new_well_formed_message_descriptor =
+                            WellFormedMessageDescriptor::try_from(
+                                NewMySimpleRecord::default().descriptor(),
+                            )
+                            .unwrap();
+
+                        assert!(!old_well_formed_message_descriptor
+                            .is_evolvable_to(new_well_formed_message_descriptor));
+                    }
+                    {
+                        use fdb_rl_proto::fdb_rl_test::java::proto::test_records_1::v1::MySimpleRecord as OldMySimpleRecord;
+                        use fdb_rl_proto::fdb_rl_test::java::proto::test_records_1::v8::MySimpleRecord as NewMySimpleRecord;
+
+                        let old_well_formed_message_descriptor =
+                            WellFormedMessageDescriptor::try_from(
+                                OldMySimpleRecord::default().descriptor(),
+                            )
+                            .unwrap();
+                        let new_well_formed_message_descriptor =
+                            WellFormedMessageDescriptor::try_from(
+                                NewMySimpleRecord::default().descriptor(),
+                            )
+                            .unwrap();
+
+                        assert!(!old_well_formed_message_descriptor
+                            .is_evolvable_to(new_well_formed_message_descriptor));
+                    }
+                }
+                // Java RecordLayer `addRequiredField()` test does not
+                // make sense for us as we do not support
+                // `proto2`. However, it should be possible to add an
+                // optional field without any issue.
+                {
+                    use fdb_rl_proto::fdb_rl_test::java::proto::test_records_1::v1::MySimpleRecord as OldMySimpleRecord;
+                    use fdb_rl_proto::fdb_rl_test::java::proto::test_records_1::v9::MySimpleRecord as NewMySimpleRecord;
+
+                    let old_well_formed_message_descriptor = WellFormedMessageDescriptor::try_from(
+                        OldMySimpleRecord::default().descriptor(),
+                    )
+                    .unwrap();
+                    let new_well_formed_message_descriptor = WellFormedMessageDescriptor::try_from(
+                        NewMySimpleRecord::default().descriptor(),
+                    )
+                    .unwrap();
+
+                    assert!(old_well_formed_message_descriptor
+                        .is_evolvable_to(new_well_formed_message_descriptor));
+                }
             }
         }
 
