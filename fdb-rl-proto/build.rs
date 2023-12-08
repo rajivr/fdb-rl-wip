@@ -52,6 +52,7 @@ fn main() -> io::Result<()> {
 		    "proto-test/fdb_rl_test/protobuf/well_formed_message_descriptor/evolution/v2/proto_3.proto",
 		    "proto-test/fdb_rl_test/protobuf/well_formed_message_descriptor/evolution/v3/proto_3.proto",
 		    "proto-test/fdb_rl_test/protobuf/well_formed_message_descriptor/good/v1/proto_3.proto",
+		    "proto-test/fdb_rl_test/protobuf/well_formed_message_descriptor/good/v2/proto_3.proto",
 		    // Java RecordLayer Protos
 		    "proto-test/fdb_rl_test/java/proto/evolution/test_field_type_change/v1/test_field_type_change.proto",
 		    "proto-test/fdb_rl_test/java/proto/evolution/test_merged_nested_types/v1/test_merged_nested_types.proto",

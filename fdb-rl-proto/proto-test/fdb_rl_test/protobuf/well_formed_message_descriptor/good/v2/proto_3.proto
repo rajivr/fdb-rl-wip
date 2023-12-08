@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package fdb_rl_test.protobuf.well_formed_message_descriptor.good.v2;
+
+import "fdb_rl/field/v1/field.proto";
+
+// tests::well_formed_dynamic_message::try_from_well_formed_message_descriptor_ref_t_try_from()
+message HelloWorld {
+  optional fdb_rl.field.v1.UUID primary_key = 1;
+  optional string hello = 2;
+  optional string world = 3;
+  optional string hello_world = 4;
+}
