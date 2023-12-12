@@ -1,0 +1,5 @@
+syntax = "proto3";
+
+package fdb_rl_test.protobuf.well_formed_dynamic_message.v1;
+
+message Empty {}

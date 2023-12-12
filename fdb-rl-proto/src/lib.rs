@@ -108,6 +108,12 @@ pub(crate) const TEST_FILE_DESCRIPTOR_SET: &[u8] =
 
 pub mod fdb_rl_test {
     pub mod protobuf {
+        pub mod well_formed_dynamic_message {
+            pub mod v1 {
+                include_proto!("fdb_rl_test.protobuf.well_formed_dynamic_message.v1");
+            }
+        }
+
         pub mod well_formed_message_descriptor {
             pub mod bad {
                 pub mod proto_2 {

@@ -1,7 +1,10 @@
 //! TODO
 
 use fdb::error::{FdbError, FdbResult};
+
 use prost_reflect::{DynamicMessage, ReflectMessage};
+
+use partiql_value::{Tuple, Value};
 
 use std::convert::TryFrom;
 
@@ -47,10 +50,30 @@ where
     }
 }
 
+impl From<WellFormedDynamicMessage> for Value {
+    fn from(value: WellFormedDynamicMessage) -> Value {
+        let dynamic_message = value.inner;
+        let message_descriptor = dynamic_message.descriptor();
+
+        let mut tuple = Tuple::new();
+
+        tuple.insert(
+            "fdb_rl_type",
+            Value::String(format!("message_{}", message_descriptor.name()).into()),
+        );
+
+        // TODO: fields
+
+        Value::Tuple(tuple.into())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     mod well_formed_dynamic_message {
         use fdb::error::FdbError;
+
+        use partiql_value::Value;
 
         use prost_reflect::ReflectMessage;
 
@@ -195,6 +218,24 @@ mod tests {
                     Err(FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE)),
                     well_formed_dynamic_message
                 );
+            }
+        }
+
+        #[test]
+        fn from_well_formed_message_descriptor_from() {
+            // Empty
+            {
+                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::Empty;
+                let empty = Empty {};
+
+                let well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(empty.descriptor()).unwrap();
+
+                let well_formed_dynamic_message =
+                    WellFormedDynamicMessage::try_from((well_formed_message_descriptor, &empty))
+                        .unwrap();
+
+                println!("{:?}", Value::from(well_formed_dynamic_message));
             }
         }
     }

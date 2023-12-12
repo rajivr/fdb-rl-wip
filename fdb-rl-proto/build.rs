@@ -46,6 +46,7 @@ fn main() -> io::Result<()> {
             .compile_protos_with_config(
                 prost_build_config,
                 &[
+		    "proto-test/fdb_rl_test/protobuf/well_formed_dynamic_message/v1/proto_3.proto",
                     "proto-test/fdb_rl_test/protobuf/well_formed_message_descriptor/bad/proto_2/v1/proto_2.proto",
 		    "proto-test/fdb_rl_test/protobuf/well_formed_message_descriptor/bad/proto_3/v1/proto_3.proto",
 		    "proto-test/fdb_rl_test/protobuf/well_formed_message_descriptor/evolution/v1/proto_3.proto",
