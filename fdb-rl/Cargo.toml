@@ -29,6 +29,7 @@ partiql-logical-planner = { git = "https://github.com/partiql/partiql-lang-rust.
 partiql-logical = { git = "https://github.com/partiql/partiql-lang-rust.git", rev = "febf454500"}
 partiql-value = { git = "https://github.com/partiql/partiql-lang-rust.git", rev = "febf454500"}
 partiql-eval = { git = "https://github.com/partiql/partiql-lang-rust.git", rev = "febf454500"}
+rust_decimal = { version = "1.25.0", default-features = false, features = ["std"] } # from `partiql-value`
 prost = "0.12"
 prost-reflect = "0.12"
 tokio-stream = "0.1"

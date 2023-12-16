@@ -3,3 +3,58 @@ syntax = "proto3";
 package fdb_rl_test.protobuf.well_formed_dynamic_message.v1;
 
 message Empty {}
+
+message HelloWorldDouble {
+  optional double hello = 1;
+  optional double world = 2;
+}
+
+message HelloWorldFloat {
+  optional float hello = 1;
+  optional float world = 2;
+}
+
+message HelloWorldInt32 {
+  optional int32 hello = 1;
+  optional int32 world = 2;
+}
+
+message HelloWorldInt64 {
+  optional int64 hello = 1;
+  optional int64 world = 2;
+}
+
+message HelloWorldSint32 {
+  optional sint32 hello = 1;
+  optional sint32 world = 2;
+}
+
+message HelloWorldSint64 {
+  optional sint64 hello = 1;
+  optional sint64 world = 2;
+}
+
+message HelloWorldSfixed32 {
+  optional sfixed32 hello = 1;
+  optional sfixed32 world = 2;
+}
+
+message HelloWorldSfixed64 {
+  optional sfixed64 hello = 1;
+  optional sfixed64 world = 2;
+}
+
+message HelloWorldBool {
+  optional bool hello = 1;
+  optional bool world = 2;
+}
+
+message HelloWorldString {
+  optional string hello = 1;
+  optional string world = 2;
+}
+
+message HelloWorldBytes {
+  optional bytes hello = 1;
+  optional bytes world = 2;
+}

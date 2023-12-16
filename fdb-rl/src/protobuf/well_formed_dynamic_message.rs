@@ -2,13 +2,20 @@
 
 use fdb::error::{FdbError, FdbResult};
 
-use prost_reflect::{DynamicMessage, ReflectMessage};
+use prost_reflect::{DynamicMessage, Kind, ReflectMessage, Value as ProstReflectValue};
 
-use partiql_value::{Tuple, Value};
+// We do not rename `Value` to `PartiqlValue`. If we did that `tuple!`
+// macro fails.
+use partiql_value::{tuple, Tuple, Value};
+
+use rust_decimal::Decimal;
 
 use std::convert::TryFrom;
+use std::ops::Deref;
 
-use super::error::PROTOBUF_ILL_FORMED_MESSAGE;
+use super::error::{
+    PROTOBUF_ILL_FORMED_MESSAGE, PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR,
+};
 use super::WellFormedMessageDescriptor;
 
 /// Describes a valid `DynamicMessage`.
@@ -50,30 +57,354 @@ where
     }
 }
 
-impl From<WellFormedDynamicMessage> for Value {
-    fn from(value: WellFormedDynamicMessage) -> Value {
+impl TryFrom<WellFormedDynamicMessage> for Value {
+    type Error = FdbError;
+
+    fn try_from(value: WellFormedDynamicMessage) -> FdbResult<Value> {
         let dynamic_message = value.inner;
         let message_descriptor = dynamic_message.descriptor();
 
-        let mut tuple = Tuple::new();
+        let mut message_tuple = Tuple::new();
 
-        tuple.insert(
+        message_tuple.insert(
             "fdb_rl_type",
             Value::String(format!("message_{}", message_descriptor.name()).into()),
         );
 
-        // TODO: fields
+        let mut message_fdb_rl_value_tuple = Tuple::new();
 
-        Value::Tuple(tuple.into())
+        for field_descriptor in message_descriptor.fields() {
+            if field_descriptor.is_map() {
+                // ```
+                // map<string, SomeType> some_field = X;
+                // ```
+                todo!();
+            } else if field_descriptor.is_list() {
+                // ```
+                // repeated SomeType some_field = X;
+                // ```
+                todo!();
+            } else {
+                // ```
+                // optional SomeType some_field = X;
+                // ```
+                //
+                // or
+                //
+                // ```
+                // oneof some_oneof {
+                //   SomeType some_field = X;
+                // }
+                // ```
+
+                let partiql_value_tuple = match field_descriptor.kind() {
+                    Kind::Uint32 | Kind::Uint64 | Kind::Fixed32 | Kind::Fixed64 => {
+                        return Err(FdbError::new(
+                            PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR,
+                        ))
+                    }
+                    // For `Kind::Double` and `Kind::Float`, we are
+                    // converting to `Value::Decimal` instead of
+                    // `Value::Real`.
+                    //
+                    // See [1] and [2].
+                    //
+                    // [1]: https://github.com/partiql/partiql-lang/issues/41
+                    // [2]: https://github.com/partiql/partiql-lang-rust/blob/v0.6.0/partiql-parser/src/parse/partiql.lalrpop#L1185-L1213
+                    Kind::Double => {
+                        if dynamic_message.has_field(&field_descriptor) {
+                            let partiql_value_decimal = Value::Decimal(
+                                Decimal::try_from(
+                                    if let ProstReflectValue::F64(f) =
+                                        dynamic_message.get_field(&field_descriptor).deref()
+                                    {
+                                        *f
+                                    } else {
+                                        return Err(FdbError::new(
+				    PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR
+				));
+                                    },
+                                )
+                                .map_err(|_| {
+                                    FdbError::new(
+                                        PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR,
+                                    )
+                                })?
+                                .into(),
+                            );
+
+                            tuple![
+                                ("fdb_rl_type", "double"),
+                                ("fdb_rl_value", partiql_value_decimal)
+                            ]
+                        } else {
+                            tuple![("fdb_rl_type", "double"), ("fdb_rl_value", Value::Null)]
+                        }
+                    }
+                    Kind::Float => {
+                        if dynamic_message.has_field(&field_descriptor) {
+                            let partiql_value_decimal = Value::Decimal(
+                                Decimal::try_from(
+                                    if let ProstReflectValue::F32(f) =
+                                        dynamic_message.get_field(&field_descriptor).deref()
+                                    {
+                                        *f
+                                    } else {
+                                        return Err(FdbError::new(
+				    PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR
+				));
+                                    },
+                                )
+                                .map_err(|_| {
+                                    FdbError::new(
+                                        PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR,
+                                    )
+                                })?
+                                .into(),
+                            );
+
+                            tuple![
+                                ("fdb_rl_type", "float"),
+                                ("fdb_rl_value", partiql_value_decimal)
+                            ]
+                        } else {
+                            tuple![("fdb_rl_type", "float"), ("fdb_rl_value", Value::Null)]
+                        }
+                    }
+                    Kind::Int32 => {
+                        if dynamic_message.has_field(&field_descriptor) {
+                            let partiql_value_integer = Value::Integer(
+                                if let ProstReflectValue::I32(i) =
+                                    dynamic_message.get_field(&field_descriptor).deref()
+                                {
+                                    *i
+                                } else {
+                                    return Err(FdbError::new(
+                                        PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR,
+                                    ));
+                                }
+                                .into(),
+                            );
+
+                            tuple![
+                                ("fdb_rl_type", "int32"),
+                                ("fdb_rl_value", partiql_value_integer)
+                            ]
+                        } else {
+                            tuple![("fdb_rl_type", "int32"), ("fdb_rl_value", Value::Null)]
+                        }
+                    }
+                    Kind::Int64 => {
+                        if dynamic_message.has_field(&field_descriptor) {
+                            let partiql_value_integer = Value::Integer(
+                                if let ProstReflectValue::I64(i) =
+                                    dynamic_message.get_field(&field_descriptor).deref()
+                                {
+                                    *i
+                                } else {
+                                    return Err(FdbError::new(
+                                        PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR,
+                                    ));
+                                }
+                                .into(),
+                            );
+
+                            tuple![
+                                ("fdb_rl_type", "int64"),
+                                ("fdb_rl_value", partiql_value_integer)
+                            ]
+                        } else {
+                            tuple![("fdb_rl_type", "int64"), ("fdb_rl_value", Value::Null)]
+                        }
+                    }
+                    Kind::Sint32 => {
+                        if dynamic_message.has_field(&field_descriptor) {
+                            let partiql_value_integer = Value::Integer(
+                                if let ProstReflectValue::I32(i) =
+                                    dynamic_message.get_field(&field_descriptor).deref()
+                                {
+                                    *i
+                                } else {
+                                    return Err(FdbError::new(
+                                        PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR,
+                                    ));
+                                }
+                                .into(),
+                            );
+
+                            tuple![
+                                ("fdb_rl_type", "sint32"),
+                                ("fdb_rl_value", partiql_value_integer)
+                            ]
+                        } else {
+                            tuple![("fdb_rl_type", "sint32"), ("fdb_rl_value", Value::Null)]
+                        }
+                    }
+                    Kind::Sint64 => {
+                        if dynamic_message.has_field(&field_descriptor) {
+                            let partiql_value_integer = Value::Integer(
+                                if let ProstReflectValue::I64(i) =
+                                    dynamic_message.get_field(&field_descriptor).deref()
+                                {
+                                    *i
+                                } else {
+                                    return Err(FdbError::new(
+                                        PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR,
+                                    ));
+                                }
+                                .into(),
+                            );
+
+                            tuple![
+                                ("fdb_rl_type", "sint64"),
+                                ("fdb_rl_value", partiql_value_integer)
+                            ]
+                        } else {
+                            tuple![("fdb_rl_type", "sint64"), ("fdb_rl_value", Value::Null)]
+                        }
+                    }
+                    Kind::Sfixed32 => {
+                        if dynamic_message.has_field(&field_descriptor) {
+                            let partiql_value_integer = Value::Integer(
+                                if let ProstReflectValue::I32(i) =
+                                    dynamic_message.get_field(&field_descriptor).deref()
+                                {
+                                    *i
+                                } else {
+                                    return Err(FdbError::new(
+                                        PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR,
+                                    ));
+                                }
+                                .into(),
+                            );
+
+                            tuple![
+                                ("fdb_rl_type", "sfixed32"),
+                                ("fdb_rl_value", partiql_value_integer)
+                            ]
+                        } else {
+                            tuple![("fdb_rl_type", "sfixed32"), ("fdb_rl_value", Value::Null)]
+                        }
+                    }
+                    Kind::Sfixed64 => {
+                        if dynamic_message.has_field(&field_descriptor) {
+                            let partiql_value_integer = Value::Integer(
+                                if let ProstReflectValue::I64(i) =
+                                    dynamic_message.get_field(&field_descriptor).deref()
+                                {
+                                    *i
+                                } else {
+                                    return Err(FdbError::new(
+                                        PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR,
+                                    ));
+                                }
+                                .into(),
+                            );
+
+                            tuple![
+                                ("fdb_rl_type", "sfixed64"),
+                                ("fdb_rl_value", partiql_value_integer)
+                            ]
+                        } else {
+                            tuple![("fdb_rl_type", "sfixed64"), ("fdb_rl_value", Value::Null)]
+                        }
+                    }
+                    Kind::Bool => {
+                        if dynamic_message.has_field(&field_descriptor) {
+                            let partiql_value_bool = Value::Boolean(
+                                if let ProstReflectValue::Bool(b) =
+                                    dynamic_message.get_field(&field_descriptor).deref()
+                                {
+                                    *b
+                                } else {
+                                    return Err(FdbError::new(
+                                        PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR,
+                                    ));
+                                },
+                            );
+
+                            tuple![
+                                ("fdb_rl_type", "bool"),
+                                ("fdb_rl_value", partiql_value_bool)
+                            ]
+                        } else {
+                            tuple![("fdb_rl_type", "bool"), ("fdb_rl_value", Value::Null)]
+                        }
+                    }
+                    Kind::String => {
+                        if dynamic_message.has_field(&field_descriptor) {
+                            let partiql_value_string = Value::String(
+                                if let ProstReflectValue::String(s) =
+                                    dynamic_message.get_field(&field_descriptor).into_owned()
+                                {
+                                    s
+                                } else {
+                                    return Err(FdbError::new(
+                                        PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR,
+                                    ));
+                                }
+                                .into(),
+                            );
+
+                            tuple![
+                                ("fdb_rl_type", "string"),
+                                ("fdb_rl_value", partiql_value_string)
+                            ]
+                        } else {
+                            tuple![("fdb_rl_type", "string"), ("fdb_rl_value", Value::Null)]
+                        }
+                    }
+                    Kind::Bytes => {
+                        if dynamic_message.has_field(&field_descriptor) {
+                            let partiql_value_blob = Value::Blob(
+                                if let ProstReflectValue::Bytes(b) =
+                                    dynamic_message.get_field(&field_descriptor).into_owned()
+                                {
+                                    Vec::<u8>::from(b)
+                                } else {
+                                    return Err(FdbError::new(
+                                        PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR,
+                                    ));
+                                }
+                                .into(),
+                            );
+
+                            tuple![
+                                ("fdb_rl_type", "bytes"),
+                                ("fdb_rl_value", partiql_value_blob)
+                            ]
+                        } else {
+                            tuple![("fdb_rl_type", "bytes"), ("fdb_rl_value", Value::Null)]
+                        }
+                    }
+                    Kind::Message(_) => todo!(),
+                    Kind::Enum(_) => todo!(),
+                };
+
+                message_fdb_rl_value_tuple.insert(
+                    field_descriptor.name(),
+                    Value::Tuple(partiql_value_tuple.into()),
+                );
+            }
+        }
+
+        message_tuple.insert(
+            "fdb_rl_value",
+            Value::Tuple(message_fdb_rl_value_tuple.into()),
+        );
+
+        Ok(Value::Tuple(message_tuple.into()))
     }
 }
 
 #[cfg(test)]
 mod tests {
     mod well_formed_dynamic_message {
+        use bytes::Bytes;
+
         use fdb::error::FdbError;
 
-        use partiql_value::Value;
+        use partiql_value::{tuple, Value};
 
         use prost_reflect::ReflectMessage;
 
@@ -222,8 +553,8 @@ mod tests {
         }
 
         #[test]
-        fn from_well_formed_message_descriptor_from() {
-            // Empty
+        fn try_from_well_formed_message_descriptor_try_from() {
+            // `Empty`
             {
                 use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::Empty;
                 let empty = Empty {};
@@ -235,7 +566,442 @@ mod tests {
                     WellFormedDynamicMessage::try_from((well_formed_message_descriptor, &empty))
                         .unwrap();
 
-                println!("{:?}", Value::from(well_formed_dynamic_message));
+                let result = Value::try_from(well_formed_dynamic_message).unwrap();
+                let expected =
+                    tuple![("fdb_rl_type", "message_Empty"), ("fdb_rl_value", tuple![]),];
+
+                assert_eq!(result, expected.into(),);
+            }
+            // `HelloWorldDouble`
+            {
+                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldDouble;
+
+                let hello_world_double = HelloWorldDouble {
+                    hello: Some(3.14),
+                    world: None,
+                };
+
+                let well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(hello_world_double.descriptor()).unwrap();
+
+                let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+                    well_formed_message_descriptor,
+                    &hello_world_double,
+                ))
+                .unwrap();
+
+                let result = Value::try_from(well_formed_dynamic_message).unwrap();
+                let expected = tuple![
+                    ("fdb_rl_type", "message_HelloWorldDouble"),
+                    (
+                        "fdb_rl_value",
+                        tuple![
+                            (
+                                "hello",
+                                tuple![("fdb_rl_type", "double"), ("fdb_rl_value", 3.14),]
+                            ),
+                            (
+                                "world",
+                                tuple![("fdb_rl_type", "double"), ("fdb_rl_value", Value::Null),]
+                            ),
+                        ]
+                    ),
+                ];
+
+                assert_eq!(result, expected.into(),);
+            }
+            // `HelloWorldFloat`
+            {
+                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldFloat;
+
+                let hello_world_float = HelloWorldFloat {
+                    hello: Some(3.14),
+                    world: None,
+                };
+
+                let well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(hello_world_float.descriptor()).unwrap();
+
+                let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+                    well_formed_message_descriptor,
+                    &hello_world_float,
+                ))
+                .unwrap();
+
+                let result = Value::try_from(well_formed_dynamic_message).unwrap();
+                let expected = tuple![
+                    ("fdb_rl_type", "message_HelloWorldFloat"),
+                    (
+                        "fdb_rl_value",
+                        tuple![
+                            (
+                                "hello",
+                                tuple![("fdb_rl_type", "float"), ("fdb_rl_value", 3.14),]
+                            ),
+                            (
+                                "world",
+                                tuple![("fdb_rl_type", "float"), ("fdb_rl_value", Value::Null),]
+                            ),
+                        ]
+                    ),
+                ];
+
+                assert_eq!(result, expected.into(),);
+            }
+            // `HelloWorldInt32`
+            {
+                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldInt32;
+
+                let hello_world_int32 = HelloWorldInt32 {
+                    hello: Some(108),
+                    world: None,
+                };
+
+                let well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(hello_world_int32.descriptor()).unwrap();
+
+                let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+                    well_formed_message_descriptor,
+                    &hello_world_int32,
+                ))
+                .unwrap();
+
+                let result = Value::try_from(well_formed_dynamic_message).unwrap();
+                let expected = tuple![
+                    ("fdb_rl_type", "message_HelloWorldInt32"),
+                    (
+                        "fdb_rl_value",
+                        tuple![
+                            (
+                                "hello",
+                                tuple![("fdb_rl_type", "int32"), ("fdb_rl_value", 108),]
+                            ),
+                            (
+                                "world",
+                                tuple![("fdb_rl_type", "int32"), ("fdb_rl_value", Value::Null),]
+                            ),
+                        ]
+                    ),
+                ];
+
+                assert_eq!(result, expected.into(),);
+            }
+            // `HelloWorldInt64`
+            {
+                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldInt64;
+
+                let hello_world_int64 = HelloWorldInt64 {
+                    hello: Some(108),
+                    world: None,
+                };
+
+                let well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(hello_world_int64.descriptor()).unwrap();
+
+                let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+                    well_formed_message_descriptor,
+                    &hello_world_int64,
+                ))
+                .unwrap();
+
+                let result = Value::try_from(well_formed_dynamic_message).unwrap();
+                let expected = tuple![
+                    ("fdb_rl_type", "message_HelloWorldInt64"),
+                    (
+                        "fdb_rl_value",
+                        tuple![
+                            (
+                                "hello",
+                                tuple![("fdb_rl_type", "int64"), ("fdb_rl_value", 108),]
+                            ),
+                            (
+                                "world",
+                                tuple![("fdb_rl_type", "int64"), ("fdb_rl_value", Value::Null),]
+                            ),
+                        ]
+                    ),
+                ];
+
+                assert_eq!(result, expected.into(),);
+            }
+            // `HelloWorldSint32`
+            {
+                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldSint32;
+
+                let hello_world_sint32 = HelloWorldSint32 {
+                    hello: Some(108),
+                    world: None,
+                };
+
+                let well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(hello_world_sint32.descriptor()).unwrap();
+
+                let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+                    well_formed_message_descriptor,
+                    &hello_world_sint32,
+                ))
+                .unwrap();
+
+                let result = Value::try_from(well_formed_dynamic_message).unwrap();
+                let expected = tuple![
+                    ("fdb_rl_type", "message_HelloWorldSint32"),
+                    (
+                        "fdb_rl_value",
+                        tuple![
+                            (
+                                "hello",
+                                tuple![("fdb_rl_type", "sint32"), ("fdb_rl_value", 108),]
+                            ),
+                            (
+                                "world",
+                                tuple![("fdb_rl_type", "sint32"), ("fdb_rl_value", Value::Null),]
+                            ),
+                        ]
+                    ),
+                ];
+
+                assert_eq!(result, expected.into(),);
+            }
+            // `HelloWorldSint64`
+            {
+                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldSint64;
+
+                let hello_world_sint64 = HelloWorldSint64 {
+                    hello: Some(108),
+                    world: None,
+                };
+
+                let well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(hello_world_sint64.descriptor()).unwrap();
+
+                let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+                    well_formed_message_descriptor,
+                    &hello_world_sint64,
+                ))
+                .unwrap();
+
+                let result = Value::try_from(well_formed_dynamic_message).unwrap();
+                let expected = tuple![
+                    ("fdb_rl_type", "message_HelloWorldSint64"),
+                    (
+                        "fdb_rl_value",
+                        tuple![
+                            (
+                                "hello",
+                                tuple![("fdb_rl_type", "sint64"), ("fdb_rl_value", 108),]
+                            ),
+                            (
+                                "world",
+                                tuple![("fdb_rl_type", "sint64"), ("fdb_rl_value", Value::Null),]
+                            ),
+                        ]
+                    ),
+                ];
+
+                assert_eq!(result, expected.into(),);
+            }
+            // `HelloWorldSfixed32`
+            {
+                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldSfixed32;
+
+                let hello_world_sfixed32 = HelloWorldSfixed32 {
+                    hello: Some(108),
+                    world: None,
+                };
+
+                let well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(hello_world_sfixed32.descriptor())
+                        .unwrap();
+
+                let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+                    well_formed_message_descriptor,
+                    &hello_world_sfixed32,
+                ))
+                .unwrap();
+
+                let result = Value::try_from(well_formed_dynamic_message).unwrap();
+                let expected = tuple![
+                    ("fdb_rl_type", "message_HelloWorldSfixed32"),
+                    (
+                        "fdb_rl_value",
+                        tuple![
+                            (
+                                "hello",
+                                tuple![("fdb_rl_type", "sfixed32"), ("fdb_rl_value", 108),]
+                            ),
+                            (
+                                "world",
+                                tuple![("fdb_rl_type", "sfixed32"), ("fdb_rl_value", Value::Null),]
+                            ),
+                        ]
+                    ),
+                ];
+
+                assert_eq!(result, expected.into(),);
+            }
+            // `HelloWorldSfixed64`
+            {
+                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldSfixed64;
+
+                let hello_world_sfixed64 = HelloWorldSfixed64 {
+                    hello: Some(108),
+                    world: None,
+                };
+
+                let well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(hello_world_sfixed64.descriptor())
+                        .unwrap();
+
+                let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+                    well_formed_message_descriptor,
+                    &hello_world_sfixed64,
+                ))
+                .unwrap();
+
+                let result = Value::try_from(well_formed_dynamic_message).unwrap();
+                let expected = tuple![
+                    ("fdb_rl_type", "message_HelloWorldSfixed64"),
+                    (
+                        "fdb_rl_value",
+                        tuple![
+                            (
+                                "hello",
+                                tuple![("fdb_rl_type", "sfixed64"), ("fdb_rl_value", 108),]
+                            ),
+                            (
+                                "world",
+                                tuple![("fdb_rl_type", "sfixed64"), ("fdb_rl_value", Value::Null),]
+                            ),
+                        ]
+                    ),
+                ];
+
+                assert_eq!(result, expected.into(),);
+            }
+            // `HelloWorldBool`
+            {
+                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldBool;
+
+                let hello_world_bool = HelloWorldBool {
+                    hello: Some(true),
+                    world: None,
+                };
+
+                let well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(hello_world_bool.descriptor()).unwrap();
+
+                let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+                    well_formed_message_descriptor,
+                    &hello_world_bool,
+                ))
+                .unwrap();
+
+                let result = Value::try_from(well_formed_dynamic_message).unwrap();
+                let expected = tuple![
+                    ("fdb_rl_type", "message_HelloWorldBool"),
+                    (
+                        "fdb_rl_value",
+                        tuple![
+                            (
+                                "hello",
+                                tuple![
+                                    ("fdb_rl_type", "bool"),
+                                    ("fdb_rl_value", Value::Boolean(true)),
+                                ]
+                            ),
+                            (
+                                "world",
+                                tuple![("fdb_rl_type", "bool"), ("fdb_rl_value", Value::Null),]
+                            ),
+                        ]
+                    ),
+                ];
+
+                assert_eq!(result, expected.into(),);
+            }
+            // `HelloWorldString`
+            {
+                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldString;
+
+                let hello_world_string = HelloWorldString {
+                    hello: Some("hello".to_string()),
+                    world: None,
+                };
+
+                let well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(hello_world_string.descriptor()).unwrap();
+
+                let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+                    well_formed_message_descriptor,
+                    &hello_world_string,
+                ))
+                .unwrap();
+
+                let result = Value::try_from(well_formed_dynamic_message).unwrap();
+                let expected = tuple![
+                    ("fdb_rl_type", "message_HelloWorldString"),
+                    (
+                        "fdb_rl_value",
+                        tuple![
+                            (
+                                "hello",
+                                tuple![("fdb_rl_type", "string"), ("fdb_rl_value", "hello"),]
+                            ),
+                            (
+                                "world",
+                                tuple![("fdb_rl_type", "string"), ("fdb_rl_value", Value::Null),]
+                            ),
+                        ]
+                    ),
+                ];
+
+                assert_eq!(result, expected.into(),);
+            }
+            // `HelloWorldBytes`
+            {
+                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldBytes;
+
+                let hello_world_bool = HelloWorldBytes {
+                    hello: Some(Bytes::from_static(b"hello")),
+                    world: None,
+                };
+
+                let well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(hello_world_bool.descriptor()).unwrap();
+
+                let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+                    well_formed_message_descriptor,
+                    &hello_world_bool,
+                ))
+                .unwrap();
+
+                let result = Value::try_from(well_formed_dynamic_message).unwrap();
+                let expected = tuple![
+                    ("fdb_rl_type", "message_HelloWorldBytes"),
+                    (
+                        "fdb_rl_value",
+                        tuple![
+                            (
+                                "hello",
+                                tuple![
+                                    ("fdb_rl_type", "bytes"),
+                                    (
+                                        "fdb_rl_value",
+                                        Value::Blob(
+                                            Vec::<u8>::from(Bytes::from_static(b"hello")).into()
+                                        )
+                                    ),
+                                ]
+                            ),
+                            (
+                                "world",
+                                tuple![("fdb_rl_type", "bytes"), ("fdb_rl_value", Value::Null),]
+                            ),
+                        ]
+                    ),
+                ];
+
+                assert_eq!(result, expected.into(),);
             }
         }
     }
