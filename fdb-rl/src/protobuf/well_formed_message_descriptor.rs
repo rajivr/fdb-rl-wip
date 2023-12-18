@@ -1,7 +1,7 @@
 //! TODO
 
 use fdb::error::{FdbError, FdbResult};
-use fdb_rl_proto::fdb_rl::field::v1::Uuid as FdbRLWktUuidProto;
+use fdb_rl_proto::fdb_rl::field::v1::Uuid as FdbRLWktV1UuidProto;
 use prost::Message;
 use prost_reflect::{
     Cardinality, EnumDescriptor, FieldDescriptor, FileDescriptor, Kind, MessageDescriptor,
@@ -20,11 +20,19 @@ use super::error::PROTOBUF_ILL_FORMED_MESSAGE_DESCRIPTOR;
 /// We check based on full name. This is so that we do not get an
 /// error in case `protoc` produces descriptor pool in sligtly
 /// different ways when different options are used.
-static FDB_RL_WKT_FULL_NAME: LazyLock<Vec<String>> = LazyLock::new(|| {
-    vec![FdbRLWktUuidProto::default()
+static FDB_RL_WKT_FULL_NAMES: LazyLock<Vec<String>> = LazyLock::new(|| {
+    vec![FdbRLWktV1UuidProto::default()
         .descriptor()
         .full_name()
         .to_string()]
+});
+
+// `fdb_rl.field.v1.UUID`
+pub(crate) static FDB_RL_WKT_V1_UUID: LazyLock<String> = LazyLock::new(|| {
+    FdbRLWktV1UuidProto::default()
+        .descriptor()
+        .full_name()
+        .to_string()
 });
 
 // Wrapper types so we do not accidentally mixup old and new
@@ -219,7 +227,7 @@ impl WellFormedMessageDescriptor {
             }
             Kind::Message(old_inner_message_descriptor) => {
                 if let Kind::Message(new_inner_message_descriptor) = new_field_descriptor_kind {
-                    if FDB_RL_WKT_FULL_NAME
+                    if FDB_RL_WKT_FULL_NAMES
                         .deref()
                         .contains(&old_inner_message_descriptor.full_name().to_string())
                     {
@@ -301,12 +309,24 @@ impl TryFrom<MessageDescriptor> for WellFormedMessageDescriptor {
     type Error = FdbError;
 
     fn try_from(message_descriptor: MessageDescriptor) -> FdbResult<WellFormedMessageDescriptor> {
-        // Before walking the message descriptor, make sure that the
-        // message descriptor is not a Protobuf generated map
-        // entry. While the message descriptor can contain map fields,
-        // if the user is trying to use Protobuf generated map entry
-        // as a record, then something is amiss.
+        // Before walking the message descriptor, make sure that
+        //
+        // 1. The message descriptor is not a Protobuf generated map
+        //    entry. While the message descriptor can contain map
+        //    fields, if the user is trying to use Protobuf generated
+        //    map entry as a record, then something is amiss.
+        //
+        // 2. The message descriptor is not a well known type. Well
+        //    known types must be a field inside another message
+        //    descriptor, and cannot be used as a record.
         if message_descriptor.is_map_entry() {
+            return Err(FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE_DESCRIPTOR));
+        }
+
+        if FDB_RL_WKT_FULL_NAMES
+            .deref()
+            .contains(&message_descriptor.full_name().to_string())
+        {
             return Err(FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE_DESCRIPTOR));
         }
 
@@ -558,6 +578,17 @@ fn walk_message_descriptor(
 /// checking field descriptor with name `value` ((b.ii) above) is
 /// implemented in `visit_map_entry_value_type_field_descriptor`.
 ///
+/// We do not allow well known types to be record types. For example,
+/// `fdb_rl.field.v1.UUID` shown below (even if was a "valid" record
+/// type would not be allowed). Well known types must be embedded in
+/// other valid record types.
+///
+/// ```
+/// message UUID {
+///   bytes value = 1;
+/// }
+/// ```
+///
 /// We do not allow field names to begin with `fdb_`. This is because
 /// field names starting with `fdb_` is used to represent metadata
 /// when converting to PartiQL.
@@ -587,7 +618,7 @@ impl Visitor for MessageDescriptorValidatorVisitor {
     /// Checks if the message descriptor is a FDB Record Layer well
     /// known type.
     fn check_fdb_wkt(&self, message_descriptor: &MessageDescriptor) -> bool {
-        FDB_RL_WKT_FULL_NAME
+        FDB_RL_WKT_FULL_NAMES
             .deref()
             .contains(&message_descriptor.full_name().to_string())
     }
@@ -1273,6 +1304,8 @@ mod tests {
                 {
                     use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_message_descriptor::bad::proto_3::v1::{RecursiveInner, RecursiveOuter, GeneratedMapEntry, InvalidMap, UnsignedRecordUint32, UnsignedRecordRepeatedUint32, UnsignedRecordUint64, UnsignedRecordRepeatedUint64, UnsignedRecordFixed32, UnsignedRecordRepeatedFixed32, UnsignedRecordFixed64, UnsignedRecordRepeatedFixed64, InvalidFieldName, InvalidMapUnsignedRecordUint32, InvalidMapUnsignedRecordUint64, InvalidMapUnsignedRecordFixed32, InvalidMapUnsignedRecordFixed64};
 
+                    use fdb_rl_proto::fdb_rl::field::v1::Uuid as FdbRLWktV1Uuid;
+
                     for message_descriptor in vec![
                         InvalidMap::default().descriptor(),
                         RecursiveInner::default().descriptor(),
@@ -1298,16 +1331,29 @@ mod tests {
                     }
 
                     // Protobuf generated map entry message.
-                    let message_descriptor = GeneratedMapEntry::default()
+                    {
+                        let message_descriptor = GeneratedMapEntry::default()
 			.descriptor()
 			.parent_pool()
 			.get_message_by_name("fdb_rl_test.protobuf.well_formed_message_descriptor.bad.proto_3.v1.GeneratedMapEntry.HelloWorldEntry")
 			.unwrap();
 
-                    assert_eq!(
-                        WellFormedMessageDescriptor::try_from(message_descriptor),
-                        Err(FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE_DESCRIPTOR))
-                    );
+                        assert_eq!(
+                            WellFormedMessageDescriptor::try_from(message_descriptor),
+                            Err(FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                        );
+                    }
+
+                    // Well known types
+
+                    // `fdb_rl.field.v1.UUID`
+                    {
+                        let message_descriptor = FdbRLWktV1Uuid::default().descriptor();
+                        assert_eq!(
+                            WellFormedMessageDescriptor::try_from(message_descriptor),
+                            Err(FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE_DESCRIPTOR))
+                        );
+                    }
                 }
 
                 // Java RecordLayer `proto`

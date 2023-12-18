@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package fdb_rl_test.protobuf.well_formed_dynamic_message.v1;
 
+import "fdb_rl/field/v1/field.proto";
+
 message Empty {}
 
 message HelloWorldDouble {
@@ -57,4 +59,30 @@ message HelloWorldString {
 message HelloWorldBytes {
   optional bytes hello = 1;
   optional bytes world = 2;
+}
+
+message HelloWorldEnum {
+  enum Size {
+    SIZE_UNSPECIFIED = 0;
+    SIZE_SMALL = 1;
+    SIZE_MEDIUM = 2;
+    SIZE_LARGE = 3;
+  }
+  optional Size hello = 1;
+  optional Size world = 2;
+}
+
+message HelloWorldOneof {
+  optional string some_field = 1;
+
+  oneof hello_world {
+    string hello = 2;
+    int64 world = 3;
+  }
+}
+
+message HelloWorldWktV1Uuid {
+  optional fdb_rl.field.v1.UUID primary_key = 1;
+  optional string hello = 2;
+  optional string world = 3;
 }
