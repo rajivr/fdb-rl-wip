@@ -89,12 +89,13 @@ impl WellFormedDynamicMessage {
         }
     }
 
-    // TODO: write test case to for valid/invalid uuid in a regular
-    // field, list with some invalid, and map with some invalid. list
-    // empty, map empty, nested test, nested recursion test. Also test
-    // oneof.
-    //
-    // TODO: Continue from here.
+    // TODO: test oneof.
+
+    /// This is an internal method. Here we are only checking to make
+    /// sure that any well known types inside the dynamic message is
+    /// well formed. We are *not* checking if the message descriptor
+    /// backing the dynamic message is well formed. It is the caller's
+    /// responsibility to do that.
     fn validate_wkt(dynamic_message_ref: &DynamicMessage) -> bool {
         let message_descriptor = dynamic_message_ref.descriptor();
 
@@ -691,11 +692,442 @@ mod tests {
 
         use uuid::Uuid;
 
+        use std::collections::HashMap;
         use std::convert::TryFrom;
 
         use super::super::super::error::PROTOBUF_ILL_FORMED_MESSAGE;
         use super::super::super::WellFormedMessageDescriptor;
         use super::super::WellFormedDynamicMessage;
+
+        #[test]
+        fn validate_wkt() {
+            // fdb_rl_proto::fdb_rl::field::v1::Uuid
+            {
+                use fdb_rl_proto::fdb_rl::field::v1::Uuid as FdbRLWktUuidProto;
+
+                // `WktV1UuidOptional`
+                {
+                    use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::WktV1UuidOptional;
+
+                    assert!(WellFormedMessageDescriptor::try_from(
+                        WktV1UuidOptional::default().descriptor()
+                    )
+                    .is_ok());
+
+                    // optional valid wkt field
+                    {
+                        let dynamic_message = WktV1UuidOptional {
+                            optional_field: Some(FdbRLWktUuidProto::from(
+                                Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e").unwrap(),
+                            )),
+                            hello: Some("hello".to_string()),
+                        }
+                        .transcode_to_dynamic();
+
+                        assert!(WellFormedDynamicMessage::validate_wkt(&dynamic_message));
+                    }
+                    // optional invalid wkt field
+                    {
+                        let dynamic_message = WktV1UuidOptional {
+                            optional_field: Some(FdbRLWktUuidProto {
+                                value: Bytes::from([4, 54, 67, 12, 43, 2, 98, 76].as_ref()),
+                            }),
+                            hello: Some("hello".to_string()),
+                        }
+                        .transcode_to_dynamic();
+
+                        assert!(!WellFormedDynamicMessage::validate_wkt(&dynamic_message));
+                    }
+                    // optional null wkt field
+                    {
+                        let dynamic_message = WktV1UuidOptional {
+                            optional_field: None,
+                            hello: Some("hello".to_string()),
+                        }
+                        .transcode_to_dynamic();
+
+                        assert!(WellFormedDynamicMessage::validate_wkt(&dynamic_message));
+                    }
+                }
+                // `WktV1UuidRepeated`
+                {
+                    use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::WktV1UuidRepeated;
+
+                    assert!(WellFormedMessageDescriptor::try_from(
+                        WktV1UuidRepeated::default().descriptor()
+                    )
+                    .is_ok());
+
+                    // repeated with valid wkt entries
+                    {
+                        let dynamic_message = WktV1UuidRepeated {
+                            repeated_field: vec![
+                                FdbRLWktUuidProto::from(
+                                    Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
+                                        .unwrap(),
+                                ),
+                                FdbRLWktUuidProto::from(
+                                    Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
+                                        .unwrap(),
+                                ),
+                                FdbRLWktUuidProto::from(
+                                    Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
+                                        .unwrap(),
+                                ),
+                            ],
+                            hello: None,
+                        }
+                        .transcode_to_dynamic();
+
+                        assert!(WellFormedDynamicMessage::validate_wkt(&dynamic_message));
+                    }
+                    // repeated with some invalid wkt entries
+                    {
+                        let dynamic_message = WktV1UuidRepeated {
+                            repeated_field: vec![
+                                FdbRLWktUuidProto::from(
+                                    Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
+                                        .unwrap(),
+                                ),
+                                // invalid
+                                FdbRLWktUuidProto {
+                                    value: Bytes::from([4, 54, 67, 12, 43, 2, 98, 76].as_ref()),
+                                },
+                                FdbRLWktUuidProto::from(
+                                    Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
+                                        .unwrap(),
+                                ),
+                            ],
+                            hello: None,
+                        }
+                        .transcode_to_dynamic();
+
+                        assert!(!WellFormedDynamicMessage::validate_wkt(&dynamic_message));
+                    }
+                    // repeated with no entry
+                    {
+                        let dynamic_message = WktV1UuidRepeated {
+                            repeated_field: vec![],
+                            hello: None,
+                        }
+                        .transcode_to_dynamic();
+
+                        assert!(WellFormedDynamicMessage::validate_wkt(&dynamic_message));
+                    }
+                }
+                // `WktV1UuidMap`
+                {
+                    use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::WktV1UuidMap;
+
+                    assert!(WellFormedMessageDescriptor::try_from(
+                        WktV1UuidMap::default().descriptor()
+                    )
+                    .is_ok());
+
+                    // map with valid wkt entries
+                    {
+                        let dynamic_message = WktV1UuidMap {
+                            map_field: HashMap::from([
+                                (
+                                    "key1".to_string(),
+                                    FdbRLWktUuidProto::from(
+                                        Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
+                                            .unwrap(),
+                                    ),
+                                ),
+                                (
+                                    "key2".to_string(),
+                                    FdbRLWktUuidProto::from(
+                                        Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
+                                            .unwrap(),
+                                    ),
+                                ),
+                                (
+                                    "key3".to_string(),
+                                    FdbRLWktUuidProto::from(
+                                        Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
+                                            .unwrap(),
+                                    ),
+                                ),
+                            ]),
+                            hello: Some("hello".to_string()),
+                        }
+                        .transcode_to_dynamic();
+
+                        assert!(WellFormedDynamicMessage::validate_wkt(&dynamic_message));
+                    }
+                    // map with some invalid wkt entries
+                    {
+                        let dynamic_message = WktV1UuidMap {
+                            map_field: HashMap::from([
+                                (
+                                    "key1".to_string(),
+                                    FdbRLWktUuidProto::from(
+                                        Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
+                                            .unwrap(),
+                                    ),
+                                ),
+                                (
+                                    "key2".to_string(),
+                                    // invalid
+                                    FdbRLWktUuidProto {
+                                        value: Bytes::from([4, 54, 67, 12, 43, 2, 98, 76].as_ref()),
+                                    },
+                                ),
+                                (
+                                    "key3".to_string(),
+                                    FdbRLWktUuidProto::from(
+                                        Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
+                                            .unwrap(),
+                                    ),
+                                ),
+                            ]),
+                            hello: Some("hello".to_string()),
+                        }
+                        .transcode_to_dynamic();
+
+                        assert!(!WellFormedDynamicMessage::validate_wkt(&dynamic_message));
+                    }
+                    // map with no entry
+                    {
+                        let dynamic_message = WktV1UuidMap {
+                            map_field: HashMap::from([]),
+                            hello: Some("hello".to_string()),
+                        }
+                        .transcode_to_dynamic();
+
+                        assert!(WellFormedDynamicMessage::validate_wkt(&dynamic_message));
+                    }
+                }
+                // `WktV1UuidNestedOuter`
+                {
+                    use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::{
+                        WktV1UuidNestedInner, WktV1UuidNestedOuter,
+                    };
+
+                    assert!(WellFormedMessageDescriptor::try_from(
+                        WktV1UuidNestedOuter::default().descriptor()
+                    )
+                    .is_ok());
+
+                    // inner valid wkt field
+                    {
+                        let dynamic_message = WktV1UuidNestedOuter {
+                            nested_inner: Some(WktV1UuidNestedInner {
+                                optional_field: Some(FdbRLWktUuidProto::from(
+                                    Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
+                                        .unwrap(),
+                                )),
+                                world: Some("world".to_string()),
+                            }),
+                            hello: None,
+                        }
+                        .transcode_to_dynamic();
+
+                        assert!(WellFormedDynamicMessage::validate_wkt(&dynamic_message));
+                    }
+                    // inner invalid wkt field
+                    {
+                        let dynamic_message = WktV1UuidNestedOuter {
+                            nested_inner: Some(WktV1UuidNestedInner {
+                                optional_field: Some(FdbRLWktUuidProto {
+                                    value: Bytes::from([4, 54, 67, 12, 43, 2, 98, 76].as_ref()),
+                                }),
+                                world: Some("world".to_string()),
+                            }),
+                            hello: None,
+                        }
+                        .transcode_to_dynamic();
+
+                        assert!(!WellFormedDynamicMessage::validate_wkt(&dynamic_message));
+                    }
+                    // inner null wkt field
+                    {
+                        let dynamic_message = WktV1UuidNestedOuter {
+                            nested_inner: Some(WktV1UuidNestedInner {
+                                optional_field: None,
+                                world: Some("world".to_string()),
+                            }),
+                            hello: None,
+                        }
+                        .transcode_to_dynamic();
+
+                        assert!(WellFormedDynamicMessage::validate_wkt(&dynamic_message));
+                    }
+                }
+                // `WktV1UuidRecursiveOuter`
+                {
+                    use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::{
+                        WktV1UuidRecursiveInner, WktV1UuidRecursiveOuter,
+                    };
+
+                    assert!(WellFormedMessageDescriptor::try_from(
+                        WktV1UuidRecursiveOuter::default().descriptor()
+                    )
+                    .is_ok());
+
+                    // outer valid, inner valid, outer valid
+                    {
+                        let dynamic_message = WktV1UuidRecursiveOuter {
+                            recursive_inner: Some(
+                                WktV1UuidRecursiveInner {
+                                    recursive_outer: Some(
+                                        WktV1UuidRecursiveOuter {
+                                            recursive_inner: None,
+                                            optional_field: Some(FdbRLWktUuidProto::from(
+                                                Uuid::parse_str(
+                                                    "ffffffff-ba5e-ba11-0000-00005ca1ab1e",
+                                                )
+                                                .unwrap(),
+                                            )),
+                                        }
+                                        .into(),
+                                    ),
+                                    optional_field: Some(FdbRLWktUuidProto::from(
+                                        Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
+                                            .unwrap(),
+                                    )),
+                                }
+                                .into(),
+                            ),
+                            optional_field: Some(FdbRLWktUuidProto::from(
+                                Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e").unwrap(),
+                            )),
+                        }
+                        .transcode_to_dynamic();
+
+                        assert!(WellFormedDynamicMessage::validate_wkt(&dynamic_message));
+                    }
+                    // outer valid, inner valid, outer invalid
+                    {
+                        let dynamic_message = WktV1UuidRecursiveOuter {
+                            recursive_inner: Some(
+                                WktV1UuidRecursiveInner {
+                                    recursive_outer: Some(
+                                        WktV1UuidRecursiveOuter {
+                                            recursive_inner: None,
+                                            optional_field: Some(FdbRLWktUuidProto {
+                                                value: Bytes::from(
+                                                    [4, 54, 67, 12, 43, 2, 98, 76].as_ref(),
+                                                ),
+                                            }),
+                                        }
+                                        .into(),
+                                    ),
+                                    optional_field: Some(FdbRLWktUuidProto::from(
+                                        Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
+                                            .unwrap(),
+                                    )),
+                                }
+                                .into(),
+                            ),
+                            optional_field: Some(FdbRLWktUuidProto::from(
+                                Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e").unwrap(),
+                            )),
+                        }
+                        .transcode_to_dynamic();
+
+                        assert!(!WellFormedDynamicMessage::validate_wkt(&dynamic_message));
+                    }
+                    // outer valid, inner invalid, outer valid
+                    {
+                        let dynamic_message = WktV1UuidRecursiveOuter {
+                            recursive_inner: Some(
+                                WktV1UuidRecursiveInner {
+                                    recursive_outer: Some(
+                                        WktV1UuidRecursiveOuter {
+                                            recursive_inner: None,
+                                            optional_field: Some(FdbRLWktUuidProto::from(
+                                                Uuid::parse_str(
+                                                    "ffffffff-ba5e-ba11-0000-00005ca1ab1e",
+                                                )
+                                                .unwrap(),
+                                            )),
+                                        }
+                                        .into(),
+                                    ),
+                                    optional_field: Some(FdbRLWktUuidProto {
+                                        value: Bytes::from([4, 54, 67, 12, 43, 2, 98, 76].as_ref()),
+                                    }),
+                                }
+                                .into(),
+                            ),
+                            optional_field: Some(FdbRLWktUuidProto::from(
+                                Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e").unwrap(),
+                            )),
+                        }
+                        .transcode_to_dynamic();
+
+                        assert!(!WellFormedDynamicMessage::validate_wkt(&dynamic_message));
+                    }
+                    // outer invalid, inner valid, outer valid
+                    {
+                        let dynamic_message = WktV1UuidRecursiveOuter {
+                            recursive_inner: Some(
+                                WktV1UuidRecursiveInner {
+                                    recursive_outer: Some(
+                                        WktV1UuidRecursiveOuter {
+                                            recursive_inner: None,
+                                            optional_field: Some(FdbRLWktUuidProto::from(
+                                                Uuid::parse_str(
+                                                    "ffffffff-ba5e-ba11-0000-00005ca1ab1e",
+                                                )
+                                                .unwrap(),
+                                            )),
+                                        }
+                                        .into(),
+                                    ),
+                                    optional_field: Some(FdbRLWktUuidProto::from(
+                                        Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
+                                            .unwrap(),
+                                    )),
+                                }
+                                .into(),
+                            ),
+                            optional_field: Some(FdbRLWktUuidProto {
+                                value: Bytes::from([4, 54, 67, 12, 43, 2, 98, 76].as_ref()),
+                            }),
+                        }
+                        .transcode_to_dynamic();
+
+                        assert!(!WellFormedDynamicMessage::validate_wkt(&dynamic_message));
+                    }
+                    // outer null, inner null, outer null
+                    {
+                        let dynamic_message = WktV1UuidRecursiveOuter {
+                            recursive_inner: Some(
+                                WktV1UuidRecursiveInner {
+                                    recursive_outer: Some(
+                                        WktV1UuidRecursiveOuter {
+                                            recursive_inner: None,
+                                            optional_field: None,
+                                        }
+                                        .into(),
+                                    ),
+                                    optional_field: None,
+                                }
+                                .into(),
+                            ),
+                            optional_field: None,
+                        }
+                        .transcode_to_dynamic();
+
+                        assert!(WellFormedDynamicMessage::validate_wkt(&dynamic_message));
+                    }
+                }
+                // `WktV1UuidOneof`
+                {
+                    use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::WktV1UuidOneof;
+
+                    assert!(WellFormedMessageDescriptor::try_from(
+                        WktV1UuidOneof::default().descriptor()
+                    )
+                    .is_ok());
+
+                    // TODO: continue from here.
+		}
+            }
+        }
 
         #[test]
         fn try_from_well_formed_message_descriptor_ref_t_try_from() {

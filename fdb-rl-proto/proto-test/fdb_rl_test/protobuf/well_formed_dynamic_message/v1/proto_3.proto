@@ -4,6 +4,50 @@ package fdb_rl_test.protobuf.well_formed_dynamic_message.v1;
 
 import "fdb_rl/field/v1/field.proto";
 
+message WktV1UuidOptional {
+  optional fdb_rl.field.v1.UUID optional_field = 1;
+  optional string hello = 2;
+}
+
+message WktV1UuidRepeated {
+  repeated fdb_rl.field.v1.UUID repeated_field = 1;
+  optional string hello = 2;
+}
+
+message WktV1UuidMap {
+  map<string, fdb_rl.field.v1.UUID> map_field = 1;
+  optional string hello = 2;
+}
+
+message WktV1UuidNestedInner {
+  optional fdb_rl.field.v1.UUID optional_field = 1;
+  optional string world = 2;
+}
+
+message WktV1UuidNestedOuter {
+  optional WktV1UuidNestedInner nested_inner = 1;
+  optional string hello = 2;
+}
+
+message WktV1UuidRecursiveInner {
+  optional WktV1UuidRecursiveOuter recursive_outer = 1;
+  optional fdb_rl.field.v1.UUID optional_field = 2;
+}
+
+message WktV1UuidRecursiveOuter {
+  optional WktV1UuidRecursiveInner recursive_inner = 1;
+  optional fdb_rl.field.v1.UUID optional_field = 2;
+}
+
+message WktV1UuidOneof {
+  optional string hello = 1;
+
+  oneof wkt_v1_uuid_oneof {
+    fdb_rl.field.v1.UUID uuid_field = 2;
+    string world = 3;
+  }
+}
+
 message Empty {}
 
 message HelloWorldDouble {
