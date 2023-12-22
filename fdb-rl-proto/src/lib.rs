@@ -149,6 +149,11 @@ pub mod fdb_rl_test {
                         "fdb_rl_test.protobuf.well_formed_message_descriptor.evolution.v3"
                     );
                 }
+                pub mod v4 {
+                    include_proto!(
+                        "fdb_rl_test.protobuf.well_formed_message_descriptor.evolution.v4"
+                    );
+                }
             }
 
             pub mod good {

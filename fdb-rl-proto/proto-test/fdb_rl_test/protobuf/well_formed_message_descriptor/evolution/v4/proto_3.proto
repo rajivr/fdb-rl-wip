@@ -1,18 +1,13 @@
 syntax = "proto3";
 
-package fdb_rl_test.protobuf.well_formed_message_descriptor.evolution.v1;
+package fdb_rl_test.protobuf.well_formed_message_descriptor.evolution.v4;
 
 import "fdb_rl/field/v1/field.proto";
 
-message HelloWorld {
-  optional fdb_rl.field.v1.UUID primary_key = 1;
-  optional string hello = 2;
-}
-
 message HelloWorldOneof {
   optional fdb_rl.field.v1.UUID primary_key = 1;
+  optional string hello = 2;
   oneof hello_world {
-    string hello = 2;
     int64 world = 3;
     int64 some_field = 4;
   }

@@ -188,6 +188,27 @@ impl WellFormedMessageDescriptor {
             return false;
         }
 
+        // The `containing_oneof` names must match. Otherwise, it
+        // indicates a field might have been promoted out of an
+        // `oneof`.
+        if (old_field_descriptor.containing_oneof().is_some()
+            && new_field_descriptor.containing_oneof().is_none())
+            || (old_field_descriptor.containing_oneof().is_none()
+                && new_field_descriptor.containing_oneof().is_some())
+        {
+            return false;
+        }
+
+        // We either have `Some(...)` in old_field_descriptor and
+        // new_field_descriptor or we have `None`.
+        if let Some(old_oneof_descriptor) = old_field_descriptor.containing_oneof() {
+            if let Some(new_oneof_descriptor) = new_field_descriptor.containing_oneof() {
+                if old_oneof_descriptor.name() != new_oneof_descriptor.name() {
+                    return false;
+                }
+            }
+        }
+
         match old_field_descriptor.cardinality() {
             t @ (Cardinality::Optional | Cardinality::Repeated) => {
                 if t != new_field_descriptor.cardinality() {
@@ -894,6 +915,24 @@ mod tests {
                 let new_well_formed_message_descriptor =
                     WellFormedMessageDescriptor::try_from(NewHelloWorld::default().descriptor())
                         .unwrap();
+
+                assert!(!old_well_formed_message_descriptor
+                    .is_evolvable_to(new_well_formed_message_descriptor));
+            }
+
+            // Promoting fields of an existing oneof is not allowed.
+            {
+                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_message_descriptor::evolution::v1::HelloWorldOneof as OldHelloWorldOneof;
+		use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_message_descriptor::evolution::v4::HelloWorldOneof as NewHelloWorldOneof;
+
+                let old_well_formed_message_descriptor = WellFormedMessageDescriptor::try_from(
+                    OldHelloWorldOneof::default().descriptor(),
+                )
+                .unwrap();
+                let new_well_formed_message_descriptor = WellFormedMessageDescriptor::try_from(
+                    NewHelloWorldOneof::default().descriptor(),
+                )
+                .unwrap();
 
                 assert!(!old_well_formed_message_descriptor
                     .is_evolvable_to(new_well_formed_message_descriptor));

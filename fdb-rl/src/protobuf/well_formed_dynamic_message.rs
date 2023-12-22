@@ -89,8 +89,6 @@ impl WellFormedDynamicMessage {
         }
     }
 
-    // TODO: test oneof.
-
     /// This is an internal method. Here we are only checking to make
     /// sure that any well known types inside the dynamic message is
     /// well formed. We are *not* checking if the message descriptor
@@ -1118,14 +1116,63 @@ mod tests {
                 // `WktV1UuidOneof`
                 {
                     use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::WktV1UuidOneof;
+		    use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::wkt_v1_uuid_oneof::WktV1UuidOneof as WktV1UuidOneofEnum;
 
                     assert!(WellFormedMessageDescriptor::try_from(
                         WktV1UuidOneof::default().descriptor()
                     )
                     .is_ok());
 
-                    // TODO: continue from here.
-		}
+                    // `wkt_v1_uuid_oneof` uuid valid
+                    {
+                        let dynamic_message = WktV1UuidOneof {
+                            hello: Some("hello".to_string()),
+                            wkt_v1_uuid_oneof: Some(WktV1UuidOneofEnum::UuidField(
+                                FdbRLWktUuidProto::from(
+                                    Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
+                                        .unwrap(),
+                                ),
+                            )),
+                        }
+                        .transcode_to_dynamic();
+
+                        assert!(WellFormedDynamicMessage::validate_wkt(&dynamic_message));
+                    }
+                    // `wkt_v1_uuid_oneof` uuid invalid
+                    {
+                        let dynamic_message = WktV1UuidOneof {
+                            hello: Some("hello".to_string()),
+                            wkt_v1_uuid_oneof: Some(WktV1UuidOneofEnum::UuidField(
+                                FdbRLWktUuidProto {
+                                    value: Bytes::from([4, 54, 67, 12, 43, 2, 98, 76].as_ref()),
+                                },
+                            )),
+                        }
+                        .transcode_to_dynamic();
+
+                        assert!(!WellFormedDynamicMessage::validate_wkt(&dynamic_message));
+                    }
+                    // `wkt_v1_uuid_oneof` string
+                    {
+                        let dynamic_message = WktV1UuidOneof {
+                            hello: Some("hello".to_string()),
+                            wkt_v1_uuid_oneof: Some(WktV1UuidOneofEnum::World("world".to_string())),
+                        }
+                        .transcode_to_dynamic();
+
+                        assert!(WellFormedDynamicMessage::validate_wkt(&dynamic_message));
+                    }
+                    // `wkt_v1_uuid_oneof` null
+                    {
+                        let dynamic_message = WktV1UuidOneof {
+                            hello: Some("hello".to_string()),
+                            wkt_v1_uuid_oneof: None,
+                        }
+                        .transcode_to_dynamic();
+
+                        assert!(WellFormedDynamicMessage::validate_wkt(&dynamic_message));
+                    }
+                }
             }
         }
 
