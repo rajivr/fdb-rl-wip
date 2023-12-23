@@ -154,7 +154,11 @@ impl WellFormedDynamicMessage {
     // not.
     //
     // When we have a value of `WellFormedDynamicMessage`, then the
-    // whole message, including inner message is well formed.
+    // whole message, including inner message is well formed. A well
+    // formed dynamic message by definition also means that any well
+    // known types within the dynamic message is also well
+    // formed. Therefore we can safely convert well known types to
+    // their PartiQL equivalent value.
     fn try_from_inner(dynamic_message: DynamicMessage) -> FdbResult<Value> {
         let message_descriptor = dynamic_message.descriptor();
 
@@ -492,46 +496,22 @@ impl WellFormedDynamicMessage {
 					    ));
 					};
 
-                                    // TODO: Remove this check.
-                                    //
-                                    // If we have a value of
-                                    // `WellFormedDynamicMessage`
-                                    // type, then we will assume all
-                                    // values of well known types
-                                    // within it are valid.
-
-                                    // Check that UUID bytes is well
-                                    // formed. Since
-                                    // `fdb_rl_proto::fdb_rl::field::v1::Uuid`
-                                    // is an open struct, this is to
-                                    // ensure that we do not
-                                    // accidentally convert an invalid
-                                    // value.
-                                    Uuid::try_from(FdbRLWktV1UuidProto {
-                                        value: uuid_bytes.clone(),
-                                    })
-                                    .map(|_| {
-                                        tuple![
-                                            (
-                                                "fdb_rl_type",
-                                                format!(
-                                                    "message_{}",
-                                                    FDB_RL_WKT_V1_UUID.deref().as_str()
-                                                )
-                                            ),
-                                            (
-                                                "fdb_rl_value",
-                                                tuple![(
-                                                    "uuid_value",
-                                                    Value::Blob(Vec::<u8>::from(uuid_bytes).into())
-                                                )]
+                                    tuple![
+                                        (
+                                            "fdb_rl_type",
+                                            format!(
+                                                "message_{}",
+                                                FDB_RL_WKT_V1_UUID.deref().as_str()
                                             )
-                                        ]
-                                    })
-                                    .map_err(|_| {
-                                        FdbError::new(
-						PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR)
-                                    })?
+                                        ),
+                                        (
+                                            "fdb_rl_value",
+                                            tuple![(
+                                                "uuid_value",
+                                                Value::Blob(Vec::<u8>::from(uuid_bytes).into())
+                                            )]
+                                        )
+                                    ]
                                 } else {
                                     return Err(FdbError::new(
                                         PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR,
@@ -652,14 +632,18 @@ where
             if let Err(_) = dynamic_message.transcode_from(message) {
                 Err(FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE))
             } else {
-                // TODO: Check to make sure that any well known types
-                // that might be inside dynamic message is well
-                // formed. Basically if any WKT is ill formed, do not
-                // return a value of well formed dynamic message.
-
-                Ok(WellFormedDynamicMessage {
-                    inner: dynamic_message,
-                })
+                // Check to make sure that any well known types that
+                // might be inside dynamic message is well formed. If
+                // any WKT is ill formed, do not return a value of
+                // well formed dynamic message.
+                if Self::validate_wkt(&dynamic_message) {
+                    Ok(WellFormedDynamicMessage {
+                        inner: dynamic_message,
+                    })
+                } else {
+                    // TODO: write test case for this.
+                    Err(FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE))
+                }
             }
         } else {
             Err(FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE))
@@ -1941,30 +1925,32 @@ mod tests {
 
                 assert_eq!(result, expected.into(),);
             }
-            // `HelloWorldWktV1Uuid, primary_key: Some(invalid_uuid)`
-            {
-                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldWktV1Uuid;
+            // TODO: Does this test case belong here?
+            //
+            // // `HelloWorldWktV1Uuid, primary_key: Some(invalid_uuid)`
+            // {
+            //     use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldWktV1Uuid;
 
-                use fdb_rl_proto::fdb_rl::field::v1::Uuid as FdbRLWktV1UuidProto;
+            //     use fdb_rl_proto::fdb_rl::field::v1::Uuid as FdbRLWktV1UuidProto;
 
-                let hello_world_wkt_v1_uuid = HelloWorldWktV1Uuid {
-                    primary_key: Some(FdbRLWktV1UuidProto {
-                        value: Bytes::from([4, 54, 67, 12, 43, 2, 98, 76].as_ref()),
-                    }),
-                    hello: Some("hello".to_string()),
-                    world: None,
-                };
+            //     let hello_world_wkt_v1_uuid = HelloWorldWktV1Uuid {
+            //         primary_key: Some(FdbRLWktV1UuidProto {
+            //             value: Bytes::from([4, 54, 67, 12, 43, 2, 98, 76].as_ref()),
+            //         }),
+            //         hello: Some("hello".to_string()),
+            //         world: None,
+            //     };
 
-                let well_formed_message_descriptor =
-                    WellFormedMessageDescriptor::try_from(hello_world_wkt_v1_uuid.descriptor())
-                        .unwrap();
+            //     let well_formed_message_descriptor =
+            //         WellFormedMessageDescriptor::try_from(hello_world_wkt_v1_uuid.descriptor())
+            //             .unwrap();
 
-                let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
-                    well_formed_message_descriptor,
-                    &hello_world_wkt_v1_uuid,
-                ))
-                .unwrap();
-            }
+            //     let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+            //         well_formed_message_descriptor,
+            //         &hello_world_wkt_v1_uuid,
+            //     ))
+            //     .unwrap();
+            // }
         }
     }
 }
