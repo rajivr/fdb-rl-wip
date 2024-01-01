@@ -199,8 +199,8 @@ impl WellFormedMessageDescriptor {
             return false;
         }
 
-        // We either have `Some(...)` in old_field_descriptor and
-        // new_field_descriptor or we have `None`.
+        // We either have `Some(...)` in `old_field_descriptor` and
+        // `new_field_descriptor` or we have `None`.
         if let Some(old_oneof_descriptor) = old_field_descriptor.containing_oneof() {
             if let Some(new_oneof_descriptor) = new_field_descriptor.containing_oneof() {
                 if old_oneof_descriptor.name() != new_oneof_descriptor.name() {

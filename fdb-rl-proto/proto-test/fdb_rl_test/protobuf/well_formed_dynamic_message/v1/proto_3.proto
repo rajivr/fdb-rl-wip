@@ -130,3 +130,12 @@ message HelloWorldWktV1Uuid {
   optional string hello = 2;
   optional string world = 3;
 }
+
+message HelloWorldNestedInner {
+  optional string world = 1;
+}
+
+message HelloWorldNestedOuter {
+  optional HelloWorldNestedInner nested_inner = 1;
+  optional string hello = 2;
+}

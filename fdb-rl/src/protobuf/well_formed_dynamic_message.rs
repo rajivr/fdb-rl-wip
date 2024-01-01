@@ -171,6 +171,7 @@ impl WellFormedDynamicMessage {
 
         let mut message_fdb_rl_value_tuple = Tuple::new();
 
+	// TODO: Continue from here...
         for field_descriptor in message_descriptor.fields() {
             if field_descriptor.is_map() {
                 // ```
@@ -527,7 +528,6 @@ impl WellFormedDynamicMessage {
                                 ]
                             }
                         } else {
-                            // TODO: Write test case for this.
                             if dynamic_message.has_field(&field_descriptor) {
                                 let partiql_value = if let ProstReflectValue::Message(dm) =
                                     dynamic_message.get_field(&field_descriptor).into_owned()
@@ -619,35 +619,46 @@ where
     fn try_from(
         (well_formed_message_descriptor, message): (WellFormedMessageDescriptor, &T),
     ) -> FdbResult<WellFormedDynamicMessage> {
-        // TODO: Logic below needs to be rewritten.
+        WellFormedMessageDescriptor::try_from(message.descriptor())
+            .map_err(|_| {
+                // `message`'s message descriptor is not valid.
+                FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE)
+            })
+            .and_then(|message_well_formed_message_descriptor| {
+                if well_formed_message_descriptor
+                    .is_evolvable_to(message_well_formed_message_descriptor)
+                {
+                    // `message` is compatible to provided message
+                    // descriptor.
+                    Ok(())
+                } else {
+                    Err(FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE))
+                }
+            })
+            .and_then(|_| {
+                // Create a new dynamic message. If transcoding fails,
+                // return an error.
+                let mut dynamic_message =
+                    DynamicMessage::new(well_formed_message_descriptor.into());
 
-        // Ensure that `message` is compatible with
-        // `well_formed_message_descriptor`.
-        if well_formed_message_descriptor.is_evolvable_to(
-            WellFormedMessageDescriptor::try_from(message.descriptor())
-                .map_err(|_| FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE))?,
-        ) {
-            let mut dynamic_message = DynamicMessage::new(well_formed_message_descriptor.into());
-
-            if let Err(_) = dynamic_message.transcode_from(message) {
-                Err(FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE))
-            } else {
-                // Check to make sure that any well known types that
-                // might be inside dynamic message is well formed. If
-                // any WKT is ill formed, do not return a value of
-                // well formed dynamic message.
+                dynamic_message
+                    .transcode_from(message)
+                    .map(|_| dynamic_message)
+                    .map_err(|_| FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE))
+            })
+            .and_then(|dynamic_message| {
+                // Check to make sure that any well known types
+                // that might be inside dynamic message is well
+                // formed. If any WKT is ill formed, do not return
+                // a value of well formed dynamic message.
                 if Self::validate_wkt(&dynamic_message) {
                     Ok(WellFormedDynamicMessage {
                         inner: dynamic_message,
                     })
                 } else {
-                    // TODO: write test case for this.
                     Err(FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE))
                 }
-            }
-        } else {
-            Err(FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE))
-        }
+            })
     }
 }
 
@@ -685,7 +696,7 @@ mod tests {
         fn validate_wkt() {
             // fdb_rl_proto::fdb_rl::field::v1::Uuid
             {
-                use fdb_rl_proto::fdb_rl::field::v1::Uuid as FdbRLWktUuidProto;
+                use fdb_rl_proto::fdb_rl::field::v1::Uuid as FdbRLWktV1UuidProto;
 
                 // `WktV1UuidOptional`
                 {
@@ -699,7 +710,7 @@ mod tests {
                     // optional valid wkt field
                     {
                         let dynamic_message = WktV1UuidOptional {
-                            optional_field: Some(FdbRLWktUuidProto::from(
+                            optional_field: Some(FdbRLWktV1UuidProto::from(
                                 Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e").unwrap(),
                             )),
                             hello: Some("hello".to_string()),
@@ -711,7 +722,7 @@ mod tests {
                     // optional invalid wkt field
                     {
                         let dynamic_message = WktV1UuidOptional {
-                            optional_field: Some(FdbRLWktUuidProto {
+                            optional_field: Some(FdbRLWktV1UuidProto {
                                 value: Bytes::from([4, 54, 67, 12, 43, 2, 98, 76].as_ref()),
                             }),
                             hello: Some("hello".to_string()),
@@ -744,15 +755,15 @@ mod tests {
                     {
                         let dynamic_message = WktV1UuidRepeated {
                             repeated_field: vec![
-                                FdbRLWktUuidProto::from(
+                                FdbRLWktV1UuidProto::from(
                                     Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
                                         .unwrap(),
                                 ),
-                                FdbRLWktUuidProto::from(
+                                FdbRLWktV1UuidProto::from(
                                     Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
                                         .unwrap(),
                                 ),
-                                FdbRLWktUuidProto::from(
+                                FdbRLWktV1UuidProto::from(
                                     Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
                                         .unwrap(),
                                 ),
@@ -767,15 +778,15 @@ mod tests {
                     {
                         let dynamic_message = WktV1UuidRepeated {
                             repeated_field: vec![
-                                FdbRLWktUuidProto::from(
+                                FdbRLWktV1UuidProto::from(
                                     Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
                                         .unwrap(),
                                 ),
                                 // invalid
-                                FdbRLWktUuidProto {
+                                FdbRLWktV1UuidProto {
                                     value: Bytes::from([4, 54, 67, 12, 43, 2, 98, 76].as_ref()),
                                 },
-                                FdbRLWktUuidProto::from(
+                                FdbRLWktV1UuidProto::from(
                                     Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
                                         .unwrap(),
                                 ),
@@ -812,21 +823,21 @@ mod tests {
                             map_field: HashMap::from([
                                 (
                                     "key1".to_string(),
-                                    FdbRLWktUuidProto::from(
+                                    FdbRLWktV1UuidProto::from(
                                         Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
                                             .unwrap(),
                                     ),
                                 ),
                                 (
                                     "key2".to_string(),
-                                    FdbRLWktUuidProto::from(
+                                    FdbRLWktV1UuidProto::from(
                                         Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
                                             .unwrap(),
                                     ),
                                 ),
                                 (
                                     "key3".to_string(),
-                                    FdbRLWktUuidProto::from(
+                                    FdbRLWktV1UuidProto::from(
                                         Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
                                             .unwrap(),
                                     ),
@@ -844,7 +855,7 @@ mod tests {
                             map_field: HashMap::from([
                                 (
                                     "key1".to_string(),
-                                    FdbRLWktUuidProto::from(
+                                    FdbRLWktV1UuidProto::from(
                                         Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
                                             .unwrap(),
                                     ),
@@ -852,13 +863,13 @@ mod tests {
                                 (
                                     "key2".to_string(),
                                     // invalid
-                                    FdbRLWktUuidProto {
+                                    FdbRLWktV1UuidProto {
                                         value: Bytes::from([4, 54, 67, 12, 43, 2, 98, 76].as_ref()),
                                     },
                                 ),
                                 (
                                     "key3".to_string(),
-                                    FdbRLWktUuidProto::from(
+                                    FdbRLWktV1UuidProto::from(
                                         Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
                                             .unwrap(),
                                     ),
@@ -896,7 +907,7 @@ mod tests {
                     {
                         let dynamic_message = WktV1UuidNestedOuter {
                             nested_inner: Some(WktV1UuidNestedInner {
-                                optional_field: Some(FdbRLWktUuidProto::from(
+                                optional_field: Some(FdbRLWktV1UuidProto::from(
                                     Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
                                         .unwrap(),
                                 )),
@@ -912,7 +923,7 @@ mod tests {
                     {
                         let dynamic_message = WktV1UuidNestedOuter {
                             nested_inner: Some(WktV1UuidNestedInner {
-                                optional_field: Some(FdbRLWktUuidProto {
+                                optional_field: Some(FdbRLWktV1UuidProto {
                                     value: Bytes::from([4, 54, 67, 12, 43, 2, 98, 76].as_ref()),
                                 }),
                                 world: Some("world".to_string()),
@@ -956,7 +967,7 @@ mod tests {
                                     recursive_outer: Some(
                                         WktV1UuidRecursiveOuter {
                                             recursive_inner: None,
-                                            optional_field: Some(FdbRLWktUuidProto::from(
+                                            optional_field: Some(FdbRLWktV1UuidProto::from(
                                                 Uuid::parse_str(
                                                     "ffffffff-ba5e-ba11-0000-00005ca1ab1e",
                                                 )
@@ -965,14 +976,14 @@ mod tests {
                                         }
                                         .into(),
                                     ),
-                                    optional_field: Some(FdbRLWktUuidProto::from(
+                                    optional_field: Some(FdbRLWktV1UuidProto::from(
                                         Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
                                             .unwrap(),
                                     )),
                                 }
                                 .into(),
                             ),
-                            optional_field: Some(FdbRLWktUuidProto::from(
+                            optional_field: Some(FdbRLWktV1UuidProto::from(
                                 Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e").unwrap(),
                             )),
                         }
@@ -988,7 +999,7 @@ mod tests {
                                     recursive_outer: Some(
                                         WktV1UuidRecursiveOuter {
                                             recursive_inner: None,
-                                            optional_field: Some(FdbRLWktUuidProto {
+                                            optional_field: Some(FdbRLWktV1UuidProto {
                                                 value: Bytes::from(
                                                     [4, 54, 67, 12, 43, 2, 98, 76].as_ref(),
                                                 ),
@@ -996,14 +1007,14 @@ mod tests {
                                         }
                                         .into(),
                                     ),
-                                    optional_field: Some(FdbRLWktUuidProto::from(
+                                    optional_field: Some(FdbRLWktV1UuidProto::from(
                                         Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
                                             .unwrap(),
                                     )),
                                 }
                                 .into(),
                             ),
-                            optional_field: Some(FdbRLWktUuidProto::from(
+                            optional_field: Some(FdbRLWktV1UuidProto::from(
                                 Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e").unwrap(),
                             )),
                         }
@@ -1019,7 +1030,7 @@ mod tests {
                                     recursive_outer: Some(
                                         WktV1UuidRecursiveOuter {
                                             recursive_inner: None,
-                                            optional_field: Some(FdbRLWktUuidProto::from(
+                                            optional_field: Some(FdbRLWktV1UuidProto::from(
                                                 Uuid::parse_str(
                                                     "ffffffff-ba5e-ba11-0000-00005ca1ab1e",
                                                 )
@@ -1028,13 +1039,13 @@ mod tests {
                                         }
                                         .into(),
                                     ),
-                                    optional_field: Some(FdbRLWktUuidProto {
+                                    optional_field: Some(FdbRLWktV1UuidProto {
                                         value: Bytes::from([4, 54, 67, 12, 43, 2, 98, 76].as_ref()),
                                     }),
                                 }
                                 .into(),
                             ),
-                            optional_field: Some(FdbRLWktUuidProto::from(
+                            optional_field: Some(FdbRLWktV1UuidProto::from(
                                 Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e").unwrap(),
                             )),
                         }
@@ -1050,7 +1061,7 @@ mod tests {
                                     recursive_outer: Some(
                                         WktV1UuidRecursiveOuter {
                                             recursive_inner: None,
-                                            optional_field: Some(FdbRLWktUuidProto::from(
+                                            optional_field: Some(FdbRLWktV1UuidProto::from(
                                                 Uuid::parse_str(
                                                     "ffffffff-ba5e-ba11-0000-00005ca1ab1e",
                                                 )
@@ -1059,14 +1070,14 @@ mod tests {
                                         }
                                         .into(),
                                     ),
-                                    optional_field: Some(FdbRLWktUuidProto::from(
+                                    optional_field: Some(FdbRLWktV1UuidProto::from(
                                         Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
                                             .unwrap(),
                                     )),
                                 }
                                 .into(),
                             ),
-                            optional_field: Some(FdbRLWktUuidProto {
+                            optional_field: Some(FdbRLWktV1UuidProto {
                                 value: Bytes::from([4, 54, 67, 12, 43, 2, 98, 76].as_ref()),
                             }),
                         }
@@ -1112,7 +1123,7 @@ mod tests {
                         let dynamic_message = WktV1UuidOneof {
                             hello: Some("hello".to_string()),
                             wkt_v1_uuid_oneof: Some(WktV1UuidOneofEnum::UuidField(
-                                FdbRLWktUuidProto::from(
+                                FdbRLWktV1UuidProto::from(
                                     Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
                                         .unwrap(),
                                 ),
@@ -1127,7 +1138,7 @@ mod tests {
                         let dynamic_message = WktV1UuidOneof {
                             hello: Some("hello".to_string()),
                             wkt_v1_uuid_oneof: Some(WktV1UuidOneofEnum::UuidField(
-                                FdbRLWktUuidProto {
+                                FdbRLWktV1UuidProto {
                                     value: Bytes::from([4, 54, 67, 12, 43, 2, 98, 76].as_ref()),
                                 },
                             )),
@@ -1166,11 +1177,11 @@ mod tests {
             {
                 // Same message descriptor
                 {
-                    use fdb_rl_proto::fdb_rl::field::v1::Uuid as FdbRLWktUuidProto;
+                    use fdb_rl_proto::fdb_rl::field::v1::Uuid as FdbRLWktV1UuidProto;
                     use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_message_descriptor::good::v1::HelloWorld;
 
                     let hello_world = HelloWorld {
-                        primary_key: Some(FdbRLWktUuidProto::from(
+                        primary_key: Some(FdbRLWktV1UuidProto::from(
                             Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e").unwrap(),
                         )),
                         hello: Some("hello".to_string()),
@@ -1194,7 +1205,7 @@ mod tests {
                 }
                 // Evolved message descriptor
                 {
-                    use fdb_rl_proto::fdb_rl::field::v1::Uuid as FdbRLWktUuidProto;
+                    use fdb_rl_proto::fdb_rl::field::v1::Uuid as FdbRLWktV1UuidProto;
                     use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_message_descriptor::good::v1::HelloWorld as MetadataHelloWorld;
 		    use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_message_descriptor::good::v2::HelloWorld as CodeHelloWorld;
 
@@ -1205,7 +1216,7 @@ mod tests {
 
                     // Does not have the field `hello_world`.
                     let metadata_hello_world = MetadataHelloWorld {
-                        primary_key: Some(FdbRLWktUuidProto::from(
+                        primary_key: Some(FdbRLWktV1UuidProto::from(
                             Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e").unwrap(),
                         )),
                         hello: Some("hello".to_string()),
@@ -1213,7 +1224,7 @@ mod tests {
                     };
 
                     let code_hello_world = CodeHelloWorld {
-                        primary_key: Some(FdbRLWktUuidProto::from(
+                        primary_key: Some(FdbRLWktV1UuidProto::from(
                             Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e").unwrap(),
                         )),
                         hello: Some("hello".to_string()),
@@ -1259,40 +1270,70 @@ mod tests {
             }
             // Invalid message
             {
-                use fdb_rl_proto::fdb_rl::field::v1::Uuid as FdbRLWktUuidProto;
-                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_message_descriptor::good::v1::{HelloWorld, HelloWorldMap};
+                {
+                    use fdb_rl_proto::fdb_rl::field::v1::Uuid as FdbRLWktV1UuidProto;
+                    use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_message_descriptor::good::v1::{HelloWorld, HelloWorldMap};
 
-                use std::collections::HashMap;
+                    use std::collections::HashMap;
 
-                let well_formed_message_descriptor =
-                    WellFormedMessageDescriptor::try_from(HelloWorld::default().descriptor())
-                        .unwrap();
+                    let well_formed_message_descriptor =
+                        WellFormedMessageDescriptor::try_from(HelloWorld::default().descriptor())
+                            .unwrap();
 
-                let hello_world_map = HelloWorldMap {
-                    hello_world_map: HashMap::from([(
-                        "hello_world".to_string(),
-                        HelloWorld {
-                            primary_key: Some(FdbRLWktUuidProto::from(
-                                Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e").unwrap(),
-                            )),
-                            hello: Some("hello".to_string()),
-                            world: Some("world".to_string()),
-                        },
-                    )]),
-                };
+                    let hello_world_map = HelloWorldMap {
+                        hello_world_map: HashMap::from([(
+                            "hello_world".to_string(),
+                            HelloWorld {
+                                primary_key: Some(FdbRLWktV1UuidProto::from(
+                                    Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
+                                        .unwrap(),
+                                )),
+                                hello: Some("hello".to_string()),
+                                world: Some("world".to_string()),
+                            },
+                        )]),
+                    };
 
-                let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
-                    well_formed_message_descriptor,
-                    &hello_world_map,
-                ));
+                    let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+                        well_formed_message_descriptor,
+                        &hello_world_map,
+                    ));
 
-                // Even though `hello_world_map` has a message
-                // descriptor that is well formed, it is not
-                // compatible with `HelloWorld`'s message descriptor.
-                assert_eq!(
-                    Err(FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE)),
-                    well_formed_dynamic_message
-                );
+                    // Even though `hello_world_map` has a message
+                    // descriptor that is well formed, it is not
+                    // compatible with `HelloWorld`'s message descriptor.
+                    assert_eq!(
+                        Err(FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE)),
+                        well_formed_dynamic_message
+                    );
+                }
+                {
+                    use fdb_rl_proto::fdb_rl::field::v1::Uuid as FdbRLWktV1UuidProto;
+                    use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_message_descriptor::good::v1::HelloWorld;
+
+                    let well_formed_message_descriptor =
+                        WellFormedMessageDescriptor::try_from(HelloWorld::default().descriptor())
+                            .unwrap();
+
+                    let hello_world = HelloWorld {
+                        primary_key: Some(FdbRLWktV1UuidProto {
+                            value: Bytes::from([4, 54, 67, 12, 43, 2, 98, 76].as_ref()),
+                        }),
+                        hello: Some("hello".to_string()),
+                        world: None,
+                    };
+
+                    let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+                        well_formed_message_descriptor,
+                        &hello_world,
+                    ));
+
+                    // We have an invalid `FdbRLWktV1UuidProto` value.
+                    assert_eq!(
+                        Err(FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE)),
+                        well_formed_dynamic_message
+                    );
+                }
             }
         }
 
@@ -1835,7 +1876,6 @@ mod tests {
 
                 assert_eq!(result, expected.into(),);
             }
-
             // `HelloWorldOneof, hello_world: None`
             {
                 use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldOneof;
@@ -1925,32 +1965,182 @@ mod tests {
 
                 assert_eq!(result, expected.into(),);
             }
-            // TODO: Does this test case belong here?
+            // `HelloWorldWktV1Uuid, primary_key:
+            // Some(valid_uuid)`. We do not test for `primary_key:
+            // Some(invalid_uuid)` because we will not get a value of
+            // `well_formed_dynamic_message` if WKTs are invalid.
+            {
+                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldWktV1Uuid;
+
+                use fdb_rl_proto::fdb_rl::field::v1::Uuid as FdbRLWktV1UuidProto;
+
+                let hello_world_wkt_v1_uuid = HelloWorldWktV1Uuid {
+                    primary_key: Some(FdbRLWktV1UuidProto::from(
+                        Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e").unwrap(),
+                    )),
+                    hello: Some("hello".to_string()),
+                    world: None,
+                };
+
+                let well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(hello_world_wkt_v1_uuid.descriptor())
+                        .unwrap();
+
+                let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+                    well_formed_message_descriptor,
+                    &hello_world_wkt_v1_uuid,
+                ))
+                .unwrap();
+
+                let result = Value::try_from(well_formed_dynamic_message).unwrap();
+                let expected = tuple![
+                    ("fdb_rl_type", "message_HelloWorldWktV1Uuid"),
+                    (
+                        "fdb_rl_value",
+                        tuple![
+                            (
+                                "primary_key",
+                                tuple![
+                                    ("fdb_rl_type", "message_fdb_rl.field.v1.UUID"),
+                                    (
+                                        "fdb_rl_value",
+                                        tuple![(
+                                            "uuid_value",
+                                            Value::Blob(
+                                                Uuid::parse_str(
+                                                    "ffffffff-ba5e-ba11-0000-00005ca1ab1e"
+                                                )
+                                                .unwrap()
+                                                .as_bytes()
+                                                .to_vec()
+                                                .into(),
+                                            )
+                                        )]
+                                    )
+                                ]
+                            ),
+                            (
+                                "hello",
+                                tuple![("fdb_rl_type", "string"), ("fdb_rl_value", "hello")]
+                            ),
+                            (
+                                "world",
+                                tuple![("fdb_rl_type", "string"), ("fdb_rl_value", Value::Null)]
+                            )
+                        ]
+                    )
+                ];
+
+                assert_eq!(result, expected.into(),);
+            }
+            // `HelloWorldNestedOuter, nested_inner: None`
+            {
+                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldNestedOuter;
+
+                let hello_world_nested_outer = HelloWorldNestedOuter {
+                    nested_inner: None,
+                    hello: Some("hello".to_string()),
+                };
+
+                let well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(hello_world_nested_outer.descriptor())
+                        .unwrap();
+
+                let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+                    well_formed_message_descriptor,
+                    &hello_world_nested_outer,
+                ))
+                .unwrap();
+
+                let result = Value::try_from(well_formed_dynamic_message).unwrap();
+                let expected = tuple![
+                    ("fdb_rl_type", "message_HelloWorldNestedOuter"),
+                    (
+                        "fdb_rl_value",
+                        tuple![
+                            (
+                                "nested_inner",
+                                tuple![
+                                    ("fdb_rl_type", "message_HelloWorldNestedInner"),
+                                    ("fdb_rl_value", Value::Null)
+                                ]
+                            ),
+                            (
+                                "hello",
+                                tuple![("fdb_rl_type", "string"), ("fdb_rl_value", "hello"),]
+                            )
+                        ]
+                    )
+                ];
+
+                assert_eq!(result, expected.into(),);
+            }
+            // `HelloWorldNestedOuter, nested_inner: Some(...)`
             //
-            // // `HelloWorldWktV1Uuid, primary_key: Some(invalid_uuid)`
-            // {
-            //     use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldWktV1Uuid;
+            // In this case, `("fdb_rl_type",
+            // "message_HelloWorldNestedInner")` appears twice. Once
+            // as a part of the value and another time to describe the
+            // field.
+            {
+                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::{
+                    HelloWorldNestedInner, HelloWorldNestedOuter,
+                };
 
-            //     use fdb_rl_proto::fdb_rl::field::v1::Uuid as FdbRLWktV1UuidProto;
+                let hello_world_nested_outer = HelloWorldNestedOuter {
+                    nested_inner: Some(HelloWorldNestedInner {
+                        world: Some("world".to_string()),
+                    }),
+                    hello: Some("hello".to_string()),
+                };
 
-            //     let hello_world_wkt_v1_uuid = HelloWorldWktV1Uuid {
-            //         primary_key: Some(FdbRLWktV1UuidProto {
-            //             value: Bytes::from([4, 54, 67, 12, 43, 2, 98, 76].as_ref()),
-            //         }),
-            //         hello: Some("hello".to_string()),
-            //         world: None,
-            //     };
+                let well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(hello_world_nested_outer.descriptor())
+                        .unwrap();
 
-            //     let well_formed_message_descriptor =
-            //         WellFormedMessageDescriptor::try_from(hello_world_wkt_v1_uuid.descriptor())
-            //             .unwrap();
+                let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+                    well_formed_message_descriptor,
+                    &hello_world_nested_outer,
+                ))
+                .unwrap();
 
-            //     let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
-            //         well_formed_message_descriptor,
-            //         &hello_world_wkt_v1_uuid,
-            //     ))
-            //     .unwrap();
-            // }
+                let result = Value::try_from(well_formed_dynamic_message).unwrap();
+                let expected = tuple![
+                    ("fdb_rl_type", "message_HelloWorldNestedOuter"),
+                    (
+                        "fdb_rl_value",
+                        tuple![
+                            (
+                                "nested_inner",
+                                tuple![
+                                    ("fdb_rl_type", "message_HelloWorldNestedInner"),
+                                    (
+                                        "fdb_rl_value",
+                                        tuple![
+                                            ("fdb_rl_type", "message_HelloWorldNestedInner"),
+                                            (
+                                                "fdb_rl_value",
+                                                tuple![(
+                                                    "world",
+                                                    tuple![
+                                                        ("fdb_rl_type", "string"),
+                                                        ("fdb_rl_value", "world")
+                                                    ]
+                                                )]
+                                            )
+                                        ]
+                                    )
+                                ]
+                            ),
+                            (
+                                "hello",
+                                tuple![("fdb_rl_type", "string"), ("fdb_rl_value", "hello"),]
+                            )
+                        ]
+                    )
+                ];
+
+                assert_eq!(result, expected.into(),);
+            }
         }
     }
 }
