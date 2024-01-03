@@ -139,3 +139,8 @@ message HelloWorldNestedOuter {
   optional HelloWorldNestedInner nested_inner = 1;
   optional string hello = 2;
 }
+
+message HelloWorldMap {
+  map<string, bytes> map_hello_world_simple = 1;
+  map<string, HelloWorldString> map_hello_world_complex = 2;
+}
