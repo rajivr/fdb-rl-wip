@@ -4,7 +4,8 @@ use fdb::error::{FdbError, FdbResult};
 use fdb_rl_proto::fdb_rl::field::v1::Uuid as FdbRLWktV1UuidProto;
 
 use prost_reflect::{
-    DynamicMessage, EnumDescriptor, Kind, ReflectMessage, Value as ProstReflectValue,
+    DynamicMessage, EnumDescriptor, Kind, MapKey, MessageDescriptor, ReflectMessage,
+    Value as ProstReflectValue,
 };
 
 // We do not rename `Value` to `PartiqlValue`. If we did that `tuple!`
@@ -15,6 +16,7 @@ use rust_decimal::Decimal;
 
 use uuid::Uuid;
 
+use std::borrow::Cow;
 use std::convert::TryFrom;
 use std::ops::Deref;
 
@@ -446,41 +448,101 @@ impl WellFormedDynamicMessage {
     }
 
     fn partiql_value_message(
-        message_name: &str,
+        message_descriptor: MessageDescriptor,
         maybe_prost_reflect_value: Option<ProstReflectValue>,
     ) -> FdbResult<Tuple> {
-        match maybe_prost_reflect_value {
-            Some(prost_reflect_value) => {
-                if let ProstReflectValue::Message(dm) = prost_reflect_value {
-                    Ok(dm)
-                } else {
-                    Err(FdbError::new(
-                        PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR,
-                    ))
+        // First check if message descriptor is a well
+        // known type.
+        if message_descriptor.full_name() == FDB_RL_WKT_V1_UUID.deref().as_str() {
+            match maybe_prost_reflect_value {
+                Some(prost_reflect_value) => {
+                    if let ProstReflectValue::Message(dm) = prost_reflect_value {
+                        Ok(dm)
+                    } else {
+                        Err(FdbError::new(
+                            PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR,
+                        ))
+                    }
+                    .and_then(|dm| {
+                        dm.get_field_by_name("value")
+                            .ok_or(FdbError::new(
+                                PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR,
+                            ))
+                            .map(Cow::into_owned)
+                    })
+                    .and_then(|v| {
+                        if let ProstReflectValue::Bytes(b) = v {
+                            Ok(b)
+                        } else {
+                            Err(FdbError::new(
+                                PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR,
+                            ))
+                        }
+                    })
+                    .map(|uuid_bytes| {
+                        tuple![
+                            (
+                                "fdb_rl_type",
+                                format!("message_{}", FDB_RL_WKT_V1_UUID.deref().as_str())
+                            ),
+                            (
+                                "fdb_rl_value",
+                                tuple![(
+                                    "uuid_value",
+                                    Value::Blob(Vec::<u8>::from(uuid_bytes).into())
+                                )]
+                            )
+                        ]
+                    })
                 }
-                .and_then(Self::try_from_inner)
-                .map(|partiql_value| {
-                    tuple![
-                        ("fdb_rl_type", format!("message_{}", message_name)),
-                        ("fdb_rl_value", partiql_value)
-                    ]
-                })
+                None => Ok(tuple![
+                    (
+                        "fdb_rl_type",
+                        format!("message_{}", FDB_RL_WKT_V1_UUID.deref().as_str())
+                    ),
+                    ("fdb_rl_value", Value::Null)
+                ]),
             }
-            None => Ok(tuple![
-                ("fdb_rl_type", format!("message_{}", message_name)),
-                ("fdb_rl_value", Value::Null)
-            ]),
+        } else {
+            match maybe_prost_reflect_value {
+                Some(prost_reflect_value) => {
+                    if let ProstReflectValue::Message(dm) = prost_reflect_value {
+                        Ok(dm)
+                    } else {
+                        Err(FdbError::new(
+                            PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR,
+                        ))
+                    }
+                    .and_then(Self::try_from_inner)
+                    .map(|partiql_value| {
+                        tuple![
+                            (
+                                "fdb_rl_type",
+                                format!("message_{}", message_descriptor.name())
+                            ),
+                            ("fdb_rl_value", partiql_value)
+                        ]
+                    })
+                }
+                None => Ok(tuple![
+                    (
+                        "fdb_rl_type",
+                        format!("message_{}", message_descriptor.name())
+                    ),
+                    ("fdb_rl_value", Value::Null)
+                ]),
+            }
         }
     }
 
     fn partiql_value_enum(
-        enum_name: String,
-        maybe_prost_reflect_value: Option<(ProstReflectValue, EnumDescriptor)>,
+        enum_descriptor: EnumDescriptor,
+        maybe_prost_reflect_value: Option<ProstReflectValue>,
     ) -> FdbResult<Tuple> {
         match maybe_prost_reflect_value {
-            Some((prost_reflect_value, enum_descriptor)) => {
-                if let ProstReflectValue::EnumNumber(i) = prost_reflect_value {
-                    Ok(i)
+            Some(prost_reflect_value) => {
+                if let ProstReflectValue::EnumNumber(number) = prost_reflect_value {
+                    Ok(number)
                 } else {
                     Err(FdbError::new(
                         PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR,
@@ -499,13 +561,13 @@ impl WellFormedDynamicMessage {
                 .map(Value::Tuple)
                 .map(|partiql_value_tuple| {
                     tuple![
-                        ("fdb_rl_type", format!("enum_{}", enum_name)),
+                        ("fdb_rl_type", format!("enum_{}", enum_descriptor.name())),
                         ("fdb_rl_value", partiql_value_tuple)
                     ]
                 })
             }
             None => Ok(tuple![
-                ("fdb_rl_type", format!("enum_{}", enum_name)),
+                ("fdb_rl_type", format!("enum_{}", enum_descriptor.name())),
                 ("fdb_rl_value", Value::Null)
             ]),
         }
@@ -539,24 +601,228 @@ impl WellFormedDynamicMessage {
                 // map<string, SomeType> some_field = X;
                 // ```
 
-		// // TODO: Continue from here...
-                // let partiql_value_map: () = if let ProstReflectValue::Map(hash_map_ref) =
-                //     dynamic_message.get_field(&field_descriptor).deref()
-                // {
-                //     let _: () = hash_map_ref;
-                //     todo!();
-                // } else {
-                //     return Err(FdbError::new(
-                //         PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR,
-                //     ));
-                // };
+                // We need to get the type of `SomeType` along value
+                // field message descriptor or enum descriptor (if
+                // applicable).
+                let (
+                    fdb_rl_type,
+                    maybe_value_field_message_descriptor,
+                    maybe_value_field_enum_descriptor,
+                ) = if let Kind::Message(map_entry_message_descriptor) = field_descriptor.kind() {
+                    // `map_entry_key_field` in our case is always a
+                    // string`.
+                    let map_entry_value_field_descriptor =
+                        if map_entry_message_descriptor.is_map_entry() {
+                            map_entry_message_descriptor.map_entry_value_field()
+                        } else {
+                            return Err(FdbError::new(
+                                PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR,
+                            ));
+                        };
 
-                todo!();
+                    match map_entry_value_field_descriptor.kind() {
+                        Kind::Uint32 | Kind::Uint64 | Kind::Fixed32 | Kind::Fixed64 => {
+                            return Err(FdbError::new(
+                                PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR,
+                            ))
+                        }
+                        Kind::Double => ("double".to_string(), None, None),
+                        Kind::Float => ("float".to_string(), None, None),
+                        Kind::Int32 => ("int32".to_string(), None, None),
+                        Kind::Int64 => ("int64".to_string(), None, None),
+                        Kind::Sint32 => ("sint32".to_string(), None, None),
+                        Kind::Sint64 => ("sint64".to_string(), None, None),
+                        Kind::Sfixed32 => ("sfixed32".to_string(), None, None),
+                        Kind::Sfixed64 => ("sfixed64".to_string(), None, None),
+                        Kind::Bool => ("bool".to_string(), None, None),
+                        Kind::String => ("string".to_string(), None, None),
+                        Kind::Bytes => ("bytes".to_string(), None, None),
+                        Kind::Message(value_field_message_descriptor) => {
+                            // First check if message descriptor is a well
+                            // known type.
+                            if value_field_message_descriptor.full_name()
+                                == FDB_RL_WKT_V1_UUID.deref().as_str()
+                            {
+                                (
+                                    format!("message_{}", FDB_RL_WKT_V1_UUID.deref().as_str()),
+                                    Some(value_field_message_descriptor),
+                                    None,
+                                )
+                            } else {
+                                (
+                                    format!("message_{}", value_field_message_descriptor.name()),
+                                    Some(value_field_message_descriptor),
+                                    None,
+                                )
+                            }
+                        }
+                        Kind::Enum(value_field_enum_descriptor) => (
+                            format!("enum_{}", value_field_enum_descriptor.name()),
+                            None,
+                            Some(value_field_enum_descriptor),
+                        ),
+                    }
+                } else {
+                    return Err(FdbError::new(
+                        PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR,
+                    ));
+                };
+
+                let mut map_fdb_rl_value_tuple = Tuple::new();
+
+                if let ProstReflectValue::Map(mut hash_map) =
+                    dynamic_message.get_field(&field_descriptor).into_owned()
+                {
+                    for (key, val) in hash_map.drain() {
+                        let tuple_key = if let MapKey::String(s) = key {
+                            s
+                        } else {
+                            return Err(FdbError::new(
+                                PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR,
+                            ));
+                        };
+
+                        // `prost_reflect::Value` does not capture
+                        // `prost_reflect::Kind`
+                        // information. Therefore we need to use
+                        // `fdb_rl_type`.
+                        //
+                        // Note you cannot define the following in protobuf [1].
+                        //
+                        // ```
+                        // map<string, repeated SomeType> some_field = X;
+                        // map<string, map<string, SomeType>> some_field = X;
+                        // ```
+                        //
+                        // These forms needs to be wrapped inside
+                        // another message type.
+                        //
+                        // [1]: https://protobuf.dev/programming-guides/proto3/#maps
+                        if fdb_rl_type.as_str() == "double" {
+                            map_fdb_rl_value_tuple.insert(
+                                tuple_key.as_str(),
+                                Value::Tuple(Self::partiql_value_double(Some(val))?.into()),
+                            );
+                        } else if fdb_rl_type.as_str() == "float" {
+                            map_fdb_rl_value_tuple.insert(
+                                tuple_key.as_str(),
+                                Value::Tuple(Self::partiql_value_float(Some(val))?.into()),
+                            );
+                        } else if fdb_rl_type.as_str() == "int32" {
+                            map_fdb_rl_value_tuple.insert(
+                                tuple_key.as_str(),
+                                Value::Tuple(Self::partiql_value_int32(Some(val))?.into()),
+                            );
+                        } else if fdb_rl_type.as_str() == "int64" {
+                            map_fdb_rl_value_tuple.insert(
+                                tuple_key.as_str(),
+                                Value::Tuple(Self::partiql_value_int64(Some(val))?.into()),
+                            );
+                        } else if fdb_rl_type.as_str() == "sint32" {
+                            map_fdb_rl_value_tuple.insert(
+                                tuple_key.as_str(),
+                                Value::Tuple(Self::partiql_value_sint32(Some(val))?.into()),
+                            );
+                        } else if fdb_rl_type.as_str() == "sint64" {
+                            map_fdb_rl_value_tuple.insert(
+                                tuple_key.as_str(),
+                                Value::Tuple(Self::partiql_value_sint64(Some(val))?.into()),
+                            );
+                        } else if fdb_rl_type.as_str() == "sfixed32" {
+                            map_fdb_rl_value_tuple.insert(
+                                tuple_key.as_str(),
+                                Value::Tuple(Self::partiql_value_sfixed32(Some(val))?.into()),
+                            );
+                        } else if fdb_rl_type.as_str() == "sfixed64" {
+                            map_fdb_rl_value_tuple.insert(
+                                tuple_key.as_str(),
+                                Value::Tuple(Self::partiql_value_sfixed64(Some(val))?.into()),
+                            );
+                        } else if fdb_rl_type.as_str() == "bool" {
+                            map_fdb_rl_value_tuple.insert(
+                                tuple_key.as_str(),
+                                Value::Tuple(Self::partiql_value_bool(Some(val))?.into()),
+                            );
+                        } else if fdb_rl_type.as_str() == "string" {
+                            map_fdb_rl_value_tuple.insert(
+                                tuple_key.as_str(),
+                                Value::Tuple(Self::partiql_value_string(Some(val))?.into()),
+                            );
+                        } else if fdb_rl_type.as_str() == "bytes" {
+                            map_fdb_rl_value_tuple.insert(
+                                tuple_key.as_str(),
+                                Value::Tuple(Self::partiql_value_bytes(Some(val))?.into()),
+                            );
+                        } else if fdb_rl_type.as_str().starts_with("message_") {
+                            match maybe_value_field_message_descriptor {
+                                Some(ref value_field_message_descriptor) => {
+                                    map_fdb_rl_value_tuple.insert(
+                                        tuple_key.as_str(),
+                                        Value::Tuple(
+                                            Self::partiql_value_message(
+                                                value_field_message_descriptor.clone(),
+                                                Some(val),
+                                            )?
+                                            .into(),
+                                        ),
+                                    );
+                                }
+                                None => {
+                                    return Err(FdbError::new(
+                                        PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR,
+                                    ))
+                                }
+                            }
+                        } else if fdb_rl_type.as_str().starts_with("enum_") {
+                            match maybe_value_field_enum_descriptor {
+                                Some(ref value_field_enum_descriptor) => {
+                                    map_fdb_rl_value_tuple.insert(
+                                        tuple_key.as_str(),
+                                        Value::Tuple(
+                                            Self::partiql_value_enum(
+                                                value_field_enum_descriptor.clone(),
+                                                Some(val),
+                                            )?
+                                            .into(),
+                                        ),
+                                    );
+                                }
+                                None => {
+                                    return Err(FdbError::new(
+                                        PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR,
+                                    ))
+                                }
+                            }
+                        } else {
+                            return Err(FdbError::new(
+                                PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR,
+                            ));
+                        }
+                    }
+                } else {
+                    return Err(FdbError::new(
+                        PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR,
+                    ));
+                };
+
+                message_fdb_rl_value_tuple.insert(
+                    field_descriptor.name(),
+                    Value::Tuple(
+                        tuple![
+                            ("fdb_rl_type", fdb_rl_type),
+                            ("fdb_rl_value", map_fdb_rl_value_tuple),
+                        ]
+                        .into(),
+                    ),
+                );
             } else if field_descriptor.is_list() {
                 // ```
                 // repeated SomeType some_field = X;
                 // ```
-                todo!();
+
+                // TODO
+                message_fdb_rl_value_tuple
+                    .insert(field_descriptor.name(), Value::Tuple(tuple![].into()));
             } else {
                 // ```
                 // optional SomeType some_field = X;
@@ -683,80 +949,23 @@ impl WellFormedDynamicMessage {
                         }
                     }
                     Kind::Message(message_descriptor) => {
-                        // First check if message descriptor is a well
-                        // known type.
-                        if message_descriptor.full_name() == FDB_RL_WKT_V1_UUID.deref().as_str() {
-                            if dynamic_message.has_field(&field_descriptor) {
-                                if let ProstReflectValue::Message(dm) =
-                                    dynamic_message.get_field(&field_descriptor).as_ref()
-                                {
-                                    // `dm` is a dynamic message value
-                                    // of type `fdb_rl.field.v1.UUID`.
-                                    let uuid_bytes = if let ProstReflectValue::Bytes(b) = dm
-                                        .get_field_by_name("value")
-                                        .ok_or(FdbError::new(
-                                        PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR,
-					))?.as_ref() {
-					    b.clone()
-					} else {
-					    return Err(FdbError::new(
-						PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR,
-					    ));
-					};
-
-                                    tuple![
-                                        (
-                                            "fdb_rl_type",
-                                            format!(
-                                                "message_{}",
-                                                FDB_RL_WKT_V1_UUID.deref().as_str()
-                                            )
-                                        ),
-                                        (
-                                            "fdb_rl_value",
-                                            tuple![(
-                                                "uuid_value",
-                                                Value::Blob(Vec::<u8>::from(uuid_bytes).into())
-                                            )]
-                                        )
-                                    ]
-                                } else {
-                                    return Err(FdbError::new(
-                                        PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR,
-                                    ));
-                                }
-                            } else {
-                                tuple![
-                                    (
-                                        "fdb_rl_type",
-                                        format!("message_{}", FDB_RL_WKT_V1_UUID.deref().as_str())
-                                    ),
-                                    ("fdb_rl_value", Value::Null)
-                                ]
-                            }
+                        if dynamic_message.has_field(&field_descriptor) {
+                            Self::partiql_value_message(
+                                message_descriptor,
+                                Some(dynamic_message.get_field(&field_descriptor).into_owned()),
+                            )?
                         } else {
-                            if dynamic_message.has_field(&field_descriptor) {
-                                Self::partiql_value_message(
-                                    message_descriptor.name(),
-                                    Some(dynamic_message.get_field(&field_descriptor).into_owned()),
-                                )?
-                            } else {
-                                Self::partiql_value_message(message_descriptor.name(), None)?
-                            }
+                            Self::partiql_value_message(message_descriptor, None)?
                         }
                     }
                     Kind::Enum(enum_descriptor) => {
-                        let enum_name = enum_descriptor.name().to_string();
                         if dynamic_message.has_field(&field_descriptor) {
                             Self::partiql_value_enum(
-                                enum_name,
-                                Some((
-                                    dynamic_message.get_field(&field_descriptor).into_owned(),
-                                    enum_descriptor,
-                                )),
+                                enum_descriptor,
+                                Some(dynamic_message.get_field(&field_descriptor).into_owned()),
                             )?
                         } else {
-                            Self::partiql_value_enum(enum_name, None)?
+                            Self::partiql_value_enum(enum_descriptor, None)?
                         }
                     }
                 };
@@ -2307,6 +2516,37 @@ mod tests {
                 ];
 
                 assert_eq!(result, expected.into(),);
+            }
+        }
+
+        // TODO: Remove this test later
+        #[test]
+        fn wip() {
+            {
+                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldMap;
+
+                let hello_world_map = HelloWorldMap {
+                    map_hello_world_simple: HashMap::from([
+                        ("abcd".to_string(), Bytes::from_static(b"efgh")),
+                        ("ijkl".to_string(), Bytes::from_static(b"mnop")),
+                    ]),
+                    map_hello_world_complex: HashMap::new(),
+                    map_hello_world_wkt_v1_uuid: HashMap::new(),
+                    map_hello_world_enum: HashMap::new(),
+                };
+
+                let well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(hello_world_map.descriptor()).unwrap();
+
+                let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+                    well_formed_message_descriptor,
+                    &hello_world_map,
+                ))
+                .unwrap();
+
+                let result = Value::try_from(well_formed_dynamic_message).unwrap();
+
+                println!("{:?}", result);
             }
         }
     }

@@ -141,6 +141,14 @@ message HelloWorldNestedOuter {
 }
 
 message HelloWorldMap {
+  enum Size {
+    SIZE_UNSPECIFIED = 0;
+    SIZE_SMALL = 1;
+    SIZE_MEDIUM = 2;
+  }
+
   map<string, bytes> map_hello_world_simple = 1;
   map<string, HelloWorldString> map_hello_world_complex = 2;
+  map<string, fdb_rl.field.v1.UUID> map_hello_world_wkt_v1_uuid = 3;
+  map<string, Size> map_hello_world_enum = 4;
 }
