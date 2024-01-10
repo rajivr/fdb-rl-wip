@@ -162,3 +162,25 @@ message HelloWorldMap {
   map<string, HelloWorldString> field_message = 13;
   map<string, fdb_rl.field.v1.UUID> field_message_wkt_v1_uuid = 14;
 }
+
+message HelloWorldRepeated {
+  enum Size {
+    SIZE_UNSPECIFIED = 0;
+    SIZE_SMALL = 1;
+  }
+
+  repeated double field_double = 1;
+  repeated float field_float = 2;
+  repeated int32 field_int32 = 3;
+  repeated int64 field_int64 = 4;
+  repeated sint32 field_sint32 = 5;
+  repeated sint64 field_sint64 = 6;
+  repeated sfixed32 field_sfixed32 = 7;
+  repeated sfixed64 field_sfixed64 = 8;
+  repeated bool field_bool = 9;
+  repeated string field_string = 10;
+  repeated bytes field_bytes = 11;
+  repeated Size field_enum = 12;
+  repeated HelloWorldString field_message = 13;
+  repeated fdb_rl.field.v1.UUID field_message_wkt_v1_uuid = 14;
+}

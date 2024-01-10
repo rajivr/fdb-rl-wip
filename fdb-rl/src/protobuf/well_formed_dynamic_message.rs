@@ -10,7 +10,7 @@ use prost_reflect::{
 
 // We do not rename `Value` to `PartiqlValue`. If we did that `tuple!`
 // macro fails.
-use partiql_value::{tuple, Tuple, Value};
+use partiql_value::{tuple, List, Tuple, Value};
 
 use rust_decimal::Decimal;
 
@@ -601,9 +601,9 @@ impl WellFormedDynamicMessage {
                 // map<string, SomeType> some_field = X;
                 // ```
 
-                // We need to get the type of `SomeType` along value
-                // field message descriptor or enum descriptor (if
-                // applicable).
+                // We need to get the type of `SomeType` and (if
+                // applicable) value field message descriptor or enum
+                // descriptor.
                 let (
                     fdb_rl_type,
                     maybe_value_field_message_descriptor,
@@ -687,7 +687,7 @@ impl WellFormedDynamicMessage {
                         // information. Therefore we need to use
                         // `fdb_rl_type`.
                         //
-                        // Note you cannot define the following in protobuf [1].
+                        // You cannot define the following in protobuf [1].
                         //
                         // ```
                         // map<string, repeated SomeType> some_field = X;
@@ -820,9 +820,168 @@ impl WellFormedDynamicMessage {
                 // repeated SomeType some_field = X;
                 // ```
 
+                // We need to get the type of `SomeType` and (if
+                // applicable) message descriptor or enum descriptor.
+                let (
+                    fdb_rl_type,
+                    maybe_repeated_field_message_descriptor,
+                    maybe_repeated_field_enum_descriptor,
+                ) = match field_descriptor.kind() {
+                    Kind::Uint32 | Kind::Uint64 | Kind::Fixed32 | Kind::Fixed64 => {
+                        return Err(FdbError::new(
+                            PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR,
+                        ))
+                    }
+                    Kind::Double => ("double".to_string(), None, None),
+                    Kind::Float => ("float".to_string(), None, None),
+                    Kind::Int32 => ("int32".to_string(), None, None),
+                    Kind::Int64 => ("int64".to_string(), None, None),
+                    Kind::Sint32 => ("sint32".to_string(), None, None),
+                    Kind::Sint64 => ("sint64".to_string(), None, None),
+                    Kind::Sfixed32 => ("sfixed32".to_string(), None, None),
+                    Kind::Sfixed64 => ("sfixed64".to_string(), None, None),
+                    Kind::Bool => ("bool".to_string(), None, None),
+                    Kind::String => ("string".to_string(), None, None),
+                    Kind::Bytes => ("bytes".to_string(), None, None),
+                    Kind::Message(repeated_field_message_descriptor) => {
+                        // First check if message descriptor is a well
+                        // known type.
+                        if repeated_field_message_descriptor.full_name()
+                            == FDB_RL_WKT_V1_UUID.deref().as_str()
+                        {
+                            (
+                                format!("message_{}", FDB_RL_WKT_V1_UUID.deref().as_str()),
+                                Some(repeated_field_message_descriptor),
+                                None,
+                            )
+                        } else {
+                            (
+                                format!("message_{}", repeated_field_message_descriptor.name()),
+                                Some(repeated_field_message_descriptor),
+                                None,
+                            )
+                        }
+                    }
+                    Kind::Enum(repeated_field_enum_descriptor) => (
+                        format!("enum_{}", repeated_field_enum_descriptor.name()),
+                        None,
+                        Some(repeated_field_enum_descriptor),
+                    ),
+                };
+
+                let mut repeated_fdb_rl_value_list = Vec::<Value>::new();
+
+                if let ProstReflectValue::List(prost_reflect_value_list) =
+                    dynamic_message.get_field(&field_descriptor).into_owned()
+                {
+                    // `prost_reflect::Value` does not capture
+                    // `prost_reflect::Kind`
+                    // information. Therefore we need to use
+                    // `fdb_rl_type`.
+                    //
+                    // You cannot define the following in protobuf.
+                    //
+                    // ```
+                    // repeated map<string, SomeType> some_field = X;
+                    // repeated repeated double some_field = X;
+                    // ```
+                    //
+                    // These forms needs to be wrapped inside
+                    // another message type.
+                    for val in prost_reflect_value_list {
+                        if fdb_rl_type.as_str() == "double" {
+                            repeated_fdb_rl_value_list
+                                .push(Self::partiql_value_double(Some(val))?.into());
+                        } else if fdb_rl_type.as_str() == "float" {
+                            repeated_fdb_rl_value_list
+                                .push(Self::partiql_value_float(Some(val))?.into());
+                        } else if fdb_rl_type.as_str() == "int32" {
+                            repeated_fdb_rl_value_list
+                                .push(Self::partiql_value_int32(Some(val))?.into());
+                        } else if fdb_rl_type.as_str() == "int64" {
+                            repeated_fdb_rl_value_list
+                                .push(Self::partiql_value_int64(Some(val))?.into());
+                        } else if fdb_rl_type.as_str() == "sint32" {
+                            repeated_fdb_rl_value_list
+                                .push(Self::partiql_value_sint32(Some(val))?.into());
+                        } else if fdb_rl_type.as_str() == "sint64" {
+                            repeated_fdb_rl_value_list
+                                .push(Self::partiql_value_sint64(Some(val))?.into());
+                        } else if fdb_rl_type.as_str() == "sfixed32" {
+                            repeated_fdb_rl_value_list
+                                .push(Self::partiql_value_sfixed32(Some(val))?.into());
+                        } else if fdb_rl_type.as_str() == "sfixed64" {
+                            repeated_fdb_rl_value_list
+                                .push(Self::partiql_value_sfixed64(Some(val))?.into());
+                        } else if fdb_rl_type.as_str() == "bool" {
+                            repeated_fdb_rl_value_list
+                                .push(Self::partiql_value_bool(Some(val))?.into());
+                        } else if fdb_rl_type.as_str() == "string" {
+                            repeated_fdb_rl_value_list
+                                .push(Self::partiql_value_string(Some(val))?.into());
+                        } else if fdb_rl_type.as_str() == "bytes" {
+                            repeated_fdb_rl_value_list
+                                .push(Self::partiql_value_bytes(Some(val))?.into());
+                        } else if fdb_rl_type.as_str().starts_with("message_") {
+                            match maybe_repeated_field_message_descriptor {
+                                Some(ref repeated_field_message_descriptor) => {
+                                    repeated_fdb_rl_value_list.push(
+                                        Self::partiql_value_message(
+                                            repeated_field_message_descriptor.clone(),
+                                            Some(val),
+                                        )?
+                                        .into(),
+                                    );
+                                }
+                                None => {
+                                    return Err(FdbError::new(
+                                        PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR,
+                                    ))
+                                }
+                            }
+                        } else if fdb_rl_type.as_str().starts_with("enum_") {
+                            match maybe_repeated_field_enum_descriptor {
+                                Some(ref repeated_field_enum_descriptor) => {
+                                    repeated_fdb_rl_value_list.push(
+                                        Self::partiql_value_enum(
+                                            repeated_field_enum_descriptor.clone(),
+                                            Some(val),
+                                        )?
+                                        .into(),
+                                    );
+                                }
+                                None => {
+                                    return Err(FdbError::new(
+                                        PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR,
+                                    ))
+                                }
+                            }
+                        } else {
+                            return Err(FdbError::new(
+                                PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR,
+                            ));
+                        }
+                    }
+                } else {
+                    return Err(FdbError::new(
+                        PROTOBUF_WELL_FORMED_DYNAMIC_MESSAGE_TO_PARTIQL_VALUE_ERROR,
+                    ));
+                }
+
                 // TODO
-                message_fdb_rl_value_tuple
-                    .insert(field_descriptor.name(), Value::Tuple(tuple![].into()));
+                message_fdb_rl_value_tuple.insert(
+                    field_descriptor.name(),
+                    Value::Tuple(
+                        tuple![
+                            ("fdb_rl_type", format!("repeated_{}", fdb_rl_type)),
+                            (
+                                "fdb_rl_value",
+                                Value::List(List::from(repeated_fdb_rl_value_list).into())
+                            ),
+                        ]
+                        .into(),
+                    ),
+                );
             } else {
                 // ```
                 // optional SomeType some_field = X;
@@ -4593,6 +4752,45 @@ mod tests {
                 ];
 
                 assert_eq!(result, expected.into(),);
+            }
+        }
+
+	// TODO: Continue from here.
+        #[test]
+        fn wip() {
+            {
+                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldRepeated;
+
+                let hello_world_repeated = HelloWorldRepeated {
+                    field_double: vec![3.14, 3.14],
+                    field_float: vec![],
+                    field_int32: vec![],
+                    field_int64: vec![],
+                    field_sint32: vec![],
+                    field_sint64: vec![],
+                    field_sfixed32: vec![],
+                    field_sfixed64: vec![],
+                    field_bool: vec![],
+                    field_string: vec![],
+                    field_bytes: vec![],
+                    field_enum: vec![],
+                    field_message: vec![],
+                    field_message_wkt_v1_uuid: vec![],
+                };
+
+                let well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(hello_world_repeated.descriptor())
+                        .unwrap();
+
+                let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+                    well_formed_message_descriptor,
+                    &hello_world_repeated,
+                ))
+                .unwrap();
+
+                let result = Value::try_from(well_formed_dynamic_message).unwrap();
+
+                println!("{:?}", result);
             }
         }
     }
