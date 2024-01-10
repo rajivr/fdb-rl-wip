@@ -147,8 +147,18 @@ message HelloWorldMap {
     SIZE_MEDIUM = 2;
   }
 
-  map<string, bytes> map_hello_world_simple = 1;
-  map<string, HelloWorldString> map_hello_world_complex = 2;
-  map<string, fdb_rl.field.v1.UUID> map_hello_world_wkt_v1_uuid = 3;
-  map<string, Size> map_hello_world_enum = 4;
+  map<string, double> field_double = 1;
+  map<string, float> field_float = 2;
+  map<string, int32> field_int32 = 3;
+  map<string, int64> field_int64 = 4;
+  map<string, sint32> field_sint32 = 5;
+  map<string, sint64> field_sint64 = 6;
+  map<string, sfixed32> field_sfixed32 = 7;
+  map<string, sfixed64> field_sfixed64 = 8;
+  map<string, bool> field_bool = 9;
+  map<string, string> field_string = 10;
+  map<string, bytes> field_bytes = 11;
+  map<string, Size> field_enum = 12;
+  map<string, HelloWorldString> field_message = 13;
+  map<string, fdb_rl.field.v1.UUID> field_message_wkt_v1_uuid = 14;
 }

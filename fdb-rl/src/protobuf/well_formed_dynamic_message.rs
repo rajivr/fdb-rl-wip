@@ -809,7 +809,7 @@ impl WellFormedDynamicMessage {
                     field_descriptor.name(),
                     Value::Tuple(
                         tuple![
-                            ("fdb_rl_type", fdb_rl_type),
+                            ("fdb_rl_type", format!("map_{}", fdb_rl_type)),
                             ("fdb_rl_value", map_fdb_rl_value_tuple),
                         ]
                         .into(),
@@ -2517,22 +2517,120 @@ mod tests {
 
                 assert_eq!(result, expected.into(),);
             }
-        }
+            // `HelloWorldMap, empty`
+            {
+                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldMap;
 
-        // TODO: Remove this test later
-        #[test]
-        fn wip() {
+                let hello_world_map = HelloWorldMap::default();
+
+                let well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(hello_world_map.descriptor()).unwrap();
+
+                let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+                    well_formed_message_descriptor,
+                    &hello_world_map,
+                ))
+                .unwrap();
+
+                let result = Value::try_from(well_formed_dynamic_message).unwrap();
+                let expected = tuple![
+                    ("fdb_rl_type", "message_HelloWorldMap"),
+                    (
+                        "fdb_rl_value",
+                        tuple![
+                            (
+                                "field_double",
+                                tuple![("fdb_rl_type", "map_double"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_float",
+                                tuple![("fdb_rl_type", "map_float"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_int32",
+                                tuple![("fdb_rl_type", "map_int32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_int64",
+                                tuple![("fdb_rl_type", "map_int64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sint32",
+                                tuple![("fdb_rl_type", "map_sint32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sint64",
+                                tuple![("fdb_rl_type", "map_sint64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sfixed32",
+                                tuple![("fdb_rl_type", "map_sfixed32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sfixed64",
+                                tuple![("fdb_rl_type", "map_sfixed64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_bool",
+                                tuple![("fdb_rl_type", "map_bool"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_string",
+                                tuple![("fdb_rl_type", "map_string"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_bytes",
+                                tuple![("fdb_rl_type", "map_bytes"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_enum",
+                                tuple![
+                                    ("fdb_rl_type", "map_enum_Size"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                            (
+                                "field_message",
+                                tuple![
+                                    ("fdb_rl_type", "map_message_HelloWorldString"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                            (
+                                "field_message_wkt_v1_uuid",
+                                tuple![
+                                    ("fdb_rl_type", "map_message_fdb_rl.field.v1.UUID"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                        ]
+                    )
+                ];
+
+                assert_eq!(result, expected.into(),);
+            }
+            // `HelloWorldMap, double`
             {
                 use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldMap;
 
                 let hello_world_map = HelloWorldMap {
-                    map_hello_world_simple: HashMap::from([
-                        ("abcd".to_string(), Bytes::from_static(b"efgh")),
-                        ("ijkl".to_string(), Bytes::from_static(b"mnop")),
+                    field_double: HashMap::from([
+                        ("hello".to_string(), 3.14),
+                        ("world".to_string(), 3.14),
                     ]),
-                    map_hello_world_complex: HashMap::new(),
-                    map_hello_world_wkt_v1_uuid: HashMap::new(),
-                    map_hello_world_enum: HashMap::new(),
+                    field_float: HashMap::new(),
+                    field_int32: HashMap::new(),
+                    field_int64: HashMap::new(),
+                    field_sint32: HashMap::new(),
+                    field_sint64: HashMap::new(),
+                    field_sfixed32: HashMap::new(),
+                    field_sfixed64: HashMap::new(),
+                    field_bool: HashMap::new(),
+                    field_string: HashMap::new(),
+                    field_bytes: HashMap::new(),
+                    field_enum: HashMap::new(),
+                    field_message: HashMap::new(),
+                    field_message_wkt_v1_uuid: HashMap::new(),
                 };
 
                 let well_formed_message_descriptor =
@@ -2545,8 +2643,1956 @@ mod tests {
                 .unwrap();
 
                 let result = Value::try_from(well_formed_dynamic_message).unwrap();
+                let expected = tuple![
+                    ("fdb_rl_type", "message_HelloWorldMap"),
+                    (
+                        "fdb_rl_value",
+                        tuple![
+                            (
+                                "field_double",
+                                tuple![
+                                    ("fdb_rl_type", "map_double"),
+                                    (
+                                        "fdb_rl_value",
+                                        tuple![
+                                            (
+                                                "hello",
+                                                tuple![
+                                                    ("fdb_rl_type", "double"),
+                                                    ("fdb_rl_value", 3.14),
+                                                ]
+                                            ),
+                                            (
+                                                "world",
+                                                tuple![
+                                                    ("fdb_rl_type", "double"),
+                                                    ("fdb_rl_value", 3.14),
+                                                ]
+                                            ),
+                                        ]
+                                    ),
+                                ]
+                            ),
+                            (
+                                "field_float",
+                                tuple![("fdb_rl_type", "map_float"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_int32",
+                                tuple![("fdb_rl_type", "map_int32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_int64",
+                                tuple![("fdb_rl_type", "map_int64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sint32",
+                                tuple![("fdb_rl_type", "map_sint32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sint64",
+                                tuple![("fdb_rl_type", "map_sint64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sfixed32",
+                                tuple![("fdb_rl_type", "map_sfixed32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sfixed64",
+                                tuple![("fdb_rl_type", "map_sfixed64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_bool",
+                                tuple![("fdb_rl_type", "map_bool"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_string",
+                                tuple![("fdb_rl_type", "map_string"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_bytes",
+                                tuple![("fdb_rl_type", "map_bytes"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_enum",
+                                tuple![
+                                    ("fdb_rl_type", "map_enum_Size"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                            (
+                                "field_message",
+                                tuple![
+                                    ("fdb_rl_type", "map_message_HelloWorldString"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                            (
+                                "field_message_wkt_v1_uuid",
+                                tuple![
+                                    ("fdb_rl_type", "map_message_fdb_rl.field.v1.UUID"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                        ]
+                    )
+                ];
 
-                println!("{:?}", result);
+                assert_eq!(result, expected.into(),);
+            }
+            // `HelloWorldMap, float`
+            {
+                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldMap;
+
+                let hello_world_map = HelloWorldMap {
+                    field_double: HashMap::new(),
+                    field_float: HashMap::from([
+                        ("hello".to_string(), 3.14),
+                        ("world".to_string(), 3.14),
+                    ]),
+                    field_int32: HashMap::new(),
+                    field_int64: HashMap::new(),
+                    field_sint32: HashMap::new(),
+                    field_sint64: HashMap::new(),
+                    field_sfixed32: HashMap::new(),
+                    field_sfixed64: HashMap::new(),
+                    field_bool: HashMap::new(),
+                    field_string: HashMap::new(),
+                    field_bytes: HashMap::new(),
+                    field_enum: HashMap::new(),
+                    field_message: HashMap::new(),
+                    field_message_wkt_v1_uuid: HashMap::new(),
+                };
+
+                let well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(hello_world_map.descriptor()).unwrap();
+
+                let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+                    well_formed_message_descriptor,
+                    &hello_world_map,
+                ))
+                .unwrap();
+
+                let result = Value::try_from(well_formed_dynamic_message).unwrap();
+                let expected = tuple![
+                    ("fdb_rl_type", "message_HelloWorldMap"),
+                    (
+                        "fdb_rl_value",
+                        tuple![
+                            (
+                                "field_double",
+                                tuple![("fdb_rl_type", "map_double"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_float",
+                                tuple![
+                                    ("fdb_rl_type", "map_float"),
+                                    (
+                                        "fdb_rl_value",
+                                        tuple![
+                                            (
+                                                "hello",
+                                                tuple![
+                                                    ("fdb_rl_type", "float"),
+                                                    ("fdb_rl_value", 3.14),
+                                                ]
+                                            ),
+                                            (
+                                                "world",
+                                                tuple![
+                                                    ("fdb_rl_type", "float"),
+                                                    ("fdb_rl_value", 3.14),
+                                                ]
+                                            ),
+                                        ]
+                                    ),
+                                ]
+                            ),
+                            (
+                                "field_int32",
+                                tuple![("fdb_rl_type", "map_int32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_int64",
+                                tuple![("fdb_rl_type", "map_int64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sint32",
+                                tuple![("fdb_rl_type", "map_sint32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sint64",
+                                tuple![("fdb_rl_type", "map_sint64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sfixed32",
+                                tuple![("fdb_rl_type", "map_sfixed32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sfixed64",
+                                tuple![("fdb_rl_type", "map_sfixed64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_bool",
+                                tuple![("fdb_rl_type", "map_bool"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_string",
+                                tuple![("fdb_rl_type", "map_string"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_bytes",
+                                tuple![("fdb_rl_type", "map_bytes"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_enum",
+                                tuple![
+                                    ("fdb_rl_type", "map_enum_Size"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                            (
+                                "field_message",
+                                tuple![
+                                    ("fdb_rl_type", "map_message_HelloWorldString"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                            (
+                                "field_message_wkt_v1_uuid",
+                                tuple![
+                                    ("fdb_rl_type", "map_message_fdb_rl.field.v1.UUID"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                        ]
+                    )
+                ];
+
+                assert_eq!(result, expected.into(),);
+            }
+            // `HelloWorldMap, int32`
+            {
+                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldMap;
+
+                let hello_world_map = HelloWorldMap {
+                    field_double: HashMap::new(),
+                    field_float: HashMap::new(),
+                    field_int32: HashMap::from([
+                        ("hello".to_string(), 108),
+                        ("world".to_string(), 108),
+                    ]),
+                    field_int64: HashMap::new(),
+                    field_sint32: HashMap::new(),
+                    field_sint64: HashMap::new(),
+                    field_sfixed32: HashMap::new(),
+                    field_sfixed64: HashMap::new(),
+                    field_bool: HashMap::new(),
+                    field_string: HashMap::new(),
+                    field_bytes: HashMap::new(),
+                    field_enum: HashMap::new(),
+                    field_message: HashMap::new(),
+                    field_message_wkt_v1_uuid: HashMap::new(),
+                };
+
+                let well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(hello_world_map.descriptor()).unwrap();
+
+                let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+                    well_formed_message_descriptor,
+                    &hello_world_map,
+                ))
+                .unwrap();
+
+                let result = Value::try_from(well_formed_dynamic_message).unwrap();
+                let expected = tuple![
+                    ("fdb_rl_type", "message_HelloWorldMap"),
+                    (
+                        "fdb_rl_value",
+                        tuple![
+                            (
+                                "field_double",
+                                tuple![("fdb_rl_type", "map_double"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_float",
+                                tuple![("fdb_rl_type", "map_float"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_int32",
+                                tuple![
+                                    ("fdb_rl_type", "map_int32"),
+                                    (
+                                        "fdb_rl_value",
+                                        tuple![
+                                            (
+                                                "hello",
+                                                tuple![
+                                                    ("fdb_rl_type", "int32"),
+                                                    ("fdb_rl_value", 108),
+                                                ]
+                                            ),
+                                            (
+                                                "world",
+                                                tuple![
+                                                    ("fdb_rl_type", "int32"),
+                                                    ("fdb_rl_value", 108),
+                                                ]
+                                            ),
+                                        ]
+                                    ),
+                                ]
+                            ),
+                            (
+                                "field_int64",
+                                tuple![("fdb_rl_type", "map_int64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sint32",
+                                tuple![("fdb_rl_type", "map_sint32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sint64",
+                                tuple![("fdb_rl_type", "map_sint64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sfixed32",
+                                tuple![("fdb_rl_type", "map_sfixed32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sfixed64",
+                                tuple![("fdb_rl_type", "map_sfixed64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_bool",
+                                tuple![("fdb_rl_type", "map_bool"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_string",
+                                tuple![("fdb_rl_type", "map_string"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_bytes",
+                                tuple![("fdb_rl_type", "map_bytes"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_enum",
+                                tuple![
+                                    ("fdb_rl_type", "map_enum_Size"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                            (
+                                "field_message",
+                                tuple![
+                                    ("fdb_rl_type", "map_message_HelloWorldString"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                            (
+                                "field_message_wkt_v1_uuid",
+                                tuple![
+                                    ("fdb_rl_type", "map_message_fdb_rl.field.v1.UUID"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                        ]
+                    )
+                ];
+
+                assert_eq!(result, expected.into(),);
+            }
+            // `HelloWorldMap, int64`
+            {
+                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldMap;
+
+                let hello_world_map = HelloWorldMap {
+                    field_double: HashMap::new(),
+                    field_float: HashMap::new(),
+                    field_int32: HashMap::new(),
+                    field_int64: HashMap::from([
+                        ("hello".to_string(), 108),
+                        ("world".to_string(), 108),
+                    ]),
+                    field_sint32: HashMap::new(),
+                    field_sint64: HashMap::new(),
+                    field_sfixed32: HashMap::new(),
+                    field_sfixed64: HashMap::new(),
+                    field_bool: HashMap::new(),
+                    field_string: HashMap::new(),
+                    field_bytes: HashMap::new(),
+                    field_enum: HashMap::new(),
+                    field_message: HashMap::new(),
+                    field_message_wkt_v1_uuid: HashMap::new(),
+                };
+
+                let well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(hello_world_map.descriptor()).unwrap();
+
+                let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+                    well_formed_message_descriptor,
+                    &hello_world_map,
+                ))
+                .unwrap();
+
+                let result = Value::try_from(well_formed_dynamic_message).unwrap();
+                let expected = tuple![
+                    ("fdb_rl_type", "message_HelloWorldMap"),
+                    (
+                        "fdb_rl_value",
+                        tuple![
+                            (
+                                "field_double",
+                                tuple![("fdb_rl_type", "map_double"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_float",
+                                tuple![("fdb_rl_type", "map_float"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_int32",
+                                tuple![("fdb_rl_type", "map_int32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_int64",
+                                tuple![
+                                    ("fdb_rl_type", "map_int64"),
+                                    (
+                                        "fdb_rl_value",
+                                        tuple![
+                                            (
+                                                "hello",
+                                                tuple![
+                                                    ("fdb_rl_type", "int64"),
+                                                    ("fdb_rl_value", 108),
+                                                ]
+                                            ),
+                                            (
+                                                "world",
+                                                tuple![
+                                                    ("fdb_rl_type", "int64"),
+                                                    ("fdb_rl_value", 108),
+                                                ]
+                                            )
+                                        ]
+                                    ),
+                                ]
+                            ),
+                            (
+                                "field_sint32",
+                                tuple![("fdb_rl_type", "map_sint32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sint64",
+                                tuple![("fdb_rl_type", "map_sint64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sfixed32",
+                                tuple![("fdb_rl_type", "map_sfixed32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sfixed64",
+                                tuple![("fdb_rl_type", "map_sfixed64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_bool",
+                                tuple![("fdb_rl_type", "map_bool"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_string",
+                                tuple![("fdb_rl_type", "map_string"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_bytes",
+                                tuple![("fdb_rl_type", "map_bytes"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_enum",
+                                tuple![
+                                    ("fdb_rl_type", "map_enum_Size"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                            (
+                                "field_message",
+                                tuple![
+                                    ("fdb_rl_type", "map_message_HelloWorldString"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                            (
+                                "field_message_wkt_v1_uuid",
+                                tuple![
+                                    ("fdb_rl_type", "map_message_fdb_rl.field.v1.UUID"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                        ]
+                    )
+                ];
+
+                assert_eq!(result, expected.into(),);
+            }
+            // `HelloWorldMap, sint32`
+            {
+                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldMap;
+
+                let hello_world_map = HelloWorldMap {
+                    field_double: HashMap::new(),
+                    field_float: HashMap::new(),
+                    field_int32: HashMap::new(),
+                    field_int64: HashMap::new(),
+                    field_sint32: HashMap::from([
+                        ("hello".to_string(), 108),
+                        ("world".to_string(), 108),
+                    ]),
+                    field_sint64: HashMap::new(),
+                    field_sfixed32: HashMap::new(),
+                    field_sfixed64: HashMap::new(),
+                    field_bool: HashMap::new(),
+                    field_string: HashMap::new(),
+                    field_bytes: HashMap::new(),
+                    field_enum: HashMap::new(),
+                    field_message: HashMap::new(),
+                    field_message_wkt_v1_uuid: HashMap::new(),
+                };
+
+                let well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(hello_world_map.descriptor()).unwrap();
+
+                let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+                    well_formed_message_descriptor,
+                    &hello_world_map,
+                ))
+                .unwrap();
+
+                let result = Value::try_from(well_formed_dynamic_message).unwrap();
+                let expected = tuple![
+                    ("fdb_rl_type", "message_HelloWorldMap"),
+                    (
+                        "fdb_rl_value",
+                        tuple![
+                            (
+                                "field_double",
+                                tuple![("fdb_rl_type", "map_double"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_float",
+                                tuple![("fdb_rl_type", "map_float"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_int32",
+                                tuple![("fdb_rl_type", "map_int32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_int64",
+                                tuple![("fdb_rl_type", "map_int64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sint32",
+                                tuple![
+                                    ("fdb_rl_type", "map_sint32"),
+                                    (
+                                        "fdb_rl_value",
+                                        tuple![
+                                            (
+                                                "hello",
+                                                tuple![
+                                                    ("fdb_rl_type", "sint32"),
+                                                    ("fdb_rl_value", 108),
+                                                ]
+                                            ),
+                                            (
+                                                "world",
+                                                tuple![
+                                                    ("fdb_rl_type", "sint32"),
+                                                    ("fdb_rl_value", 108),
+                                                ]
+                                            )
+                                        ]
+                                    ),
+                                ]
+                            ),
+                            (
+                                "field_sint64",
+                                tuple![("fdb_rl_type", "map_sint64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sfixed32",
+                                tuple![("fdb_rl_type", "map_sfixed32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sfixed64",
+                                tuple![("fdb_rl_type", "map_sfixed64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_bool",
+                                tuple![("fdb_rl_type", "map_bool"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_string",
+                                tuple![("fdb_rl_type", "map_string"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_bytes",
+                                tuple![("fdb_rl_type", "map_bytes"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_enum",
+                                tuple![
+                                    ("fdb_rl_type", "map_enum_Size"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                            (
+                                "field_message",
+                                tuple![
+                                    ("fdb_rl_type", "map_message_HelloWorldString"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                            (
+                                "field_message_wkt_v1_uuid",
+                                tuple![
+                                    ("fdb_rl_type", "map_message_fdb_rl.field.v1.UUID"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                        ]
+                    )
+                ];
+
+                assert_eq!(result, expected.into(),);
+            }
+            // `HelloWorldMap, sint64`
+            {
+                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldMap;
+
+                let hello_world_map = HelloWorldMap {
+                    field_double: HashMap::new(),
+                    field_float: HashMap::new(),
+                    field_int32: HashMap::new(),
+                    field_int64: HashMap::new(),
+                    field_sint32: HashMap::new(),
+                    field_sint64: HashMap::from([
+                        ("hello".to_string(), 108),
+                        ("world".to_string(), 108),
+                    ]),
+                    field_sfixed32: HashMap::new(),
+                    field_sfixed64: HashMap::new(),
+                    field_bool: HashMap::new(),
+                    field_string: HashMap::new(),
+                    field_bytes: HashMap::new(),
+                    field_enum: HashMap::new(),
+                    field_message: HashMap::new(),
+                    field_message_wkt_v1_uuid: HashMap::new(),
+                };
+
+                let well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(hello_world_map.descriptor()).unwrap();
+
+                let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+                    well_formed_message_descriptor,
+                    &hello_world_map,
+                ))
+                .unwrap();
+
+                let result = Value::try_from(well_formed_dynamic_message).unwrap();
+                let expected = tuple![
+                    ("fdb_rl_type", "message_HelloWorldMap"),
+                    (
+                        "fdb_rl_value",
+                        tuple![
+                            (
+                                "field_double",
+                                tuple![("fdb_rl_type", "map_double"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_float",
+                                tuple![("fdb_rl_type", "map_float"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_int32",
+                                tuple![("fdb_rl_type", "map_int32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_int64",
+                                tuple![("fdb_rl_type", "map_int64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sint32",
+                                tuple![("fdb_rl_type", "map_sint32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sint64",
+                                tuple![
+                                    ("fdb_rl_type", "map_sint64"),
+                                    (
+                                        "fdb_rl_value",
+                                        tuple![
+                                            (
+                                                "hello",
+                                                tuple![
+                                                    ("fdb_rl_type", "sint64"),
+                                                    ("fdb_rl_value", 108),
+                                                ]
+                                            ),
+                                            (
+                                                "world",
+                                                tuple![
+                                                    ("fdb_rl_type", "sint64"),
+                                                    ("fdb_rl_value", 108),
+                                                ]
+                                            )
+                                        ]
+                                    ),
+                                ]
+                            ),
+                            (
+                                "field_sfixed32",
+                                tuple![("fdb_rl_type", "map_sfixed32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sfixed64",
+                                tuple![("fdb_rl_type", "map_sfixed64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_bool",
+                                tuple![("fdb_rl_type", "map_bool"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_string",
+                                tuple![("fdb_rl_type", "map_string"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_bytes",
+                                tuple![("fdb_rl_type", "map_bytes"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_enum",
+                                tuple![
+                                    ("fdb_rl_type", "map_enum_Size"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                            (
+                                "field_message",
+                                tuple![
+                                    ("fdb_rl_type", "map_message_HelloWorldString"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                            (
+                                "field_message_wkt_v1_uuid",
+                                tuple![
+                                    ("fdb_rl_type", "map_message_fdb_rl.field.v1.UUID"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                        ]
+                    )
+                ];
+
+                assert_eq!(result, expected.into(),);
+            }
+            // `HelloWorldMap, sfixed32`
+            {
+                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldMap;
+
+                let hello_world_map = HelloWorldMap {
+                    field_double: HashMap::new(),
+                    field_float: HashMap::new(),
+                    field_int32: HashMap::new(),
+                    field_int64: HashMap::new(),
+                    field_sint32: HashMap::new(),
+                    field_sint64: HashMap::new(),
+                    field_sfixed32: HashMap::from([
+                        ("hello".to_string(), 108),
+                        ("world".to_string(), 108),
+                    ]),
+                    field_sfixed64: HashMap::new(),
+                    field_bool: HashMap::new(),
+                    field_string: HashMap::new(),
+                    field_bytes: HashMap::new(),
+                    field_enum: HashMap::new(),
+                    field_message: HashMap::new(),
+                    field_message_wkt_v1_uuid: HashMap::new(),
+                };
+
+                let well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(hello_world_map.descriptor()).unwrap();
+
+                let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+                    well_formed_message_descriptor,
+                    &hello_world_map,
+                ))
+                .unwrap();
+
+                let result = Value::try_from(well_formed_dynamic_message).unwrap();
+                let expected = tuple![
+                    ("fdb_rl_type", "message_HelloWorldMap"),
+                    (
+                        "fdb_rl_value",
+                        tuple![
+                            (
+                                "field_double",
+                                tuple![("fdb_rl_type", "map_double"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_float",
+                                tuple![("fdb_rl_type", "map_float"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_int32",
+                                tuple![("fdb_rl_type", "map_int32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_int64",
+                                tuple![("fdb_rl_type", "map_int64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sint32",
+                                tuple![("fdb_rl_type", "map_sint32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sint64",
+                                tuple![("fdb_rl_type", "map_sint64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sfixed32",
+                                tuple![
+                                    ("fdb_rl_type", "map_sfixed32"),
+                                    (
+                                        "fdb_rl_value",
+                                        tuple![
+                                            (
+                                                "hello",
+                                                tuple![
+                                                    ("fdb_rl_type", "sfixed32"),
+                                                    ("fdb_rl_value", 108),
+                                                ]
+                                            ),
+                                            (
+                                                "world",
+                                                tuple![
+                                                    ("fdb_rl_type", "sfixed32"),
+                                                    ("fdb_rl_value", 108),
+                                                ]
+                                            )
+                                        ]
+                                    ),
+                                ]
+                            ),
+                            (
+                                "field_sfixed64",
+                                tuple![("fdb_rl_type", "map_sfixed64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_bool",
+                                tuple![("fdb_rl_type", "map_bool"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_string",
+                                tuple![("fdb_rl_type", "map_string"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_bytes",
+                                tuple![("fdb_rl_type", "map_bytes"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_enum",
+                                tuple![
+                                    ("fdb_rl_type", "map_enum_Size"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                            (
+                                "field_message",
+                                tuple![
+                                    ("fdb_rl_type", "map_message_HelloWorldString"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                            (
+                                "field_message_wkt_v1_uuid",
+                                tuple![
+                                    ("fdb_rl_type", "map_message_fdb_rl.field.v1.UUID"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                        ]
+                    )
+                ];
+
+                assert_eq!(result, expected.into(),);
+            }
+            // `HelloWorldMap, sfixed64`
+            {
+                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldMap;
+
+                let hello_world_map = HelloWorldMap {
+                    field_double: HashMap::new(),
+                    field_float: HashMap::new(),
+                    field_int32: HashMap::new(),
+                    field_int64: HashMap::new(),
+                    field_sint32: HashMap::new(),
+                    field_sint64: HashMap::new(),
+                    field_sfixed32: HashMap::new(),
+                    field_sfixed64: HashMap::from([
+                        ("hello".to_string(), 108),
+                        ("world".to_string(), 108),
+                    ]),
+                    field_bool: HashMap::new(),
+                    field_string: HashMap::new(),
+                    field_bytes: HashMap::new(),
+                    field_enum: HashMap::new(),
+                    field_message: HashMap::new(),
+                    field_message_wkt_v1_uuid: HashMap::new(),
+                };
+
+                let well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(hello_world_map.descriptor()).unwrap();
+
+                let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+                    well_formed_message_descriptor,
+                    &hello_world_map,
+                ))
+                .unwrap();
+
+                let result = Value::try_from(well_formed_dynamic_message).unwrap();
+                let expected = tuple![
+                    ("fdb_rl_type", "message_HelloWorldMap"),
+                    (
+                        "fdb_rl_value",
+                        tuple![
+                            (
+                                "field_double",
+                                tuple![("fdb_rl_type", "map_double"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_float",
+                                tuple![("fdb_rl_type", "map_float"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_int32",
+                                tuple![("fdb_rl_type", "map_int32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_int64",
+                                tuple![("fdb_rl_type", "map_int64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sint32",
+                                tuple![("fdb_rl_type", "map_sint32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sint64",
+                                tuple![("fdb_rl_type", "map_sint64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sfixed32",
+                                tuple![("fdb_rl_type", "map_sfixed32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sfixed64",
+                                tuple![
+                                    ("fdb_rl_type", "map_sfixed64"),
+                                    (
+                                        "fdb_rl_value",
+                                        tuple![
+                                            (
+                                                "hello",
+                                                tuple![
+                                                    ("fdb_rl_type", "sfixed64"),
+                                                    ("fdb_rl_value", 108),
+                                                ]
+                                            ),
+                                            (
+                                                "world",
+                                                tuple![
+                                                    ("fdb_rl_type", "sfixed64"),
+                                                    ("fdb_rl_value", 108),
+                                                ]
+                                            )
+                                        ]
+                                    ),
+                                ]
+                            ),
+                            (
+                                "field_bool",
+                                tuple![("fdb_rl_type", "map_bool"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_string",
+                                tuple![("fdb_rl_type", "map_string"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_bytes",
+                                tuple![("fdb_rl_type", "map_bytes"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_enum",
+                                tuple![
+                                    ("fdb_rl_type", "map_enum_Size"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                            (
+                                "field_message",
+                                tuple![
+                                    ("fdb_rl_type", "map_message_HelloWorldString"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                            (
+                                "field_message_wkt_v1_uuid",
+                                tuple![
+                                    ("fdb_rl_type", "map_message_fdb_rl.field.v1.UUID"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                        ]
+                    )
+                ];
+
+                assert_eq!(result, expected.into(),);
+            }
+            // `HelloWorldMap, bool`
+            {
+                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldMap;
+
+                let hello_world_map = HelloWorldMap {
+                    field_double: HashMap::new(),
+                    field_float: HashMap::new(),
+                    field_int32: HashMap::new(),
+                    field_int64: HashMap::new(),
+                    field_sint32: HashMap::new(),
+                    field_sint64: HashMap::new(),
+                    field_sfixed32: HashMap::new(),
+                    field_sfixed64: HashMap::new(),
+                    field_bool: HashMap::from([
+                        ("hello".to_string(), true),
+                        ("world".to_string(), false),
+                    ]),
+                    field_string: HashMap::new(),
+                    field_bytes: HashMap::new(),
+                    field_enum: HashMap::new(),
+                    field_message: HashMap::new(),
+                    field_message_wkt_v1_uuid: HashMap::new(),
+                };
+
+                let well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(hello_world_map.descriptor()).unwrap();
+
+                let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+                    well_formed_message_descriptor,
+                    &hello_world_map,
+                ))
+                .unwrap();
+
+                let result = Value::try_from(well_formed_dynamic_message).unwrap();
+                let expected = tuple![
+                    ("fdb_rl_type", "message_HelloWorldMap"),
+                    (
+                        "fdb_rl_value",
+                        tuple![
+                            (
+                                "field_double",
+                                tuple![("fdb_rl_type", "map_double"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_float",
+                                tuple![("fdb_rl_type", "map_float"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_int32",
+                                tuple![("fdb_rl_type", "map_int32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_int64",
+                                tuple![("fdb_rl_type", "map_int64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sint32",
+                                tuple![("fdb_rl_type", "map_sint32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sint64",
+                                tuple![("fdb_rl_type", "map_sint64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sfixed32",
+                                tuple![("fdb_rl_type", "map_sfixed32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sfixed64",
+                                tuple![("fdb_rl_type", "map_sfixed64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_bool",
+                                tuple![
+                                    ("fdb_rl_type", "map_bool"),
+                                    (
+                                        "fdb_rl_value",
+                                        tuple![
+                                            (
+                                                "hello",
+                                                tuple![
+                                                    ("fdb_rl_type", "bool"),
+                                                    ("fdb_rl_value", Value::Boolean(true)),
+                                                ]
+                                            ),
+                                            (
+                                                "world",
+                                                tuple![
+                                                    ("fdb_rl_type", "bool"),
+                                                    ("fdb_rl_value", Value::Boolean(false)),
+                                                ]
+                                            )
+                                        ]
+                                    ),
+                                ]
+                            ),
+                            (
+                                "field_string",
+                                tuple![("fdb_rl_type", "map_string"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_bytes",
+                                tuple![("fdb_rl_type", "map_bytes"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_enum",
+                                tuple![
+                                    ("fdb_rl_type", "map_enum_Size"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                            (
+                                "field_message",
+                                tuple![
+                                    ("fdb_rl_type", "map_message_HelloWorldString"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                            (
+                                "field_message_wkt_v1_uuid",
+                                tuple![
+                                    ("fdb_rl_type", "map_message_fdb_rl.field.v1.UUID"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                        ]
+                    )
+                ];
+
+                assert_eq!(result, expected.into(),);
+            }
+            // `HelloWorldMap, string`
+            {
+                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldMap;
+
+                let hello_world_map = HelloWorldMap {
+                    field_double: HashMap::new(),
+                    field_float: HashMap::new(),
+                    field_int32: HashMap::new(),
+                    field_int64: HashMap::new(),
+                    field_sint32: HashMap::new(),
+                    field_sint64: HashMap::new(),
+                    field_sfixed32: HashMap::new(),
+                    field_sfixed64: HashMap::new(),
+                    field_bool: HashMap::new(),
+                    field_string: HashMap::from([
+                        ("hello".to_string(), "abcd".to_string()),
+                        ("world".to_string(), "efgh".to_string()),
+                    ]),
+                    field_bytes: HashMap::new(),
+                    field_enum: HashMap::new(),
+                    field_message: HashMap::new(),
+                    field_message_wkt_v1_uuid: HashMap::new(),
+                };
+
+                let well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(hello_world_map.descriptor()).unwrap();
+
+                let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+                    well_formed_message_descriptor,
+                    &hello_world_map,
+                ))
+                .unwrap();
+
+                let result = Value::try_from(well_formed_dynamic_message).unwrap();
+                let expected = tuple![
+                    ("fdb_rl_type", "message_HelloWorldMap"),
+                    (
+                        "fdb_rl_value",
+                        tuple![
+                            (
+                                "field_double",
+                                tuple![("fdb_rl_type", "map_double"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_float",
+                                tuple![("fdb_rl_type", "map_float"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_int32",
+                                tuple![("fdb_rl_type", "map_int32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_int64",
+                                tuple![("fdb_rl_type", "map_int64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sint32",
+                                tuple![("fdb_rl_type", "map_sint32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sint64",
+                                tuple![("fdb_rl_type", "map_sint64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sfixed32",
+                                tuple![("fdb_rl_type", "map_sfixed32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sfixed64",
+                                tuple![("fdb_rl_type", "map_sfixed64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_bool",
+                                tuple![("fdb_rl_type", "map_bool"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_string",
+                                tuple![
+                                    ("fdb_rl_type", "map_string"),
+                                    (
+                                        "fdb_rl_value",
+                                        tuple![
+                                            (
+                                                "hello",
+                                                tuple![
+                                                    ("fdb_rl_type", "string"),
+                                                    ("fdb_rl_value", "abcd"),
+                                                ]
+                                            ),
+                                            (
+                                                "world",
+                                                tuple![
+                                                    ("fdb_rl_type", "string"),
+                                                    ("fdb_rl_value", "efgh"),
+                                                ]
+                                            )
+                                        ]
+                                    ),
+                                ]
+                            ),
+                            (
+                                "field_bytes",
+                                tuple![("fdb_rl_type", "map_bytes"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_enum",
+                                tuple![
+                                    ("fdb_rl_type", "map_enum_Size"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                            (
+                                "field_message",
+                                tuple![
+                                    ("fdb_rl_type", "map_message_HelloWorldString"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                            (
+                                "field_message_wkt_v1_uuid",
+                                tuple![
+                                    ("fdb_rl_type", "map_message_fdb_rl.field.v1.UUID"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                        ]
+                    )
+                ];
+
+                assert_eq!(result, expected.into(),);
+            }
+            // `HelloWorldMap, bytes`
+            {
+                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldMap;
+
+                let hello_world_map = HelloWorldMap {
+                    field_double: HashMap::new(),
+                    field_float: HashMap::new(),
+                    field_int32: HashMap::new(),
+                    field_int64: HashMap::new(),
+                    field_sint32: HashMap::new(),
+                    field_sint64: HashMap::new(),
+                    field_sfixed32: HashMap::new(),
+                    field_sfixed64: HashMap::new(),
+                    field_bool: HashMap::new(),
+                    field_string: HashMap::new(),
+                    field_bytes: HashMap::from([
+                        ("hello".to_string(), Bytes::from_static(b"abcd")),
+                        ("world".to_string(), Bytes::from_static(b"efgh")),
+                    ]),
+                    field_enum: HashMap::new(),
+                    field_message: HashMap::new(),
+                    field_message_wkt_v1_uuid: HashMap::new(),
+                };
+
+                let well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(hello_world_map.descriptor()).unwrap();
+
+                let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+                    well_formed_message_descriptor,
+                    &hello_world_map,
+                ))
+                .unwrap();
+
+                let result = Value::try_from(well_formed_dynamic_message).unwrap();
+                let expected = tuple![
+                    ("fdb_rl_type", "message_HelloWorldMap"),
+                    (
+                        "fdb_rl_value",
+                        tuple![
+                            (
+                                "field_double",
+                                tuple![("fdb_rl_type", "map_double"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_float",
+                                tuple![("fdb_rl_type", "map_float"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_int32",
+                                tuple![("fdb_rl_type", "map_int32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_int64",
+                                tuple![("fdb_rl_type", "map_int64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sint32",
+                                tuple![("fdb_rl_type", "map_sint32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sint64",
+                                tuple![("fdb_rl_type", "map_sint64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sfixed32",
+                                tuple![("fdb_rl_type", "map_sfixed32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sfixed64",
+                                tuple![("fdb_rl_type", "map_sfixed64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_bool",
+                                tuple![("fdb_rl_type", "map_bool"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_string",
+                                tuple![("fdb_rl_type", "map_string"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_bytes",
+                                tuple![
+                                    ("fdb_rl_type", "map_bytes"),
+                                    (
+                                        "fdb_rl_value",
+                                        tuple![
+                                            (
+                                                "hello",
+                                                tuple![
+                                                    ("fdb_rl_type", "bytes"),
+                                                    (
+                                                        "fdb_rl_value",
+                                                        Value::Blob(
+                                                            Vec::<u8>::from(Bytes::from_static(
+                                                                b"abcd"
+                                                            ))
+                                                            .into()
+                                                        )
+                                                    )
+                                                ]
+                                            ),
+                                            (
+                                                "world",
+                                                tuple![
+                                                    ("fdb_rl_type", "bytes"),
+                                                    (
+                                                        "fdb_rl_value",
+                                                        Value::Blob(
+                                                            Vec::<u8>::from(Bytes::from_static(
+                                                                b"efgh"
+                                                            ))
+                                                            .into()
+                                                        )
+                                                    ),
+                                                ]
+                                            )
+                                        ]
+                                    ),
+                                ]
+                            ),
+                            (
+                                "field_enum",
+                                tuple![
+                                    ("fdb_rl_type", "map_enum_Size"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                            (
+                                "field_message",
+                                tuple![
+                                    ("fdb_rl_type", "map_message_HelloWorldString"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                            (
+                                "field_message_wkt_v1_uuid",
+                                tuple![
+                                    ("fdb_rl_type", "map_message_fdb_rl.field.v1.UUID"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                        ]
+                    )
+                ];
+
+                assert_eq!(result, expected.into(),);
+            }
+            // `HelloWorldMap, enum`
+            {
+                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldMap;
+		use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::hello_world_map::Size;
+
+                let hello_world_map = HelloWorldMap {
+                    field_double: HashMap::new(),
+                    field_float: HashMap::new(),
+                    field_int32: HashMap::new(),
+                    field_int64: HashMap::new(),
+                    field_sint32: HashMap::new(),
+                    field_sint64: HashMap::new(),
+                    field_sfixed32: HashMap::new(),
+                    field_sfixed64: HashMap::new(),
+                    field_bool: HashMap::new(),
+                    field_string: HashMap::new(),
+                    field_bytes: HashMap::new(),
+                    field_enum: HashMap::from([
+                        ("hello".to_string(), Size::Small.into()),
+                        ("world".to_string(), Size::Medium.into()),
+                    ]),
+                    field_message: HashMap::new(),
+                    field_message_wkt_v1_uuid: HashMap::new(),
+                };
+
+                let well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(hello_world_map.descriptor()).unwrap();
+
+                let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+                    well_formed_message_descriptor,
+                    &hello_world_map,
+                ))
+                .unwrap();
+
+                let result = Value::try_from(well_formed_dynamic_message).unwrap();
+                let expected = tuple![
+                    ("fdb_rl_type", "message_HelloWorldMap"),
+                    (
+                        "fdb_rl_value",
+                        tuple![
+                            (
+                                "field_double",
+                                tuple![("fdb_rl_type", "map_double"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_float",
+                                tuple![("fdb_rl_type", "map_float"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_int32",
+                                tuple![("fdb_rl_type", "map_int32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_int64",
+                                tuple![("fdb_rl_type", "map_int64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sint32",
+                                tuple![("fdb_rl_type", "map_sint32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sint64",
+                                tuple![("fdb_rl_type", "map_sint64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sfixed32",
+                                tuple![("fdb_rl_type", "map_sfixed32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sfixed64",
+                                tuple![("fdb_rl_type", "map_sfixed64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_bool",
+                                tuple![("fdb_rl_type", "map_bool"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_string",
+                                tuple![("fdb_rl_type", "map_string"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_bytes",
+                                tuple![("fdb_rl_type", "map_bytes"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_enum",
+                                tuple![
+                                    ("fdb_rl_type", "map_enum_Size"),
+                                    (
+                                        "fdb_rl_value",
+                                        tuple![
+                                            (
+                                                "hello",
+                                                tuple![
+                                                    ("fdb_rl_type", "enum_Size"),
+                                                    (
+                                                        "fdb_rl_value",
+                                                        tuple![
+                                                            ("name", "SIZE_SMALL"),
+                                                            ("number", 1),
+                                                        ]
+                                                    )
+                                                ]
+                                            ),
+                                            (
+                                                "world",
+                                                tuple![
+                                                    ("fdb_rl_type", "enum_Size"),
+                                                    (
+                                                        "fdb_rl_value",
+                                                        tuple![
+                                                            ("name", "SIZE_MEDIUM"),
+                                                            ("number", 2),
+                                                        ]
+                                                    )
+                                                ]
+                                            )
+                                        ]
+                                    ),
+                                ]
+                            ),
+                            (
+                                "field_message",
+                                tuple![
+                                    ("fdb_rl_type", "map_message_HelloWorldString"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                            (
+                                "field_message_wkt_v1_uuid",
+                                tuple![
+                                    ("fdb_rl_type", "map_message_fdb_rl.field.v1.UUID"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                        ]
+                    )
+                ];
+
+                assert_eq!(result, expected.into(),);
+            }
+            // `HelloWorldMap, message`
+            {
+                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::{
+                    HelloWorldMap, HelloWorldString,
+                };
+
+                let hello_world_map = HelloWorldMap {
+                    field_double: HashMap::new(),
+                    field_float: HashMap::new(),
+                    field_int32: HashMap::new(),
+                    field_int64: HashMap::new(),
+                    field_sint32: HashMap::new(),
+                    field_sint64: HashMap::new(),
+                    field_sfixed32: HashMap::new(),
+                    field_sfixed64: HashMap::new(),
+                    field_bool: HashMap::new(),
+                    field_string: HashMap::new(),
+                    field_bytes: HashMap::new(),
+                    field_enum: HashMap::new(),
+                    field_message: HashMap::from([
+                        (
+                            "hello".to_string(),
+                            HelloWorldString {
+                                hello: Some("hello".to_string()),
+                                world: None,
+                            },
+                        ),
+                        (
+                            "world".to_string(),
+                            HelloWorldString {
+                                hello: None,
+                                world: Some("world".to_string()),
+                            },
+                        ),
+                    ]),
+                    field_message_wkt_v1_uuid: HashMap::new(),
+                };
+
+                let well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(hello_world_map.descriptor()).unwrap();
+
+                let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+                    well_formed_message_descriptor,
+                    &hello_world_map,
+                ))
+                .unwrap();
+
+                let result = Value::try_from(well_formed_dynamic_message).unwrap();
+                let expected = tuple![
+                    ("fdb_rl_type", "message_HelloWorldMap"),
+                    (
+                        "fdb_rl_value",
+                        tuple![
+                            (
+                                "field_double",
+                                tuple![("fdb_rl_type", "map_double"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_float",
+                                tuple![("fdb_rl_type", "map_float"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_int32",
+                                tuple![("fdb_rl_type", "map_int32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_int64",
+                                tuple![("fdb_rl_type", "map_int64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sint32",
+                                tuple![("fdb_rl_type", "map_sint32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sint64",
+                                tuple![("fdb_rl_type", "map_sint64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sfixed32",
+                                tuple![("fdb_rl_type", "map_sfixed32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sfixed64",
+                                tuple![("fdb_rl_type", "map_sfixed64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_bool",
+                                tuple![("fdb_rl_type", "map_bool"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_string",
+                                tuple![("fdb_rl_type", "map_string"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_bytes",
+                                tuple![("fdb_rl_type", "map_bytes"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_enum",
+                                tuple![
+                                    ("fdb_rl_type", "map_enum_Size"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                            (
+                                "field_message",
+                                tuple![
+                                    ("fdb_rl_type", "map_message_HelloWorldString"),
+                                    (
+                                        "fdb_rl_value",
+                                        tuple![
+                                            (
+                                                "hello",
+                                                tuple![
+                                                    ("fdb_rl_type", "message_HelloWorldString"),
+                                                    (
+                                                        "fdb_rl_value",
+                                                        tuple![
+                                                            (
+                                                                "fdb_rl_type",
+                                                                "message_HelloWorldString"
+                                                            ),
+                                                            (
+                                                                "fdb_rl_value",
+                                                                tuple![
+                                                                    (
+                                                                        "hello",
+                                                                        tuple![
+                                                                            (
+                                                                                "fdb_rl_type",
+                                                                                "string"
+                                                                            ),
+                                                                            (
+                                                                                "fdb_rl_value",
+                                                                                "hello"
+                                                                            ),
+                                                                        ]
+                                                                    ),
+                                                                    (
+                                                                        "world",
+                                                                        tuple![
+                                                                            (
+                                                                                "fdb_rl_type",
+                                                                                "string"
+                                                                            ),
+                                                                            (
+                                                                                "fdb_rl_value",
+                                                                                Value::Null
+                                                                            ),
+                                                                        ]
+                                                                    ),
+                                                                ]
+                                                            )
+                                                        ]
+                                                    )
+                                                ]
+                                            ),
+                                            (
+                                                "world",
+                                                tuple![
+                                                    ("fdb_rl_type", "message_HelloWorldString"),
+                                                    (
+                                                        "fdb_rl_value",
+                                                        tuple![
+                                                            (
+                                                                "fdb_rl_type",
+                                                                "message_HelloWorldString"
+                                                            ),
+                                                            (
+                                                                "fdb_rl_value",
+                                                                tuple![
+                                                                    (
+                                                                        "hello",
+                                                                        tuple![
+                                                                            (
+                                                                                "fdb_rl_type",
+                                                                                "string"
+                                                                            ),
+                                                                            (
+                                                                                "fdb_rl_value",
+                                                                                Value::Null
+                                                                            ),
+                                                                        ]
+                                                                    ),
+                                                                    (
+                                                                        "world",
+                                                                        tuple![
+                                                                            (
+                                                                                "fdb_rl_type",
+                                                                                "string"
+                                                                            ),
+                                                                            (
+                                                                                "fdb_rl_value",
+                                                                                "world"
+                                                                            ),
+                                                                        ]
+                                                                    ),
+                                                                ]
+                                                            )
+                                                        ]
+                                                    )
+                                                ]
+                                            )
+                                        ]
+                                    ),
+                                ]
+                            ),
+                            (
+                                "field_message_wkt_v1_uuid",
+                                tuple![
+                                    ("fdb_rl_type", "map_message_fdb_rl.field.v1.UUID"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                        ]
+                    )
+                ];
+
+                assert_eq!(result, expected.into(),);
+            }
+            // `HelloWorldMap, message_fdb_rl.field.v1.UUID`
+            {
+                use fdb_rl_proto::fdb_rl::field::v1::Uuid as FdbRLWktV1UuidProto;
+                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldMap;
+
+                let hello_world_map = HelloWorldMap {
+                    field_double: HashMap::new(),
+                    field_float: HashMap::new(),
+                    field_int32: HashMap::new(),
+                    field_int64: HashMap::new(),
+                    field_sint32: HashMap::new(),
+                    field_sint64: HashMap::new(),
+                    field_sfixed32: HashMap::new(),
+                    field_sfixed64: HashMap::new(),
+                    field_bool: HashMap::new(),
+                    field_string: HashMap::new(),
+                    field_bytes: HashMap::new(),
+                    field_enum: HashMap::new(),
+                    field_message: HashMap::new(),
+                    field_message_wkt_v1_uuid: HashMap::from([
+                        (
+                            "hello".to_string(),
+                            FdbRLWktV1UuidProto::from(
+                                Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e").unwrap(),
+                            ),
+                        ),
+                        (
+                            "world".to_string(),
+                            FdbRLWktV1UuidProto::from(
+                                Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e").unwrap(),
+                            ),
+                        ),
+                    ]),
+                };
+
+                let well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(hello_world_map.descriptor()).unwrap();
+
+                let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+                    well_formed_message_descriptor,
+                    &hello_world_map,
+                ))
+                .unwrap();
+
+                let result = Value::try_from(well_formed_dynamic_message).unwrap();
+                let expected = tuple![
+                    ("fdb_rl_type", "message_HelloWorldMap"),
+                    (
+                        "fdb_rl_value",
+                        tuple![
+                            (
+                                "field_double",
+                                tuple![("fdb_rl_type", "map_double"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_float",
+                                tuple![("fdb_rl_type", "map_float"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_int32",
+                                tuple![("fdb_rl_type", "map_int32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_int64",
+                                tuple![("fdb_rl_type", "map_int64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sint32",
+                                tuple![("fdb_rl_type", "map_sint32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sint64",
+                                tuple![("fdb_rl_type", "map_sint64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sfixed32",
+                                tuple![("fdb_rl_type", "map_sfixed32"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_sfixed64",
+                                tuple![("fdb_rl_type", "map_sfixed64"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_bool",
+                                tuple![("fdb_rl_type", "map_bool"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_string",
+                                tuple![("fdb_rl_type", "map_string"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_bytes",
+                                tuple![("fdb_rl_type", "map_bytes"), ("fdb_rl_value", tuple![]),]
+                            ),
+                            (
+                                "field_enum",
+                                tuple![
+                                    ("fdb_rl_type", "map_enum_Size"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                            (
+                                "field_message",
+                                tuple![
+                                    ("fdb_rl_type", "map_message_HelloWorldString"),
+                                    ("fdb_rl_value", tuple![]),
+                                ]
+                            ),
+                            (
+                                "field_message_wkt_v1_uuid",
+                                tuple![
+                                    ("fdb_rl_type", "map_message_fdb_rl.field.v1.UUID"),
+                                    (
+                                        "fdb_rl_value",
+                                        tuple![
+                                            (
+                                                "hello",
+                                                tuple![
+                                                    ("fdb_rl_type", "message_fdb_rl.field.v1.UUID"),
+                                                    (
+                                                        "fdb_rl_value",
+                                                        tuple![(
+                                            "uuid_value",
+                                            Value::Blob(
+                                                Uuid::parse_str(
+                                                    "ffffffff-ba5e-ba11-0000-00005ca1ab1e"
+                                                )
+                                                .unwrap()
+                                                .as_bytes()
+                                                .to_vec()
+                                                .into(),
+                                            )
+                                        )]
+                                                    )
+                                                ]
+                                            ),
+                                            (
+                                                "world",
+                                                tuple![
+                                                    ("fdb_rl_type", "message_fdb_rl.field.v1.UUID"),
+                                                    (
+                                                        "fdb_rl_value",
+                                                        tuple![(
+                                            "uuid_value",
+                                            Value::Blob(
+                                                Uuid::parse_str(
+                                                    "ffffffff-ba5e-ba11-0000-00005ca1ab1e"
+                                                )
+                                                .unwrap()
+                                                .as_bytes()
+                                                .to_vec()
+                                                .into(),
+                                            )
+                                        )]
+                                                    )
+                                                ]
+                                            )
+                                        ]
+                                    ),
+                                ]
+                            ),
+                        ]
+                    )
+                ];
+
+                assert_eq!(result, expected.into(),);
             }
         }
     }
