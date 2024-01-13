@@ -26,8 +26,6 @@ use super::error::{
 use super::{WellFormedMessageDescriptor, FDB_RL_WKT_V1_UUID};
 
 /// Describes a valid `DynamicMessage`.
-///
-/// TODO
 #[derive(Debug, PartialEq)]
 pub(crate) struct WellFormedDynamicMessage {
     inner: DynamicMessage,
@@ -968,7 +966,6 @@ impl WellFormedDynamicMessage {
                     ));
                 }
 
-                // TODO
                 message_fdb_rl_value_tuple.insert(
                     field_descriptor.name(),
                     Value::Tuple(
@@ -3360,29 +3357,166 @@ mod tests {
 
                 assert_eq!(result, expected.into(),);
             }
-        }
-
-        // TODO: Continue from here.
-        #[test]
-        fn wip() {
+            // `HelloWorldRepeated, empty`
             {
                 use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldRepeated;
 
+                let hello_world_repeated = HelloWorldRepeated::default();
+
+                let well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(hello_world_repeated.descriptor())
+                        .unwrap();
+
+                let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+                    well_formed_message_descriptor,
+                    &hello_world_repeated,
+                ))
+                .unwrap();
+
+                let result = Value::try_from(well_formed_dynamic_message).unwrap();
+                let expected = tuple![
+                    ("fdb_rl_type", "message_HelloWorldRepeated"),
+                    (
+                        "fdb_rl_value",
+                        tuple![
+                            (
+                                "field_double",
+                                tuple![
+                                    ("fdb_rl_type", "repeated_double"),
+                                    ("fdb_rl_value", list![])
+                                ]
+                            ),
+                            (
+                                "field_float",
+                                tuple![
+                                    ("fdb_rl_type", "repeated_float"),
+                                    ("fdb_rl_value", list![])
+                                ]
+                            ),
+                            (
+                                "field_int32",
+                                tuple![
+                                    ("fdb_rl_type", "repeated_int32"),
+                                    ("fdb_rl_value", list![])
+                                ]
+                            ),
+                            (
+                                "field_int64",
+                                tuple![
+                                    ("fdb_rl_type", "repeated_int64"),
+                                    ("fdb_rl_value", list![])
+                                ]
+                            ),
+                            (
+                                "field_sint32",
+                                tuple![
+                                    ("fdb_rl_type", "repeated_sint32"),
+                                    ("fdb_rl_value", list![])
+                                ]
+                            ),
+                            (
+                                "field_sint64",
+                                tuple![
+                                    ("fdb_rl_type", "repeated_sint64"),
+                                    ("fdb_rl_value", list![])
+                                ]
+                            ),
+                            (
+                                "field_sfixed32",
+                                tuple![
+                                    ("fdb_rl_type", "repeated_sfixed32"),
+                                    ("fdb_rl_value", list![])
+                                ]
+                            ),
+                            (
+                                "field_sfixed64",
+                                tuple![
+                                    ("fdb_rl_type", "repeated_sfixed64"),
+                                    ("fdb_rl_value", list![])
+                                ]
+                            ),
+                            (
+                                "field_bool",
+                                tuple![("fdb_rl_type", "repeated_bool"), ("fdb_rl_value", list![])]
+                            ),
+                            (
+                                "field_string",
+                                tuple![
+                                    ("fdb_rl_type", "repeated_string"),
+                                    ("fdb_rl_value", list![])
+                                ]
+                            ),
+                            (
+                                "field_bytes",
+                                tuple![
+                                    ("fdb_rl_type", "repeated_bytes"),
+                                    ("fdb_rl_value", list![])
+                                ]
+                            ),
+                            (
+                                "field_enum",
+                                tuple![
+                                    ("fdb_rl_type", "repeated_enum_Size"),
+                                    ("fdb_rl_value", list![])
+                                ]
+                            ),
+                            (
+                                "field_message",
+                                tuple![
+                                    ("fdb_rl_type", "repeated_message_HelloWorldString"),
+                                    ("fdb_rl_value", list![])
+                                ]
+                            ),
+                            (
+                                "field_message_wkt_v1_uuid",
+                                tuple![
+                                    ("fdb_rl_type", "repeated_message_fdb_rl.field.v1.UUID"),
+                                    ("fdb_rl_value", list![])
+                                ]
+                            ),
+                        ]
+                    )
+                ];
+
+                assert_eq!(result, expected.into(),);
+            }
+            // `HelloWorldRepeated, not empty`
+            {
+                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::{HelloWorldRepeated, HelloWorldString};
+		use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::hello_world_repeated::Size;
+		use fdb_rl_proto::fdb_rl::field::v1::Uuid as FdbRLWktV1UuidProto;
+
                 let hello_world_repeated = HelloWorldRepeated {
                     field_double: vec![3.14, 3.14],
-                    field_float: vec![],
-                    field_int32: vec![],
-                    field_int64: vec![],
-                    field_sint32: vec![],
-                    field_sint64: vec![],
-                    field_sfixed32: vec![],
-                    field_sfixed64: vec![],
-                    field_bool: vec![],
-                    field_string: vec![],
-                    field_bytes: vec![],
-                    field_enum: vec![],
-                    field_message: vec![],
-                    field_message_wkt_v1_uuid: vec![],
+                    field_float: vec![3.14, 3.14],
+                    field_int32: vec![108, 108],
+                    field_int64: vec![108, 108],
+                    field_sint32: vec![108, 108],
+                    field_sint64: vec![108, 108],
+                    field_sfixed32: vec![108, 108],
+                    field_sfixed64: vec![108, 108],
+                    field_bool: vec![true, false],
+                    field_string: vec!["abcd".to_string(), "efgh".to_string()],
+                    field_bytes: vec![Bytes::from_static(b"abcd"), Bytes::from_static(b"efgh")],
+                    field_enum: vec![Size::Small.into(), Size::Small.into()],
+                    field_message: vec![
+                        HelloWorldString {
+                            hello: Some("hello".to_string()),
+                            world: None,
+                        },
+                        HelloWorldString {
+                            hello: None,
+                            world: Some("world".to_string()),
+                        },
+                    ],
+                    field_message_wkt_v1_uuid: vec![
+                        FdbRLWktV1UuidProto::from(
+                            Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e").unwrap(),
+                        ),
+                        FdbRLWktV1UuidProto::from(
+                            Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e").unwrap(),
+                        ),
+                    ],
                 };
 
                 let well_formed_message_descriptor =
@@ -3420,101 +3554,353 @@ mod tests {
                                     ),
                                 ]
                             ),
-                            // TODO: Continue from here.
                             (
                                 "field_float",
                                 tuple![
                                     ("fdb_rl_type", "repeated_float"),
-                                    ("fdb_rl_value", list![]),
+                                    (
+                                        "fdb_rl_value",
+                                        list![
+                                            tuple![
+                                                ("fdb_rl_type", "float"),
+                                                ("fdb_rl_value", 3.14),
+                                            ],
+                                            tuple![
+                                                ("fdb_rl_type", "float"),
+                                                ("fdb_rl_value", 3.14),
+                                            ]
+                                        ]
+                                    ),
                                 ]
                             ),
                             (
                                 "field_int32",
                                 tuple![
                                     ("fdb_rl_type", "repeated_int32"),
-                                    ("fdb_rl_value", list![]),
+                                    (
+                                        "fdb_rl_value",
+                                        list![
+                                            tuple![("fdb_rl_type", "int32"), ("fdb_rl_value", 108),],
+                                            tuple![("fdb_rl_type", "int32"), ("fdb_rl_value", 108),]
+                                        ]
+                                    ),
                                 ]
                             ),
                             (
                                 "field_int64",
                                 tuple![
                                     ("fdb_rl_type", "repeated_int64"),
-                                    ("fdb_rl_value", list![]),
+                                    (
+                                        "fdb_rl_value",
+                                        list![
+                                            tuple![("fdb_rl_type", "int64"), ("fdb_rl_value", 108),],
+                                            tuple![("fdb_rl_type", "int64"), ("fdb_rl_value", 108),]
+                                        ]
+                                    ),
                                 ]
                             ),
                             (
                                 "field_sint32",
                                 tuple![
                                     ("fdb_rl_type", "repeated_sint32"),
-                                    ("fdb_rl_value", list![]),
+                                    (
+                                        "fdb_rl_value",
+                                        list![
+                                            tuple![
+                                                ("fdb_rl_type", "sint32"),
+                                                ("fdb_rl_value", 108),
+                                            ],
+                                            tuple![
+                                                ("fdb_rl_type", "sint32"),
+                                                ("fdb_rl_value", 108),
+                                            ]
+                                        ]
+                                    ),
                                 ]
                             ),
                             (
                                 "field_sint64",
                                 tuple![
                                     ("fdb_rl_type", "repeated_sint64"),
-                                    ("fdb_rl_value", list![]),
+                                    (
+                                        "fdb_rl_value",
+                                        list![
+                                            tuple![
+                                                ("fdb_rl_type", "sint64"),
+                                                ("fdb_rl_value", 108),
+                                            ],
+                                            tuple![
+                                                ("fdb_rl_type", "sint64"),
+                                                ("fdb_rl_value", 108),
+                                            ]
+                                        ]
+                                    ),
                                 ]
                             ),
                             (
                                 "field_sfixed32",
                                 tuple![
                                     ("fdb_rl_type", "repeated_sfixed32"),
-                                    ("fdb_rl_value", list![]),
+                                    (
+                                        "fdb_rl_value",
+                                        list![
+                                            tuple![
+                                                ("fdb_rl_type", "sfixed32"),
+                                                ("fdb_rl_value", 108),
+                                            ],
+                                            tuple![
+                                                ("fdb_rl_type", "sfixed32"),
+                                                ("fdb_rl_value", 108),
+                                            ]
+                                        ]
+                                    ),
                                 ]
                             ),
                             (
                                 "field_sfixed64",
                                 tuple![
                                     ("fdb_rl_type", "repeated_sfixed64"),
-                                    ("fdb_rl_value", list![]),
+                                    (
+                                        "fdb_rl_value",
+                                        list![
+                                            tuple![
+                                                ("fdb_rl_type", "sfixed64"),
+                                                ("fdb_rl_value", 108),
+                                            ],
+                                            tuple![
+                                                ("fdb_rl_type", "sfixed64"),
+                                                ("fdb_rl_value", 108),
+                                            ]
+                                        ]
+                                    ),
                                 ]
                             ),
                             (
                                 "field_bool",
-                                tuple![("fdb_rl_type", "repeated_bool"), ("fdb_rl_value", list![]),]
+                                tuple![
+                                    ("fdb_rl_type", "repeated_bool"),
+                                    (
+                                        "fdb_rl_value",
+                                        list![
+                                            tuple![
+                                                ("fdb_rl_type", "bool"),
+                                                ("fdb_rl_value", Value::Boolean(true)),
+                                            ],
+                                            tuple![
+                                                ("fdb_rl_type", "bool"),
+                                                ("fdb_rl_value", Value::Boolean(false)),
+                                            ]
+                                        ]
+                                    ),
+                                ]
                             ),
                             (
                                 "field_string",
                                 tuple![
                                     ("fdb_rl_type", "repeated_string"),
-                                    ("fdb_rl_value", list![]),
+                                    (
+                                        "fdb_rl_value",
+                                        list![
+                                            tuple![
+                                                ("fdb_rl_type", "string"),
+                                                ("fdb_rl_value", "abcd"),
+                                            ],
+                                            tuple![
+                                                ("fdb_rl_type", "string"),
+                                                ("fdb_rl_value", "efgh"),
+                                            ]
+                                        ]
+                                    ),
                                 ]
                             ),
                             (
                                 "field_bytes",
                                 tuple![
                                     ("fdb_rl_type", "repeated_bytes"),
-                                    ("fdb_rl_value", list![]),
+                                    (
+                                        "fdb_rl_value",
+                                        list![
+                                            tuple![
+                                                ("fdb_rl_type", "bytes"),
+                                                (
+                                                    "fdb_rl_value",
+                                                    Value::Blob(
+                                                        Vec::<u8>::from(Bytes::from_static(
+                                                            b"abcd"
+                                                        ))
+                                                        .into()
+                                                    )
+                                                )
+                                            ],
+                                            tuple![
+                                                ("fdb_rl_type", "bytes"),
+                                                (
+                                                    "fdb_rl_value",
+                                                    Value::Blob(
+                                                        Vec::<u8>::from(Bytes::from_static(
+                                                            b"efgh"
+                                                        ))
+                                                        .into()
+                                                    )
+                                                ),
+                                            ]
+                                        ]
+                                    ),
                                 ]
                             ),
                             (
                                 "field_enum",
                                 tuple![
                                     ("fdb_rl_type", "repeated_enum_Size"),
-                                    ("fdb_rl_value", list![]),
+                                    (
+                                        "fdb_rl_value",
+                                        list![
+                                            tuple![
+                                                ("fdb_rl_type", "enum_Size"),
+                                                (
+                                                    "fdb_rl_value",
+                                                    tuple![("name", "SIZE_SMALL"), ("number", 1),]
+                                                )
+                                            ],
+                                            tuple![
+                                                ("fdb_rl_type", "enum_Size"),
+                                                (
+                                                    "fdb_rl_value",
+                                                    tuple![("name", "SIZE_SMALL"), ("number", 1),]
+                                                )
+                                            ]
+                                        ]
+                                    ),
                                 ]
                             ),
                             (
                                 "field_message",
                                 tuple![
                                     ("fdb_rl_type", "repeated_message_HelloWorldString"),
-                                    ("fdb_rl_value", list![]),
+                                    (
+                                        "fdb_rl_value",
+                                        list![
+                                            tuple![
+                                                ("fdb_rl_type", "message_HelloWorldString"),
+                                                (
+                                                    "fdb_rl_value",
+                                                    tuple![
+                                                        ("fdb_rl_type", "message_HelloWorldString"),
+                                                        (
+                                                            "fdb_rl_value",
+                                                            tuple![
+                                                                (
+                                                                    "hello",
+                                                                    tuple![
+                                                                        ("fdb_rl_type", "string"),
+                                                                        ("fdb_rl_value", "hello"),
+                                                                    ]
+                                                                ),
+                                                                (
+                                                                    "world",
+                                                                    tuple![
+                                                                        ("fdb_rl_type", "string"),
+                                                                        (
+                                                                            "fdb_rl_value",
+                                                                            Value::Null
+                                                                        ),
+                                                                    ]
+                                                                ),
+                                                            ]
+                                                        )
+                                                    ]
+                                                )
+                                            ],
+                                            tuple![
+                                                ("fdb_rl_type", "message_HelloWorldString"),
+                                                (
+                                                    "fdb_rl_value",
+                                                    tuple![
+                                                        ("fdb_rl_type", "message_HelloWorldString"),
+                                                        (
+                                                            "fdb_rl_value",
+                                                            tuple![
+                                                                (
+                                                                    "hello",
+                                                                    tuple![
+                                                                        ("fdb_rl_type", "string"),
+                                                                        (
+                                                                            "fdb_rl_value",
+                                                                            Value::Null
+                                                                        ),
+                                                                    ]
+                                                                ),
+                                                                (
+                                                                    "world",
+                                                                    tuple![
+                                                                        ("fdb_rl_type", "string"),
+                                                                        ("fdb_rl_value", "world"),
+                                                                    ]
+                                                                ),
+                                                            ]
+                                                        )
+                                                    ]
+                                                )
+                                            ]
+                                        ]
+                                    ),
                                 ]
                             ),
                             (
                                 "field_message_wkt_v1_uuid",
                                 tuple![
                                     ("fdb_rl_type", "repeated_message_fdb_rl.field.v1.UUID"),
-                                    ("fdb_rl_value", list![]),
+                                    (
+                                        "fdb_rl_value",
+                                        list![
+                                            tuple![
+                                                ("fdb_rl_type", "message_fdb_rl.field.v1.UUID"),
+                                                (
+                                                    "fdb_rl_value",
+                                                    tuple![
+							(
+							    "uuid_value",
+							    Value::Blob(
+								Uuid::parse_str(
+								    "ffffffff-ba5e-ba11-0000-00005ca1ab1e"
+								)
+								.unwrap()
+								.as_bytes()
+								.to_vec()
+								.into(),
+							    )
+							)
+						    ]
+                                                )
+                                            ],
+                                            tuple![
+                                                ("fdb_rl_type", "message_fdb_rl.field.v1.UUID"),
+                                                (
+                                                    "fdb_rl_value",
+                                                    tuple![
+							(
+							    "uuid_value",
+							    Value::Blob(
+								Uuid::parse_str(
+								    "ffffffff-ba5e-ba11-0000-00005ca1ab1e"
+								)
+								.unwrap()
+								.as_bytes()
+                                                                .to_vec()
+								.into(),
+							    )
+							)
+						    ]
+                                                )
+                                            ]
+                                        ]
+                                    ),
                                 ]
                             ),
                         ]
                     )
                 ];
 
-                // println!("{:?}", result);
-                // println!("{:?}", expected);
                 assert_eq!(result, expected.into(),);
             }
         }
