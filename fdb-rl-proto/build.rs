@@ -22,7 +22,6 @@ fn main() -> io::Result<()> {
                 &[
                     "proto/fdb_rl/cursor/v1/cursor.proto",
                     "proto/fdb_rl/field/v1/field.proto",
-                    "proto/fdb_rl/key_expression/v1/key_expression.proto",
                     "proto/fdb_rl/record_metadata/v1/record_type.proto",
                 ],
                 &["proto/"],

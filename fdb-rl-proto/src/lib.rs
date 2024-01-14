@@ -90,12 +90,6 @@ pub mod fdb_rl {
         }
     }
 
-    pub mod key_expression {
-        pub mod v1 {
-            include_proto!("fdb_rl.key_expression.v1");
-        }
-    }
-
     pub mod record_metadata {
         pub mod v1 {
             include_proto!("fdb_rl.record_metadata.v1");
