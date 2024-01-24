@@ -21,6 +21,7 @@ fn main() -> io::Result<()> {
                 prost_build_config,
                 &[
                     "proto/fdb_rl/cursor/v1/cursor.proto",
+                    "proto/fdb_rl/fdb_tuple_schema/v1/fdb_tuple_schema.proto",
                     "proto/fdb_rl/field/v1/field.proto",
                     "proto/fdb_rl/record_metadata/v1/record_type.proto",
                 ],

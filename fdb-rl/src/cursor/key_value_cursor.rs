@@ -55,9 +55,9 @@ pub(crate) mod pb {
         type Error = FdbError;
 
         fn try_from(
-            keyvalue_continuation_v1: ProtoKeyValueContinuationV1,
+            proto_keyvalue_continuation_v1: ProtoKeyValueContinuationV1,
         ) -> FdbResult<KeyValueContinuationInternalV1> {
-            keyvalue_continuation_v1
+            proto_keyvalue_continuation_v1
                 .key_value_continuation
                 .ok_or_else(|| FdbError::new(CURSOR_INVALID_CONTINUATION))
                 .map(|key_value_continuation| KeyValueContinuationInternalV1 {

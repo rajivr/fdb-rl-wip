@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package fdb_rl.fdb_tuple_schema.v1;
+
+// Protobuf adaptation of `fdb::tuple::TupleSchemaElement`.
+message FdbTupleSchemaElement {
+  message Null {}
+
+  message Bytes {}
+
+  message String {}
+
+  message Integer {}
+
+  message Float {}
+
+  message Double {}
+
+  message Boolean {}
+
+  message Uuid {}
+
+  message Versionstamp {}
+
+  // Required.
+  oneof fdb_tuple_schema_element {
+    Null null = 1;
+    Bytes bytes = 2;
+    String string = 3;
+    FdbTupleSchema tuple = 4;
+    Integer integer = 5;
+    Float float = 6;
+    Double double = 7;
+    Boolean boolean = 8;
+    Uuid uuid = 9;
+    Versionstamp versionstamp = 10;
+    Bytes maybe_bytes = 11;
+    String maybe_string = 12;
+    FdbTupleSchema maybe_tuple = 13;
+    Integer maybe_integer = 14;
+    Float maybe_float = 15;
+    Double maybe_double = 16;
+    Boolean maybe_boolean = 17;
+    Uuid maybe_uuid = 18;
+    Versionstamp maybe_versionstamp = 19;
+    Bytes list_of_bytes = 20;
+    String list_of_string = 21;
+    FdbTupleSchema list_of_tuple = 22;
+    Integer list_of_integer = 23;
+    Float list_of_float = 24;
+    Double list_of_double = 25;
+    Boolean list_of_boolean = 26;
+    Uuid list_of_uuid = 27;
+    Versionstamp list_of_versionstamp = 28;
+  }
+}
+
+// Protobuf adaptation of `fdb::tuple::TupleSchema`.
+message FdbTupleSchema {
+  repeated FdbTupleSchemaElement fdb_tuple_schema_elements = 1;
+}

@@ -25,6 +25,12 @@ pub mod fdb_rl {
         }
     }
 
+    pub mod fdb_tuple_schema {
+        pub mod v1 {
+            include_proto!("fdb_rl.fdb_tuple_schema.v1");
+        }
+    }
+
     pub mod field {
         pub mod v1 {
             use std::convert::TryFrom;
