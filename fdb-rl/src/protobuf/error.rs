@@ -1,4 +1,4 @@
-//! Provides error constants for key expression module.
+//! Provides error constants for protobuf module.
 //!
 //! Also see `src/error.rs` for assigned error ranges.
 

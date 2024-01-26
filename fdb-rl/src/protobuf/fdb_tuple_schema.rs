@@ -1,3 +1,5 @@
+use fdb::tuple::TupleSchema;
+
 /// Protobuf types
 pub(crate) mod pb {
     use fdb::error::{FdbError, FdbResult};
@@ -557,8 +559,18 @@ pub(crate) enum FdbTupleSchemaInternal {
     V1(pb::FdbTupleSchemaInternalV1),
 }
 
-// TODO:
-//
-// Write conversion function from
-//   - `FdbTupleSchemaInternal` to `fdb::tuple::TupleSchema`.
-//   - `fdb::tuple::TupleSchema` to `FdbTupleSchemaInternal`
+impl From<FdbTupleSchemaInternal> for TupleSchema {
+    fn from(fdb_tuple_schema_internal: FdbTupleSchemaInternal) -> TupleSchema {
+        match fdb_tuple_schema_internal {
+            FdbTupleSchemaInternal::V1(pb_fdb_tuple_schema_internal_v1) => {
+                TupleSchema::from(pb_fdb_tuple_schema_internal_v1)
+            }
+        }
+    }
+}
+
+impl From<TupleSchema> for FdbTupleSchemaInternal {
+    fn from(tuple_schema: TupleSchema) -> FdbTupleSchemaInternal {
+        FdbTupleSchemaInternal::V1(pb::FdbTupleSchemaInternalV1::from(tuple_schema))
+    }
+}

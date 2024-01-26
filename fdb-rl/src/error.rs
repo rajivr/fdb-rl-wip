@@ -8,7 +8,7 @@
 // 210 - `split_helper` module
 // 220 - `RecordContext` type
 // 230 - `raw_record` module (private, see `raw_record/error.rs`)
-// 240 - TODO
+// 240 - `partiql` module (private, see `partiql/error.rs`)
 // 250 - `protobuf` module (private, see `protobuf/error.rs`)
 
 /// Continuation is invalid.
