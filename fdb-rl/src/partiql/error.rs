@@ -3,4 +3,4 @@
 //! Also see `src/error.rs` for assigned error ranges.
 
 // TODO
-// PARTIQL_... 240
+pub(crate) const PARTIQL_FDB_TUPLE_INVALID_VALUE: i32 = 240;
