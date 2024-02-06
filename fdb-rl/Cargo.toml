@@ -33,6 +33,7 @@ rust_decimal = { version = "1.25.0", default-features = false, features = ["std"
 prost = "0.12"
 prost-reflect = "0.12"
 tokio-stream = "0.1"
+time = "0.3"
 uuid = { version = "0.8", features = ["v4"] }
 
 [dev-dependencies]

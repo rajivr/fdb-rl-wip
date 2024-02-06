@@ -15,6 +15,9 @@ pub(crate) struct FdbRLPartiQLTuple<'ts> {
     tuple: FdbTuple,
 }
 
+/// TODO
+///
+/// Can we use `Value::Tuple(_)` as a way to introduce versionstamp?
 impl<'ts> FdbRLPartiQLTuple<'ts> {
     fn try_from_inner<'t>(partiql_list: List, fdb_tuple_ref: &'t mut FdbTuple) -> FdbResult<()> {
         for partiql_value in partiql_list {

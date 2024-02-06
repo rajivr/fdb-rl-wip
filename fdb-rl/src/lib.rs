@@ -51,6 +51,7 @@ pub mod partiql;
 pub mod protobuf;
 pub mod range;
 pub mod scan;
+pub mod tuple;
 
 #[doc(hidden)]
 pub mod test;
