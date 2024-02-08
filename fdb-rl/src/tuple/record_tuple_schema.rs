@@ -1,4 +1,7 @@
+use std::collections::vec_deque::{IntoIter, Iter};
 use std::collections::VecDeque;
+
+use crate::tuple::RecordTuple;
 
 // TODO
 // https://github.com/cockroachdb/cockroach/blob/v23.1.14/pkg/util/encoding/encoding.go#L42-L135
@@ -103,13 +106,13 @@ pub(crate) const RECORD_TUPLE_MARKER_MAYBE_TIME: i32 = 31;
 pub(crate) const RECORD_TUPLE_MARKER_LIST_OF_TIME: i32 = 32;
 
 /// TODO
-pub(crate) const RECORD_TUPLE_MARKER_UTC_TIME_WITH_OFFSET: i32 = 33;
+pub(crate) const RECORD_TUPLE_MARKER_UTC_TIME_WITH_MAYBE_OFFSET: i32 = 33;
 
 /// TODO
-pub(crate) const RECORD_TUPLE_MARKER_MAYBE_UTC_TIME_WITH_OFFSET: i32 = 34;
+pub(crate) const RECORD_TUPLE_MARKER_MAYBE_UTC_TIME_WITH_MAYBE_OFFSET: i32 = 34;
 
 /// TODO
-pub(crate) const RECORD_TUPLE_MARKER_LIST_OF_UTC_TIME_WITH_OFFSET: i32 = 35;
+pub(crate) const RECORD_TUPLE_MARKER_LIST_OF_UTC_TIME_WITH_MAYBE_OFFSET: i32 = 35;
 
 /// TODO
 pub(crate) const RECORD_TUPLE_MARKER_TIMESTAMP: i32 = 36;
@@ -121,18 +124,88 @@ pub(crate) const RECORD_TUPLE_MARKER_MAYBE_TIMESTAMP: i32 = 37;
 pub(crate) const RECORD_TUPLE_MARKER_LIST_OF_TIMESTAMP: i32 = 38;
 
 /// TODO
-pub(crate) const RECORD_TUPLE_MARKER_UTC_TIMESTAMP_WITH_OFFSET: i32 = 39;
+pub(crate) const RECORD_TUPLE_MARKER_UTC_TIMESTAMP_WITH_MAYBE_OFFSET: i32 = 39;
 
 /// TODO
-pub(crate) const RECORD_TUPLE_MARKER_MAYBE_UTC_TIMESTAMP_WITH_OFFSET: i32 = 40;
+pub(crate) const RECORD_TUPLE_MARKER_MAYBE_UTC_TIMESTAMP_WITH_MAYBE_OFFSET: i32 = 40;
 
 /// TODO
-pub(crate) const RECORD_TUPLE_MARKER_LIST_OF_UTC_TIMESTAMP_WITH_OFFSET: i32 = 41;
+pub(crate) const RECORD_TUPLE_MARKER_LIST_OF_UTC_TIMESTAMP_WITH_MAYBE_OFFSET: i32 = 41;
 
 /// TODO
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct RecordTupleSchema {
     elements: VecDeque<RecordTupleSchemaElement>,
+}
+
+impl RecordTupleSchema {
+    /// TODO
+    pub(crate) fn new() -> RecordTupleSchema {
+        RecordTupleSchema {
+            elements: VecDeque::new(),
+        }
+    }
+
+    /// TODO
+    pub(crate) fn get(&self, index: usize) -> Option<&RecordTupleSchemaElement> {
+        self.elements.get(index)
+    }
+
+    /// TODO
+    pub(crate) fn pop_back(&mut self) -> Option<RecordTupleSchemaElement> {
+        self.elements.pop_back()
+    }
+
+    /// TODO
+    pub(crate) fn pop_front(&mut self) -> Option<RecordTupleSchemaElement> {
+        self.elements.pop_front()
+    }
+
+    /// TODO
+    pub(crate) fn push_back(&mut self, value: RecordTupleSchemaElement) {
+        self.elements.push_back(value)
+    }
+
+    /// TODO
+    pub(crate) fn push_front(&mut self, value: RecordTupleSchemaElement) {
+        self.elements.push_front(value)
+    }
+
+    /// TODO
+    pub(crate) fn is_empty(&self) -> bool {
+        self.elements.is_empty()
+    }
+
+    /// TODO
+    pub(crate) fn len(&self) -> usize {
+        self.elements.len()
+    }
+
+    /// TODO
+    pub(crate) fn validate(&self, record_tuple: &RecordTuple) -> bool {
+        todo!();
+    }
+
+    /// TODO
+    pub(crate) fn iter(&self) -> Iter<'_, RecordTupleSchemaElement> {
+        self.elements.iter()
+    }
+}
+
+impl Default for RecordTupleSchema {
+    fn default() -> RecordTupleSchema {
+        RecordTupleSchema::new()
+    }
+}
+
+impl IntoIterator for RecordTupleSchema {
+    type Item = RecordTupleSchemaElement;
+
+    type IntoIter = IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.elements.into_iter()
+    }
 }
 
 /// TODO
@@ -149,9 +222,9 @@ pub(crate) enum RecordTupleSchemaElement {
     Versionstamp,
     Date,
     Time,
-    UTCTimeWithOffset,
+    UTCTimeWithMaybeOffset,
     Timestamp,
-    UTCTimestampWithOffset,
+    UTCTimestampWithMaybeOffset,
     MaybeBytes,
     MaybeString,
     MaybeRecordTuple(RecordTupleSchema),
@@ -163,9 +236,9 @@ pub(crate) enum RecordTupleSchemaElement {
     MaybeVersionstamp,
     MaybeDate,
     MaybeTime,
-    MaybeUTCTimeWithOffset,
+    MaybeUTCTimeWithMaybeOffset,
     MaybeTimestamp,
-    MaybeUTCTimestampWithOffset,
+    MaybeUTCTimestampWithMaybeOffset,
     ListOfBytes,
     ListOfString,
     ListOfRecordTuple(RecordTupleSchema),
@@ -177,7 +250,7 @@ pub(crate) enum RecordTupleSchemaElement {
     ListOfVersionstamp,
     ListOfDate,
     ListOfTime,
-    ListOfUTCTimeWithOffset,
+    ListOfUTCTimeWithMaybeOffset,
     ListOfTimestamp,
-    ListOfUTCTimestampWithOffset,
+    ListOfUTCTimestampWithMaybeOffset,
 }

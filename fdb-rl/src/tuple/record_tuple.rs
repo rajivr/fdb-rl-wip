@@ -5,15 +5,316 @@ use time::{Date, Time, UtcOffset};
 use uuid::Uuid;
 
 use std::collections::VecDeque;
+use std::convert::TryFrom;
+
+/// Prevent users from implementing private trait.
+mod private {
+    use bytes::Bytes;
+    use num_bigint::BigInt;
+
+    use crate::tuple::RecordTuple;
+
+    pub(crate) trait SealedGet {}
+
+    impl SealedGet for &Bytes {}
+    impl SealedGet for &String {}
+    impl SealedGet for &RecordTuple {}
+    impl SealedGet for BigInt {}
+    impl SealedGet for i64 {}
+    impl SealedGet for i32 {}
+
+    impl SealedGet for &Option<Bytes> {}
+    impl SealedGet for &Option<String> {}
+    impl SealedGet for &Option<RecordTuple> {}
+    impl SealedGet for Option<BigInt> {}
+    impl SealedGet for Option<i64> {}
+    impl SealedGet for Option<i32> {}
+
+    impl SealedGet for &Vec<Bytes> {}
+    impl SealedGet for &Vec<String> {}
+    impl SealedGet for &Vec<RecordTuple> {}
+    impl SealedGet for Vec<BigInt> {}
+    impl SealedGet for Vec<i64> {}
+    impl SealedGet for Vec<i32> {}
+
+    pub(crate) trait SealedPush {}
+
+    pub(crate) trait SealedPop {}
+}
+
+/// TODO
+pub(crate) trait RecordTupleElementGet<'a>: private::SealedGet {
+    #[doc(hidden)]
+    fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<Self>
+    where
+        Self: Sized + 'a;
+}
+
+impl<'a> RecordTupleElementGet<'a> for &'a Bytes {
+    fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<&'a Bytes> {
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::Bytes(ref b) => Some(b),
+            _ => None,
+        })
+    }
+}
+
+impl<'a> RecordTupleElementGet<'a> for &'a String {
+    fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<&'a String> {
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::String(ref s) => Some(s),
+            _ => None,
+        })
+    }
+}
+
+impl<'a> RecordTupleElementGet<'a> for &'a RecordTuple {
+    fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<&'a RecordTuple> {
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::RecordTuple(ref rt) => Some(rt),
+            _ => None,
+        })
+    }
+}
+
+impl<'a> RecordTupleElementGet<'a> for BigInt {
+    fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<BigInt> {
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::Integer(ref i) => Some(BigInt::from(i)),
+            _ => None,
+        })
+    }
+}
+
+impl<'a> RecordTupleElementGet<'a> for i64 {
+    fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<i64> {
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::Integer(ref i) => i64::try_from(i).ok(),
+            _ => None,
+        })
+    }
+}
+
+impl<'a> RecordTupleElementGet<'a> for i32 {
+    fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<i32> {
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::Integer(ref i) => i32::try_from(i).ok(),
+            _ => None,
+        })
+    }
+}
+
+impl<'a> RecordTupleElementGet<'a> for &'a Option<Bytes> {
+    fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<&'a Option<Bytes>> {
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::MaybeBytes(ref maybe_b) => Some(maybe_b),
+            _ => None,
+        })
+    }
+}
+
+impl<'a> RecordTupleElementGet<'a> for &'a Option<String> {
+    fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<&'a Option<String>> {
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::MaybeString(ref maybe_s) => Some(maybe_s),
+            _ => None,
+        })
+    }
+}
+
+impl<'a> RecordTupleElementGet<'a> for &'a Option<RecordTuple> {
+    fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<&'a Option<RecordTuple>> {
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::MaybeRecordTuple(ref maybe_rt) => Some(maybe_rt),
+            _ => None,
+        })
+    }
+}
+
+impl<'a> RecordTupleElementGet<'a> for Option<BigInt> {
+    fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<Option<BigInt>> {
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::MaybeInteger(ref maybe_i) => Some(maybe_i.as_ref().map(BigInt::from)),
+            _ => None,
+        })
+    }
+}
+
+// None: Missing or BigInt instead of i64
+// Some(None): Null
+// Some(Some(x)): Okay case.
+//
+// TODO: Write tests for this!
+impl<'a> RecordTupleElementGet<'a> for Option<i64> {
+    fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<Option<i64>> {
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::MaybeInteger(ref maybe_i) => {
+                match maybe_i.as_ref().map(i64::try_from) {
+                    Some(res) => res.ok().map(Option::Some),
+                    None => Some(None),
+                }
+            }
+            _ => None,
+        })
+    }
+}
+
+impl<'a> RecordTupleElementGet<'a> for Option<i32> {
+    fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<Option<i32>> {
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::MaybeInteger(ref maybe_i) => {
+                match maybe_i.as_ref().map(i32::try_from) {
+                    Some(res) => res.ok().map(Option::Some),
+                    None => Some(None),
+                }
+            }
+            _ => None,
+        })
+    }
+}
+
+impl<'a> RecordTupleElementGet<'a> for &'a Vec<Bytes> {
+    fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<&'a Vec<Bytes>> {
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::ListOfBytes(ref vec_b) => Some(vec_b),
+            _ => None,
+        })
+    }
+}
+
+impl<'a> RecordTupleElementGet<'a> for &'a Vec<String> {
+    fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<&'a Vec<String>> {
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::ListOfString(ref vec_s) => Some(vec_s),
+            _ => None,
+        })
+    }
+}
+
+impl<'a> RecordTupleElementGet<'a> for &'a Vec<RecordTuple> {
+    fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<&'a Vec<RecordTuple>> {
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::ListOfRecordTuple(ref vec_rt) => Some(vec_rt),
+            _ => None,
+        })
+    }
+}
+
+impl<'a> RecordTupleElementGet<'a> for Vec<BigInt> {
+    fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<Vec<BigInt>> {
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::ListOfInteger(ref vec_i) => {
+                Some(vec_i.iter().map(BigInt::from).collect::<Vec<BigInt>>())
+            }
+            _ => None,
+        })
+    }
+}
+
+// TODO: write tests!
+impl<'a> RecordTupleElementGet<'a> for Vec<i64> {
+    fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<Vec<i64>> {
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::ListOfInteger(ref vec_i) => vec_i
+                .iter()
+                .try_fold(Vec::<i64>::new(), |mut v, i| {
+                    v.push(i64::try_from(i)?);
+
+                    Ok::<Vec<i64>, ()>(v)
+                })
+                .ok(),
+            _ => None,
+        })
+    }
+}
+
+impl<'a> RecordTupleElementGet<'a> for Vec<i32> {
+    fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<Vec<i32>> {
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::ListOfInteger(ref vec_i) => vec_i
+                .iter()
+                .try_fold(Vec::<i32>::new(), |mut v, i| {
+                    v.push(i32::try_from(i)?);
+
+                    Ok::<Vec<i32>, ()>(v)
+                })
+                .ok(),
+            _ => None,
+        })
+    }
+}
+
+/// TODO
+pub(crate) trait RecordTupleElementPush: private::SealedPush {
+    #[doc(hidden)]
+    fn push_back(record_tuple: &mut RecordTuple, value: Self);
+
+    #[doc(hidden)]
+    fn push_front(record_tuple: &mut RecordTuple, value: Self);
+}
+
+pub(crate) trait RecordTupleElementPop: private::SealedPop {
+    #[doc(hidden)]
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Self>
+    where
+        Self: Sized;
+
+    #[doc(hidden)]
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Self>
+    where
+        Self: Sized;
+}
 
 /// Needed for [`RecordTupleSchemaElement::Integer`] variant because
 /// we do not have anonymous enums.
+///
+/// `RecordTupleValue::Integer` is stored in the most optimal
+/// variant. So, a value of `0` is stored as an `i8` and not as `i16`.
 enum RecordTupleValueInteger {
     I8(i8),
     I16(i16),
     I32(i32),
     I64(i64),
     BigInt(BigInt),
+}
+
+impl From<&RecordTupleValueInteger> for BigInt {
+    fn from(record_tuple_value_integer_ref: &RecordTupleValueInteger) -> BigInt {
+        match *record_tuple_value_integer_ref {
+            RecordTupleValueInteger::I8(i) => BigInt::from(i),
+            RecordTupleValueInteger::I16(i) => BigInt::from(i),
+            RecordTupleValueInteger::I32(i) => BigInt::from(i),
+            RecordTupleValueInteger::I64(i) => BigInt::from(i),
+            RecordTupleValueInteger::BigInt(ref i) => i.clone(),
+        }
+    }
+}
+
+impl TryFrom<&RecordTupleValueInteger> for i64 {
+    type Error = ();
+
+    fn try_from(record_tuple_value_integer_ref: &RecordTupleValueInteger) -> Result<i64, ()> {
+        match *record_tuple_value_integer_ref {
+            RecordTupleValueInteger::I8(i) => Ok(i64::from(i)),
+            RecordTupleValueInteger::I16(i) => Ok(i64::from(i)),
+            RecordTupleValueInteger::I32(i) => Ok(i64::from(i)),
+            RecordTupleValueInteger::I64(i) => Ok(i),
+            RecordTupleValueInteger::BigInt(_) => Err(()),
+        }
+    }
+}
+
+impl TryFrom<&RecordTupleValueInteger> for i32 {
+    type Error = ();
+
+    fn try_from(record_tuple_value_integer_ref: &RecordTupleValueInteger) -> Result<i32, ()> {
+        match *record_tuple_value_integer_ref {
+            RecordTupleValueInteger::I8(i) => Ok(i32::from(i)),
+            RecordTupleValueInteger::I16(i) => Ok(i32::from(i)),
+            RecordTupleValueInteger::I32(i) => Ok(i),
+            RecordTupleValueInteger::I64(_) | RecordTupleValueInteger::BigInt(_) => Err(()),
+        }
+    }
 }
 
 /// TODO
@@ -29,9 +330,9 @@ pub(crate) enum RecordTupleValue {
     Versionstamp(Versionstamp),
     Date(Date),
     Time(Time),
-    UTCTimeWithOffset(Time, UtcOffset),
+    UTCTimeWithMaybeOffset(Time, Option<UtcOffset>),
     Timestamp(Date, Time),
-    UTCTimestampWithOffset(Date, Time, UtcOffset),
+    UTCTimestampWithMaybeOffset(Date, Time, Option<UtcOffset>),
     MaybeBytes(Option<Bytes>),
     MaybeString(Option<String>),
     MaybeRecordTuple(Option<RecordTuple>),
@@ -43,9 +344,9 @@ pub(crate) enum RecordTupleValue {
     MaybeVersionstamp(Option<Versionstamp>),
     MaybeDate(Option<Date>),
     MaybeTime(Option<Time>),
-    MaybeUTCTimeWithOffset(Option<(Time, UtcOffset)>),
+    MaybeUTCTimeWithMaybeOffset(Option<(Time, Option<UtcOffset>)>),
     MaybeTimestamp(Option<(Date, Time)>),
-    MaybeUTCTimestampWithOffset(Option<(Date, Time, UtcOffset)>),
+    MaybeUTCTimestampWithMaybeOffset(Option<(Date, Time, Option<UtcOffset>)>),
     ListOfBytes(Vec<Bytes>),
     ListOfString(Vec<String>),
     ListOfRecordTuple(Vec<RecordTuple>),
@@ -57,12 +358,76 @@ pub(crate) enum RecordTupleValue {
     ListOfVersionstamp(Vec<Versionstamp>),
     ListOfDate(Vec<Date>),
     ListOfTime(Vec<Time>),
-    ListOfUTCTimeWithOffset(Vec<(Time, UtcOffset)>),
+    ListOfUTCTimeWithMaybeOffset(Vec<(Time, Option<UtcOffset>)>),
     ListOfTimestamp(Vec<(Date, Time)>),
-    ListOfUTCTimestampWithOffset(Vec<(Date, Time, UtcOffset)>),
+    ListOfUTCTimestampWithMaybeOffset(Vec<(Date, Time, Option<UtcOffset>)>),
 }
 
 /// TODO
 pub(crate) struct RecordTuple {
     elements: VecDeque<RecordTupleValue>,
+}
+
+impl RecordTuple {
+    /// TODO
+    pub(crate) fn new() -> RecordTuple {
+        RecordTuple {
+            elements: VecDeque::new(),
+        }
+    }
+
+    /// TODO
+    pub(crate) fn get<'a, T>(&'a self, index: usize) -> Option<T>
+    where
+        T: RecordTupleElementGet<'a> + 'a,
+    {
+        RecordTupleElementGet::get(self, index)
+    }
+
+    /// TODO
+    pub(crate) fn pop_back<T>(&mut self) -> Option<T>
+    where
+        T: RecordTupleElementPop,
+    {
+        RecordTupleElementPop::pop_back(self)
+    }
+
+    /// TODO
+    pub(crate) fn pop_front<T>(&mut self) -> Option<T>
+    where
+        T: RecordTupleElementPop,
+    {
+        RecordTupleElementPop::pop_front(self)
+    }
+
+    /// TODO
+    pub(crate) fn push_back<T>(&mut self, value: T)
+    where
+        T: RecordTupleElementPush,
+    {
+        RecordTupleElementPush::push_back(self, value)
+    }
+
+    /// TODO
+    pub(crate) fn push_front<T>(&mut self, value: T)
+    where
+        T: RecordTupleElementPush,
+    {
+        RecordTupleElementPush::push_front(self, value)
+    }
+
+    /// TODO
+    pub(crate) fn append(&mut self, other: &mut RecordTuple) {
+        self.elements.append(&mut other.elements);
+    }
+
+    /// TODO
+    pub(crate) fn is_empty(&self) -> bool {
+        self.elements.is_empty()
+    }
+
+    /// TODO
+    pub(crate) fn len(&self) -> usize {
+        self.elements.len()
+    }
 }
