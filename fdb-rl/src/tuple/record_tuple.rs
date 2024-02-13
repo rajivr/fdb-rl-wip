@@ -163,13 +163,19 @@ impl<'a> RecordTupleElementGet<'a> for i8 {
 
 impl<'a> RecordTupleElementGet<'a> for f32 {
     fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<f32> {
-        todo!();
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::Float(f) => Some(f),
+            _ => None,
+        })
     }
 }
 
 impl<'a> RecordTupleElementGet<'a> for f64 {
     fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<f64> {
-        todo!();
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::Double(d) => Some(d),
+            _ => None,
+        })
     }
 }
 
@@ -184,37 +190,55 @@ impl<'a> RecordTupleElementGet<'a> for bool {
 
 impl<'a> RecordTupleElementGet<'a> for &'a Uuid {
     fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<&'a Uuid> {
-        todo!();
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::Uuid(ref u) => Some(u),
+            _ => None,
+        })
     }
 }
 
 impl<'a> RecordTupleElementGet<'a> for &'a Versionstamp {
     fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<&'a Versionstamp> {
-        todo!();
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::Versionstamp(ref v) => Some(v),
+            _ => None,
+        })
     }
 }
 
 impl<'a> RecordTupleElementGet<'a> for &'a Date {
     fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<&'a Date> {
-        todo!();
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::Date(ref d) => Some(d),
+            _ => None,
+        })
     }
 }
 
 impl<'a> RecordTupleElementGet<'a> for &'a Time {
     fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<&'a Time> {
-        todo!();
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::Time(ref t) => Some(t),
+            _ => None,
+        })
     }
 }
 
 impl<'a> RecordTupleElementGet<'a> for &'a (Time, Option<UtcOffset>) {
     fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<&'a (Time, Option<UtcOffset>)> {
-        todo!();
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::UTCTimeWithMaybeOffset(ref t) => Some(t),
+            _ => None,
+        })
     }
 }
 
 impl<'a> RecordTupleElementGet<'a> for &'a (Date, Time) {
     fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<&'a (Date, Time)> {
-        todo!();
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::Timestamp(ref dt) => Some(dt),
+            _ => None,
+        })
     }
 }
 
@@ -223,7 +247,10 @@ impl<'a> RecordTupleElementGet<'a> for &'a (Date, Time, Option<UtcOffset>) {
         record_tuple: &'a RecordTuple,
         index: usize,
     ) -> Option<&'a (Date, Time, Option<UtcOffset>)> {
-        todo!();
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::UTCTimestampWithMaybeOffset(ref dt) => Some(dt),
+            _ => None,
+        })
     }
 }
 
@@ -326,13 +353,19 @@ impl<'a> RecordTupleElementGet<'a> for Option<i8> {
 
 impl<'a> RecordTupleElementGet<'a> for Option<f32> {
     fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<Option<f32>> {
-        todo!();
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::MaybeFloat(maybe_f) => Some(maybe_f),
+            _ => None,
+        })
     }
 }
 
 impl<'a> RecordTupleElementGet<'a> for Option<f64> {
     fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<Option<f64>> {
-        todo!();
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::MaybeDouble(maybe_d) => Some(maybe_d),
+            _ => None,
+        })
     }
 }
 
@@ -347,25 +380,37 @@ impl<'a> RecordTupleElementGet<'a> for Option<bool> {
 
 impl<'a> RecordTupleElementGet<'a> for &'a Option<Uuid> {
     fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<&'a Option<Uuid>> {
-        todo!();
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::MaybeUuid(ref maybe_u) => Some(maybe_u),
+            _ => None,
+        })
     }
 }
 
 impl<'a> RecordTupleElementGet<'a> for &'a Option<Versionstamp> {
     fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<&'a Option<Versionstamp>> {
-        todo!();
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::MaybeVersionstamp(ref maybe_v) => Some(maybe_v),
+            _ => None,
+        })
     }
 }
 
 impl<'a> RecordTupleElementGet<'a> for &'a Option<Date> {
     fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<&'a Option<Date>> {
-        todo!();
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::MaybeDate(ref maybe_d) => Some(maybe_d),
+            _ => None,
+        })
     }
 }
 
 impl<'a> RecordTupleElementGet<'a> for &'a Option<Time> {
     fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<&'a Option<Time>> {
-        todo!();
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::MaybeTime(ref maybe_t) => Some(maybe_t),
+            _ => None,
+        })
     }
 }
 
@@ -374,13 +419,19 @@ impl<'a> RecordTupleElementGet<'a> for &'a Option<(Time, Option<UtcOffset>)> {
         record_tuple: &'a RecordTuple,
         index: usize,
     ) -> Option<&'a Option<(Time, Option<UtcOffset>)>> {
-        todo!();
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::MaybeUTCTimeWithMaybeOffset(ref maybe_t) => Some(maybe_t),
+            _ => None,
+        })
     }
 }
 
 impl<'a> RecordTupleElementGet<'a> for &'a Option<(Date, Time)> {
     fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<&'a Option<(Date, Time)>> {
-        todo!();
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::MaybeTimestamp(ref maybe_dt) => Some(maybe_dt),
+            _ => None,
+        })
     }
 }
 
@@ -389,7 +440,10 @@ impl<'a> RecordTupleElementGet<'a> for &'a Option<(Date, Time, Option<UtcOffset>
         record_tuple: &'a RecordTuple,
         index: usize,
     ) -> Option<&'a Option<(Date, Time, Option<UtcOffset>)>> {
-        todo!();
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::MaybeUTCTimestampWithMaybeOffset(ref maybe_dt) => Some(maybe_dt),
+            _ => None,
+        })
     }
 }
 
@@ -498,13 +552,19 @@ impl<'a> RecordTupleElementGet<'a> for Vec<i8> {
 
 impl<'a> RecordTupleElementGet<'a> for Vec<f32> {
     fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<Vec<f32>> {
-        todo!();
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::ListOfFloat(ref vec_f) => Some(vec_f.clone()),
+            _ => None,
+        })
     }
 }
 
 impl<'a> RecordTupleElementGet<'a> for Vec<f64> {
     fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<Vec<f64>> {
-        todo!();
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::ListOfDouble(ref vec_d) => Some(vec_d.clone()),
+            _ => None,
+        })
     }
 }
 
@@ -519,25 +579,37 @@ impl<'a> RecordTupleElementGet<'a> for Vec<bool> {
 
 impl<'a> RecordTupleElementGet<'a> for &'a Vec<Uuid> {
     fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<&'a Vec<Uuid>> {
-        todo!();
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::ListOfUuid(ref vec_u) => Some(vec_u),
+            _ => None,
+        })
     }
 }
 
 impl<'a> RecordTupleElementGet<'a> for &'a Vec<Versionstamp> {
     fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<&'a Vec<Versionstamp>> {
-        todo!();
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::ListOfVersionstamp(ref vec_v) => Some(vec_v),
+            _ => None,
+        })
     }
 }
 
 impl<'a> RecordTupleElementGet<'a> for &'a Vec<Date> {
     fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<&'a Vec<Date>> {
-        todo!();
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::ListOfDate(ref vec_d) => Some(vec_d),
+            _ => None,
+        })
     }
 }
 
 impl<'a> RecordTupleElementGet<'a> for &'a Vec<Time> {
     fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<&'a Vec<Time>> {
-        todo!();
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::ListOfTime(ref vec_t) => Some(vec_t),
+            _ => None,
+        })
     }
 }
 
@@ -546,13 +618,19 @@ impl<'a> RecordTupleElementGet<'a> for &'a Vec<(Time, Option<UtcOffset>)> {
         record_tuple: &'a RecordTuple,
         index: usize,
     ) -> Option<&'a Vec<(Time, Option<UtcOffset>)>> {
-        todo!();
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::ListOfUTCTimeWithMaybeOffset(ref vec_t) => Some(vec_t),
+            _ => None,
+        })
     }
 }
 
 impl<'a> RecordTupleElementGet<'a> for &'a Vec<(Date, Time)> {
     fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<&'a Vec<(Date, Time)>> {
-        todo!();
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::ListOfTimestamp(ref vec_dt) => Some(vec_dt),
+            _ => None,
+        })
     }
 }
 
@@ -561,7 +639,10 @@ impl<'a> RecordTupleElementGet<'a> for &'a Vec<(Date, Time, Option<UtcOffset>)> 
         record_tuple: &'a RecordTuple,
         index: usize,
     ) -> Option<&'a Vec<(Date, Time, Option<UtcOffset>)>> {
-        todo!();
+        record_tuple.elements.get(index).and_then(|x| match *x {
+            RecordTupleValue::ListOfUTCTimestampWithMaybeOffset(ref vec_dt) => Some(vec_dt),
+            _ => None,
+        })
     }
 }
 
