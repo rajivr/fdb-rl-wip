@@ -15,7 +15,9 @@ mod private {
     use time::{Date, Time, UtcOffset};
     use uuid::Uuid;
 
-    use crate::tuple::RecordTuple;
+    use crate::tuple::{
+        RecordTuple, Timestamp, UTCTimeWithMaybeOffset, UTCTimestampWithMaybeOffset,
+    };
 
     pub(crate) trait SealedGet {}
 
@@ -34,9 +36,9 @@ mod private {
     impl SealedGet for &Versionstamp {}
     impl SealedGet for &Date {}
     impl SealedGet for &Time {}
-    impl SealedGet for &(Time, Option<UtcOffset>) {}
-    impl SealedGet for &(Date, Time) {}
-    impl SealedGet for &(Date, Time, Option<UtcOffset>) {}
+    impl SealedGet for &UTCTimeWithMaybeOffset {}
+    impl SealedGet for &Timestamp {}
+    impl SealedGet for &UTCTimestampWithMaybeOffset {}
 
     impl SealedGet for &Option<Bytes> {}
     impl SealedGet for &Option<String> {}
@@ -53,9 +55,9 @@ mod private {
     impl SealedGet for &Option<Versionstamp> {}
     impl SealedGet for &Option<Date> {}
     impl SealedGet for &Option<Time> {}
-    impl SealedGet for &Option<(Time, Option<UtcOffset>)> {}
-    impl SealedGet for &Option<(Date, Time)> {}
-    impl SealedGet for &Option<(Date, Time, Option<UtcOffset>)> {}
+    impl SealedGet for &Option<UTCTimeWithMaybeOffset> {}
+    impl SealedGet for &Option<Timestamp> {}
+    impl SealedGet for &Option<UTCTimestampWithMaybeOffset> {}
 
     impl SealedGet for &Vec<Bytes> {}
     impl SealedGet for &Vec<String> {}
@@ -72,11 +74,68 @@ mod private {
     impl SealedGet for &Vec<Versionstamp> {}
     impl SealedGet for &Vec<Date> {}
     impl SealedGet for &Vec<Time> {}
-    impl SealedGet for &Vec<(Time, Option<UtcOffset>)> {}
-    impl SealedGet for &Vec<(Date, Time)> {}
-    impl SealedGet for &Vec<(Date, Time, Option<UtcOffset>)> {}
+    impl SealedGet for &Vec<UTCTimeWithMaybeOffset> {}
+    impl SealedGet for &Vec<Timestamp> {}
+    impl SealedGet for &Vec<UTCTimestampWithMaybeOffset> {}
 
     pub(crate) trait SealedPush {}
+
+    impl SealedPush for Bytes {}
+    impl SealedPush for String {}
+    impl SealedPush for RecordTuple {}
+    impl SealedPush for BigInt {}
+    impl SealedPush for i64 {}
+    impl SealedPush for i32 {}
+    impl SealedPush for i16 {}
+    impl SealedPush for i8 {}
+    impl SealedPush for f32 {}
+    impl SealedPush for f64 {}
+    impl SealedPush for bool {}
+    impl SealedPush for Uuid {}
+    impl SealedPush for Versionstamp {}
+    impl SealedPush for Date {}
+    impl SealedPush for Time {}
+    impl SealedPush for UTCTimeWithMaybeOffset {}
+    impl SealedPush for Timestamp {}
+    impl SealedPush for UTCTimestampWithMaybeOffset {}
+
+    impl SealedPush for Option<Bytes> {}
+    impl SealedPush for Option<String> {}
+    impl SealedPush for Option<RecordTuple> {}
+    impl SealedPush for Option<BigInt> {}
+    impl SealedPush for Option<i64> {}
+    impl SealedPush for Option<i32> {}
+    impl SealedPush for Option<i16> {}
+    impl SealedPush for Option<i8> {}
+    impl SealedPush for Option<f32> {}
+    impl SealedPush for Option<f64> {}
+    impl SealedPush for Option<bool> {}
+    impl SealedPush for Option<Uuid> {}
+    impl SealedPush for Option<Versionstamp> {}
+    impl SealedPush for Option<Date> {}
+    impl SealedPush for Option<Time> {}
+    impl SealedPush for Option<UTCTimeWithMaybeOffset> {}
+    impl SealedPush for Option<Timestamp> {}
+    impl SealedPush for Option<UTCTimestampWithMaybeOffset> {}
+
+    impl SealedPush for Vec<Bytes> {}
+    impl SealedPush for Vec<String> {}
+    impl SealedPush for Vec<RecordTuple> {}
+    impl SealedPush for Vec<BigInt> {}
+    impl SealedPush for Vec<i64> {}
+    impl SealedPush for Vec<i32> {}
+    impl SealedPush for Vec<i16> {}
+    impl SealedPush for Vec<i8> {}
+    impl SealedPush for Vec<f32> {}
+    impl SealedPush for Vec<f64> {}
+    impl SealedPush for Vec<bool> {}
+    impl SealedPush for Vec<Uuid> {}
+    impl SealedPush for Vec<Versionstamp> {}
+    impl SealedPush for Vec<Date> {}
+    impl SealedPush for Vec<Time> {}
+    impl SealedPush for Vec<UTCTimeWithMaybeOffset> {}
+    impl SealedPush for Vec<Timestamp> {}
+    impl SealedPush for Vec<UTCTimestampWithMaybeOffset> {}
 
     pub(crate) trait SealedPop {}
 }
@@ -224,8 +283,8 @@ impl<'a> RecordTupleElementGet<'a> for &'a Time {
     }
 }
 
-impl<'a> RecordTupleElementGet<'a> for &'a (Time, Option<UtcOffset>) {
-    fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<&'a (Time, Option<UtcOffset>)> {
+impl<'a> RecordTupleElementGet<'a> for &'a UTCTimeWithMaybeOffset {
+    fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<&'a UTCTimeWithMaybeOffset> {
         record_tuple.elements.get(index).and_then(|x| match *x {
             RecordTupleValue::UTCTimeWithMaybeOffset(ref t) => Some(t),
             _ => None,
@@ -233,22 +292,19 @@ impl<'a> RecordTupleElementGet<'a> for &'a (Time, Option<UtcOffset>) {
     }
 }
 
-impl<'a> RecordTupleElementGet<'a> for &'a (Date, Time) {
-    fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<&'a (Date, Time)> {
+impl<'a> RecordTupleElementGet<'a> for &'a Timestamp {
+    fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<&'a Timestamp> {
         record_tuple.elements.get(index).and_then(|x| match *x {
-            RecordTupleValue::Timestamp(ref dt) => Some(dt),
+            RecordTupleValue::Timestamp(ref ts) => Some(ts),
             _ => None,
         })
     }
 }
 
-impl<'a> RecordTupleElementGet<'a> for &'a (Date, Time, Option<UtcOffset>) {
-    fn get(
-        record_tuple: &'a RecordTuple,
-        index: usize,
-    ) -> Option<&'a (Date, Time, Option<UtcOffset>)> {
+impl<'a> RecordTupleElementGet<'a> for &'a UTCTimestampWithMaybeOffset {
+    fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<&'a UTCTimestampWithMaybeOffset> {
         record_tuple.elements.get(index).and_then(|x| match *x {
-            RecordTupleValue::UTCTimestampWithMaybeOffset(ref dt) => Some(dt),
+            RecordTupleValue::UTCTimestampWithMaybeOffset(ref ts) => Some(ts),
             _ => None,
         })
     }
@@ -414,11 +470,11 @@ impl<'a> RecordTupleElementGet<'a> for &'a Option<Time> {
     }
 }
 
-impl<'a> RecordTupleElementGet<'a> for &'a Option<(Time, Option<UtcOffset>)> {
+impl<'a> RecordTupleElementGet<'a> for &'a Option<UTCTimeWithMaybeOffset> {
     fn get(
         record_tuple: &'a RecordTuple,
         index: usize,
-    ) -> Option<&'a Option<(Time, Option<UtcOffset>)>> {
+    ) -> Option<&'a Option<UTCTimeWithMaybeOffset>> {
         record_tuple.elements.get(index).and_then(|x| match *x {
             RecordTupleValue::MaybeUTCTimeWithMaybeOffset(ref maybe_t) => Some(maybe_t),
             _ => None,
@@ -426,22 +482,22 @@ impl<'a> RecordTupleElementGet<'a> for &'a Option<(Time, Option<UtcOffset>)> {
     }
 }
 
-impl<'a> RecordTupleElementGet<'a> for &'a Option<(Date, Time)> {
-    fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<&'a Option<(Date, Time)>> {
+impl<'a> RecordTupleElementGet<'a> for &'a Option<Timestamp> {
+    fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<&'a Option<Timestamp>> {
         record_tuple.elements.get(index).and_then(|x| match *x {
-            RecordTupleValue::MaybeTimestamp(ref maybe_dt) => Some(maybe_dt),
+            RecordTupleValue::MaybeTimestamp(ref maybe_ts) => Some(maybe_ts),
             _ => None,
         })
     }
 }
 
-impl<'a> RecordTupleElementGet<'a> for &'a Option<(Date, Time, Option<UtcOffset>)> {
+impl<'a> RecordTupleElementGet<'a> for &'a Option<UTCTimestampWithMaybeOffset> {
     fn get(
         record_tuple: &'a RecordTuple,
         index: usize,
-    ) -> Option<&'a Option<(Date, Time, Option<UtcOffset>)>> {
+    ) -> Option<&'a Option<UTCTimestampWithMaybeOffset>> {
         record_tuple.elements.get(index).and_then(|x| match *x {
-            RecordTupleValue::MaybeUTCTimestampWithMaybeOffset(ref maybe_dt) => Some(maybe_dt),
+            RecordTupleValue::MaybeUTCTimestampWithMaybeOffset(ref maybe_ts) => Some(maybe_ts),
             _ => None,
         })
     }
@@ -613,11 +669,8 @@ impl<'a> RecordTupleElementGet<'a> for &'a Vec<Time> {
     }
 }
 
-impl<'a> RecordTupleElementGet<'a> for &'a Vec<(Time, Option<UtcOffset>)> {
-    fn get(
-        record_tuple: &'a RecordTuple,
-        index: usize,
-    ) -> Option<&'a Vec<(Time, Option<UtcOffset>)>> {
+impl<'a> RecordTupleElementGet<'a> for &'a Vec<UTCTimeWithMaybeOffset> {
+    fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<&'a Vec<UTCTimeWithMaybeOffset>> {
         record_tuple.elements.get(index).and_then(|x| match *x {
             RecordTupleValue::ListOfUTCTimeWithMaybeOffset(ref vec_t) => Some(vec_t),
             _ => None,
@@ -625,22 +678,22 @@ impl<'a> RecordTupleElementGet<'a> for &'a Vec<(Time, Option<UtcOffset>)> {
     }
 }
 
-impl<'a> RecordTupleElementGet<'a> for &'a Vec<(Date, Time)> {
-    fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<&'a Vec<(Date, Time)>> {
+impl<'a> RecordTupleElementGet<'a> for &'a Vec<Timestamp> {
+    fn get(record_tuple: &'a RecordTuple, index: usize) -> Option<&'a Vec<Timestamp>> {
         record_tuple.elements.get(index).and_then(|x| match *x {
-            RecordTupleValue::ListOfTimestamp(ref vec_dt) => Some(vec_dt),
+            RecordTupleValue::ListOfTimestamp(ref vec_ts) => Some(vec_ts),
             _ => None,
         })
     }
 }
 
-impl<'a> RecordTupleElementGet<'a> for &'a Vec<(Date, Time, Option<UtcOffset>)> {
+impl<'a> RecordTupleElementGet<'a> for &'a Vec<UTCTimestampWithMaybeOffset> {
     fn get(
         record_tuple: &'a RecordTuple,
         index: usize,
-    ) -> Option<&'a Vec<(Date, Time, Option<UtcOffset>)>> {
+    ) -> Option<&'a Vec<UTCTimestampWithMaybeOffset>> {
         record_tuple.elements.get(index).and_then(|x| match *x {
-            RecordTupleValue::ListOfUTCTimestampWithMaybeOffset(ref vec_dt) => Some(vec_dt),
+            RecordTupleValue::ListOfUTCTimestampWithMaybeOffset(ref vec_ts) => Some(vec_ts),
             _ => None,
         })
     }
@@ -654,6 +707,296 @@ pub(crate) trait RecordTupleElementPush: private::SealedPush {
     #[doc(hidden)]
     fn push_front(record_tuple: &mut RecordTuple, value: Self);
 }
+
+impl RecordTupleElementPush for Bytes {
+    fn push_back(record_tuple: &mut RecordTuple, value: Bytes) {
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::Bytes(value));
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Bytes) {
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::Bytes(value));
+    }
+}
+
+impl RecordTupleElementPush for String {
+    fn push_back(record_tuple: &mut RecordTuple, value: String) {
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::String(value));
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: String) {
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::String(value));
+    }
+}
+
+impl RecordTupleElementPush for RecordTuple {
+    fn push_back(record_tuple: &mut RecordTuple, value: RecordTuple) {
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::RecordTuple(value));
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: RecordTuple) {
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::RecordTuple(value));
+    }
+}
+
+impl RecordTupleElementPush for BigInt {
+    fn push_back(record_tuple: &mut RecordTuple, value: BigInt) {
+        let _ = i64::try_from(value.clone())
+            .map(|x| record_tuple.push_back::<i64>(x))
+            .map_err(|_| {
+                record_tuple.elements.push_back(RecordTupleValue::Integer(
+                    RecordTupleValueInteger::BigInt(value),
+                ));
+            });
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: BigInt) {
+        let _ = i64::try_from(value.clone())
+            .map(|x| record_tuple.push_front::<i64>(x))
+            .map_err(|_| {
+                record_tuple.elements.push_front(RecordTupleValue::Integer(
+                    RecordTupleValueInteger::BigInt(value),
+                ));
+            });
+    }
+}
+
+impl RecordTupleElementPush for i64 {
+    fn push_back(record_tuple: &mut RecordTuple, value: i64) {
+        let _ = i32::try_from(value)
+            .map(|x| record_tuple.push_back::<i32>(x))
+            .map_err(|_| {
+                record_tuple.elements.push_back(RecordTupleValue::Integer(
+                    RecordTupleValueInteger::I64(value),
+                ));
+            });
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: i64) {
+        let _ = i32::try_from(value)
+            .map(|x| record_tuple.push_front::<i32>(x))
+            .map_err(|_| {
+                record_tuple.elements.push_front(RecordTupleValue::Integer(
+                    RecordTupleValueInteger::I64(value),
+                ));
+            });
+    }
+}
+
+impl RecordTupleElementPush for i32 {
+    fn push_back(record_tuple: &mut RecordTuple, value: i32) {
+        let _ = i16::try_from(value)
+            .map(|x| record_tuple.push_back::<i16>(x))
+            .map_err(|_| {
+                record_tuple.elements.push_back(RecordTupleValue::Integer(
+                    RecordTupleValueInteger::I32(value),
+                ));
+            });
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: i32) {
+        let _ = i16::try_from(value)
+            .map(|x| record_tuple.push_back::<i16>(x))
+            .map_err(|_| {
+                record_tuple.elements.push_front(RecordTupleValue::Integer(
+                    RecordTupleValueInteger::I32(value),
+                ));
+            });
+    }
+}
+
+impl RecordTupleElementPush for i16 {
+    fn push_back(record_tuple: &mut RecordTuple, value: i16) {
+        let _ = i8::try_from(value)
+            .map(|x| record_tuple.push_back::<i8>(x))
+            .map_err(|_| {
+                record_tuple.elements.push_back(RecordTupleValue::Integer(
+                    RecordTupleValueInteger::I16(value),
+                ));
+            });
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: i16) {
+        let _ = i8::try_from(value)
+            .map(|x| record_tuple.push_back::<i8>(x))
+            .map_err(|_| {
+                record_tuple.elements.push_front(RecordTupleValue::Integer(
+                    RecordTupleValueInteger::I16(value),
+                ));
+            });
+    }
+}
+
+impl RecordTupleElementPush for i8 {
+    fn push_back(record_tuple: &mut RecordTuple, value: i8) {
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::Integer(RecordTupleValueInteger::I8(
+                value,
+            )));
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: i8) {
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::Integer(RecordTupleValueInteger::I8(
+                value,
+            )));
+    }
+}
+
+impl RecordTupleElementPush for f32 {
+    fn push_back(record_tuple: &mut RecordTuple, value: f32) {
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::Float(value));
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: f32) {
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::Float(value));
+    }
+}
+
+impl RecordTupleElementPush for f64 {
+    fn push_back(record_tuple: &mut RecordTuple, value: f64) {
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::Double(value));
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: f64) {
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::Double(value));
+    }
+}
+
+impl RecordTupleElementPush for bool {
+    fn push_back(record_tuple: &mut RecordTuple, value: bool) {
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::Boolean(value));
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: bool) {
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::Boolean(value));
+    }
+}
+
+impl RecordTupleElementPush for Uuid {
+    fn push_back(record_tuple: &mut RecordTuple, value: Uuid) {
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::Uuid(value));
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Uuid) {
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::Uuid(value));
+    }
+}
+
+impl RecordTupleElementPush for Versionstamp {
+    fn push_back(record_tuple: &mut RecordTuple, value: Versionstamp) {
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::Versionstamp(value));
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Versionstamp) {
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::Versionstamp(value));
+    }
+}
+
+impl RecordTupleElementPush for Date {
+    fn push_back(record_tuple: &mut RecordTuple, value: Date) {
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::Date(value));
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Date) {
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::Date(value));
+    }
+}
+
+impl RecordTupleElementPush for Time {
+    fn push_back(record_tuple: &mut RecordTuple, value: Time) {
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::Time(value));
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Time) {
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::Time(value));
+    }
+}
+
+impl RecordTupleElementPush for UTCTimeWithMaybeOffset {
+    fn push_back(record_tuple: &mut RecordTuple, value: UTCTimeWithMaybeOffset) {
+       record_tuple
+            .elements
+            .push_back(RecordTupleValue::UTCTimeWithMaybeOffset(value));
+     }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: UTCTimeWithMaybeOffset) {
+       record_tuple
+            .elements
+            .push_front(RecordTupleValue::UTCTimeWithMaybeOffset(value));
+    }
+}
+
+impl RecordTupleElementPush for Timestamp {
+    fn push_back(record_tuple: &mut RecordTuple, value: Timestamp) {
+       record_tuple
+            .elements
+            .push_back(RecordTupleValue::Timestamp(value));
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Timestamp) {
+       record_tuple
+            .elements
+            .push_front(RecordTupleValue::Timestamp(value));
+    }
+}
+
+impl RecordTupleElementPush for UTCTimestampWithMaybeOffset {
+    fn push_back(record_tuple: &mut RecordTuple, value: UTCTimestampWithMaybeOffset) {
+       record_tuple
+            .elements
+            .push_back(RecordTupleValue::UTCTimestampWithMaybeOffset(value));
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: UTCTimestampWithMaybeOffset) {
+       record_tuple
+            .elements
+            .push_front(RecordTupleValue::UTCTimestampWithMaybeOffset(value));
+    }
+}
+
+// TODO: continue from here...
 
 pub(crate) trait RecordTupleElementPop: private::SealedPop {
     #[doc(hidden)]
@@ -672,6 +1015,7 @@ pub(crate) trait RecordTupleElementPop: private::SealedPop {
 ///
 /// `RecordTupleValue::Integer` is stored in the most optimal
 /// variant. So, a value of `0` is stored as an `i8` and not as `i16`.
+#[derive(Clone, PartialEq, Debug)]
 enum RecordTupleValueInteger {
     I8(i8),
     I16(i16),
@@ -748,6 +1092,19 @@ impl TryFrom<&RecordTupleValueInteger> for i8 {
 }
 
 /// TODO
+#[derive(Clone, PartialEq, Debug)]
+pub(crate) struct UTCTimeWithMaybeOffset(Time, Option<UtcOffset>);
+
+/// TODO
+#[derive(Clone, PartialEq, Debug)]
+pub(crate) struct Timestamp(Date, Time);
+
+/// TODO
+#[derive(Clone, PartialEq, Debug)]
+pub(crate) struct UTCTimestampWithMaybeOffset(Date, Time, Option<UtcOffset>);
+
+/// TODO
+#[derive(Clone, PartialEq, Debug)]
 pub(crate) enum RecordTupleValue {
     Bytes(Bytes),
     String(String),
@@ -760,9 +1117,9 @@ pub(crate) enum RecordTupleValue {
     Versionstamp(Versionstamp),
     Date(Date),
     Time(Time),
-    UTCTimeWithMaybeOffset((Time, Option<UtcOffset>)),
-    Timestamp((Date, Time)),
-    UTCTimestampWithMaybeOffset((Date, Time, Option<UtcOffset>)),
+    UTCTimeWithMaybeOffset(UTCTimeWithMaybeOffset),
+    Timestamp(Timestamp),
+    UTCTimestampWithMaybeOffset(UTCTimestampWithMaybeOffset),
     MaybeBytes(Option<Bytes>),
     MaybeString(Option<String>),
     MaybeRecordTuple(Option<RecordTuple>),
@@ -774,9 +1131,9 @@ pub(crate) enum RecordTupleValue {
     MaybeVersionstamp(Option<Versionstamp>),
     MaybeDate(Option<Date>),
     MaybeTime(Option<Time>),
-    MaybeUTCTimeWithMaybeOffset(Option<(Time, Option<UtcOffset>)>),
-    MaybeTimestamp(Option<(Date, Time)>),
-    MaybeUTCTimestampWithMaybeOffset(Option<(Date, Time, Option<UtcOffset>)>),
+    MaybeUTCTimeWithMaybeOffset(Option<UTCTimeWithMaybeOffset>),
+    MaybeTimestamp(Option<Timestamp>),
+    MaybeUTCTimestampWithMaybeOffset(Option<UTCTimestampWithMaybeOffset>),
     ListOfBytes(Vec<Bytes>),
     ListOfString(Vec<String>),
     ListOfRecordTuple(Vec<RecordTuple>),
@@ -788,12 +1145,13 @@ pub(crate) enum RecordTupleValue {
     ListOfVersionstamp(Vec<Versionstamp>),
     ListOfDate(Vec<Date>),
     ListOfTime(Vec<Time>),
-    ListOfUTCTimeWithMaybeOffset(Vec<(Time, Option<UtcOffset>)>),
-    ListOfTimestamp(Vec<(Date, Time)>),
-    ListOfUTCTimestampWithMaybeOffset(Vec<(Date, Time, Option<UtcOffset>)>),
+    ListOfUTCTimeWithMaybeOffset(Vec<UTCTimeWithMaybeOffset>),
+    ListOfTimestamp(Vec<Timestamp>),
+    ListOfUTCTimestampWithMaybeOffset(Vec<UTCTimestampWithMaybeOffset>),
 }
 
 /// TODO
+#[derive(Clone, PartialEq, Debug)]
 pub(crate) struct RecordTuple {
     elements: VecDeque<RecordTupleValue>,
 }

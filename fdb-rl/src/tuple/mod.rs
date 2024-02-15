@@ -10,5 +10,7 @@
 pub(crate) mod record_tuple;
 pub(crate) mod record_tuple_schema;
 
-pub(crate) use record_tuple::RecordTuple;
+pub(crate) use record_tuple::{
+    RecordTuple, Timestamp, UTCTimeWithMaybeOffset, UTCTimestampWithMaybeOffset,
+};
 pub(crate) use record_tuple_schema::{RecordTupleSchema, RecordTupleSchemaElement};
