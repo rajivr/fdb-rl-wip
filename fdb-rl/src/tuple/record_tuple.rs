@@ -956,13 +956,13 @@ impl RecordTupleElementPush for Time {
 
 impl RecordTupleElementPush for UTCTimeWithMaybeOffset {
     fn push_back(record_tuple: &mut RecordTuple, value: UTCTimeWithMaybeOffset) {
-       record_tuple
+        record_tuple
             .elements
             .push_back(RecordTupleValue::UTCTimeWithMaybeOffset(value));
-     }
+    }
 
     fn push_front(record_tuple: &mut RecordTuple, value: UTCTimeWithMaybeOffset) {
-       record_tuple
+        record_tuple
             .elements
             .push_front(RecordTupleValue::UTCTimeWithMaybeOffset(value));
     }
@@ -970,13 +970,13 @@ impl RecordTupleElementPush for UTCTimeWithMaybeOffset {
 
 impl RecordTupleElementPush for Timestamp {
     fn push_back(record_tuple: &mut RecordTuple, value: Timestamp) {
-       record_tuple
+        record_tuple
             .elements
             .push_back(RecordTupleValue::Timestamp(value));
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: Timestamp) {
-       record_tuple
+        record_tuple
             .elements
             .push_front(RecordTupleValue::Timestamp(value));
     }
@@ -984,19 +984,377 @@ impl RecordTupleElementPush for Timestamp {
 
 impl RecordTupleElementPush for UTCTimestampWithMaybeOffset {
     fn push_back(record_tuple: &mut RecordTuple, value: UTCTimestampWithMaybeOffset) {
-       record_tuple
+        record_tuple
             .elements
             .push_back(RecordTupleValue::UTCTimestampWithMaybeOffset(value));
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: UTCTimestampWithMaybeOffset) {
-       record_tuple
+        record_tuple
             .elements
             .push_front(RecordTupleValue::UTCTimestampWithMaybeOffset(value));
     }
 }
 
-// TODO: continue from here...
+impl RecordTupleElementPush for Option<Bytes> {
+    fn push_back(record_tuple: &mut RecordTuple, value: Option<Bytes>) {
+        todo!();
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Option<Bytes>) {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPush for Option<String> {
+    fn push_back(record_tuple: &mut RecordTuple, value: Option<String>) {
+        todo!();
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Option<String>) {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPush for Option<RecordTuple> {
+    fn push_back(record_tuple: &mut RecordTuple, value: Option<RecordTuple>) {
+        todo!();
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Option<RecordTuple>) {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPush for Option<BigInt> {
+    fn push_back(record_tuple: &mut RecordTuple, value: Option<BigInt>) {
+        todo!();
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Option<BigInt>) {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPush for Option<i64> {
+    fn push_back(record_tuple: &mut RecordTuple, value: Option<i64>) {
+        todo!();
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Option<i64>) {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPush for Option<i32> {
+    fn push_back(record_tuple: &mut RecordTuple, value: Option<i32>) {
+        todo!();
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Option<i32>) {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPush for Option<i16> {
+    fn push_back(record_tuple: &mut RecordTuple, value: Option<i16>) {
+        todo!();
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Option<i16>) {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPush for Option<i8> {
+    fn push_back(record_tuple: &mut RecordTuple, value: Option<i8>) {
+        todo!();
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Option<i8>) {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPush for Option<f32> {
+    fn push_back(record_tuple: &mut RecordTuple, value: Option<f32>) {
+        todo!();
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Option<f32>) {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPush for Option<f64> {
+    fn push_back(record_tuple: &mut RecordTuple, value: Option<f64>) {
+        todo!();
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Option<f64>) {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPush for Option<bool> {
+    fn push_back(record_tuple: &mut RecordTuple, value: Option<bool>) {
+        todo!();
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Option<bool>) {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPush for Option<Uuid> {
+    fn push_back(record_tuple: &mut RecordTuple, value: Option<Uuid>) {
+        todo!();
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Option<Uuid>) {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPush for Option<Versionstamp> {
+    fn push_back(record_tuple: &mut RecordTuple, value: Option<Versionstamp>) {
+        todo!();
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Option<Versionstamp>) {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPush for Option<Date> {
+    fn push_back(record_tuple: &mut RecordTuple, value: Option<Date>) {
+        todo!();
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Option<Date>) {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPush for Option<Time> {
+    fn push_back(record_tuple: &mut RecordTuple, value: Option<Time>) {
+        todo!();
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Option<Time>) {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPush for Option<UTCTimeWithMaybeOffset> {
+    fn push_back(record_tuple: &mut RecordTuple, value: Option<UTCTimeWithMaybeOffset>) {
+        todo!();
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Option<UTCTimeWithMaybeOffset>) {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPush for Option<Timestamp> {
+    fn push_back(record_tuple: &mut RecordTuple, value: Option<Timestamp>) {
+        todo!();
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Option<Timestamp>) {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPush for Option<UTCTimestampWithMaybeOffset> {
+    fn push_back(record_tuple: &mut RecordTuple, value: Option<UTCTimestampWithMaybeOffset>) {
+        todo!();
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Option<UTCTimestampWithMaybeOffset>) {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPush for Vec<Bytes> {
+    fn push_back(record_tuple: &mut RecordTuple, value: Vec<Bytes>) {
+        todo!();
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Vec<Bytes>) {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPush for Vec<String> {
+    fn push_back(record_tuple: &mut RecordTuple, value: Vec<String>) {
+        todo!();
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Vec<String>) {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPush for Vec<RecordTuple> {
+    fn push_back(record_tuple: &mut RecordTuple, value: Vec<RecordTuple>) {
+        todo!();
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Vec<RecordTuple>) {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPush for Vec<BigInt> {
+    fn push_back(record_tuple: &mut RecordTuple, value: Vec<BigInt>) {
+        todo!();
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Vec<BigInt>) {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPush for Vec<i64> {
+    fn push_back(record_tuple: &mut RecordTuple, value: Vec<i64>) {
+        todo!();
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Vec<i64>) {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPush for Vec<i32> {
+    fn push_back(record_tuple: &mut RecordTuple, value: Vec<i32>) {
+        todo!();
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Vec<i32>) {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPush for Vec<i16> {
+    fn push_back(record_tuple: &mut RecordTuple, value: Vec<i16>) {
+        todo!();
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Vec<i16>) {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPush for Vec<i8> {
+    fn push_back(record_tuple: &mut RecordTuple, value: Vec<i8>) {
+        todo!();
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Vec<i8>) {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPush for Vec<f32> {
+    fn push_back(record_tuple: &mut RecordTuple, value: Vec<f32>) {
+        todo!();
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Vec<f32>) {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPush for Vec<f64> {
+    fn push_back(record_tuple: &mut RecordTuple, value: Vec<f64>) {
+        todo!();
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Vec<f64>) {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPush for Vec<bool> {
+    fn push_back(record_tuple: &mut RecordTuple, value: Vec<bool>) {
+        todo!();
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Vec<bool>) {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPush for Vec<Uuid> {
+    fn push_back(record_tuple: &mut RecordTuple, value: Vec<Uuid>) {
+        todo!();
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Vec<Uuid>) {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPush for Vec<Versionstamp> {
+    fn push_back(record_tuple: &mut RecordTuple, value: Vec<Versionstamp>) {
+        todo!();
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Vec<Versionstamp>) {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPush for Vec<Date> {
+    fn push_back(record_tuple: &mut RecordTuple, value: Vec<Date>) {
+        todo!();
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Vec<Date>) {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPush for Vec<Time> {
+    fn push_back(record_tuple: &mut RecordTuple, value: Vec<Time>) {
+        todo!();
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Vec<Time>) {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPush for Vec<UTCTimeWithMaybeOffset> {
+    fn push_back(record_tuple: &mut RecordTuple, value: Vec<UTCTimeWithMaybeOffset>) {
+        todo!();
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Vec<UTCTimeWithMaybeOffset>) {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPush for Vec<Timestamp> {
+    fn push_back(record_tuple: &mut RecordTuple, value: Vec<Timestamp>) {
+        todo!();
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Vec<Timestamp>) {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPush for Vec<UTCTimestampWithMaybeOffset> {
+    fn push_back(record_tuple: &mut RecordTuple, value: Vec<UTCTimestampWithMaybeOffset>) {
+        todo!();
+    }
+
+    fn push_front(record_tuple: &mut RecordTuple, value: Vec<UTCTimestampWithMaybeOffset>) {
+        todo!();
+    }
+}
 
 pub(crate) trait RecordTupleElementPop: private::SealedPop {
     #[doc(hidden)]
