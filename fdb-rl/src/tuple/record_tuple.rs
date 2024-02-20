@@ -752,89 +752,73 @@ impl RecordTupleElementPush for RecordTuple {
 
 impl RecordTupleElementPush for BigInt {
     fn push_back(record_tuple: &mut RecordTuple, value: BigInt) {
-        let _ = i64::try_from(value.clone())
-            .map(|x| record_tuple.push_back::<i64>(x))
-            .map_err(|_| {
-                record_tuple.elements.push_back(RecordTupleValue::Integer(
-                    RecordTupleValueInteger::BigInt(value),
-                ));
-            });
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::Integer(RecordTupleValueInteger::from(
+                value,
+            )));
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: BigInt) {
-        let _ = i64::try_from(value.clone())
-            .map(|x| record_tuple.push_front::<i64>(x))
-            .map_err(|_| {
-                record_tuple.elements.push_front(RecordTupleValue::Integer(
-                    RecordTupleValueInteger::BigInt(value),
-                ));
-            });
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::Integer(RecordTupleValueInteger::from(
+                value,
+            )));
     }
 }
 
 impl RecordTupleElementPush for i64 {
     fn push_back(record_tuple: &mut RecordTuple, value: i64) {
-        let _ = i32::try_from(value)
-            .map(|x| record_tuple.push_back::<i32>(x))
-            .map_err(|_| {
-                record_tuple.elements.push_back(RecordTupleValue::Integer(
-                    RecordTupleValueInteger::I64(value),
-                ));
-            });
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::Integer(RecordTupleValueInteger::from(
+                value,
+            )));
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: i64) {
-        let _ = i32::try_from(value)
-            .map(|x| record_tuple.push_front::<i32>(x))
-            .map_err(|_| {
-                record_tuple.elements.push_front(RecordTupleValue::Integer(
-                    RecordTupleValueInteger::I64(value),
-                ));
-            });
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::Integer(RecordTupleValueInteger::from(
+                value,
+            )));
     }
 }
 
 impl RecordTupleElementPush for i32 {
     fn push_back(record_tuple: &mut RecordTuple, value: i32) {
-        let _ = i16::try_from(value)
-            .map(|x| record_tuple.push_back::<i16>(x))
-            .map_err(|_| {
-                record_tuple.elements.push_back(RecordTupleValue::Integer(
-                    RecordTupleValueInteger::I32(value),
-                ));
-            });
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::Integer(RecordTupleValueInteger::from(
+                value,
+            )));
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: i32) {
-        let _ = i16::try_from(value)
-            .map(|x| record_tuple.push_back::<i16>(x))
-            .map_err(|_| {
-                record_tuple.elements.push_front(RecordTupleValue::Integer(
-                    RecordTupleValueInteger::I32(value),
-                ));
-            });
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::Integer(RecordTupleValueInteger::from(
+                value,
+            )));
     }
 }
 
 impl RecordTupleElementPush for i16 {
     fn push_back(record_tuple: &mut RecordTuple, value: i16) {
-        let _ = i8::try_from(value)
-            .map(|x| record_tuple.push_back::<i8>(x))
-            .map_err(|_| {
-                record_tuple.elements.push_back(RecordTupleValue::Integer(
-                    RecordTupleValueInteger::I16(value),
-                ));
-            });
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::Integer(RecordTupleValueInteger::from(
+                value,
+            )));
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: i16) {
-        let _ = i8::try_from(value)
-            .map(|x| record_tuple.push_back::<i8>(x))
-            .map_err(|_| {
-                record_tuple.elements.push_front(RecordTupleValue::Integer(
-                    RecordTupleValueInteger::I16(value),
-                ));
-            });
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::Integer(RecordTupleValueInteger::from(
+                value,
+            )));
     }
 }
 
@@ -842,7 +826,7 @@ impl RecordTupleElementPush for i8 {
     fn push_back(record_tuple: &mut RecordTuple, value: i8) {
         record_tuple
             .elements
-            .push_back(RecordTupleValue::Integer(RecordTupleValueInteger::I8(
+            .push_back(RecordTupleValue::Integer(RecordTupleValueInteger::from(
                 value,
             )));
     }
@@ -850,7 +834,7 @@ impl RecordTupleElementPush for i8 {
     fn push_front(record_tuple: &mut RecordTuple, value: i8) {
         record_tuple
             .elements
-            .push_front(RecordTupleValue::Integer(RecordTupleValueInteger::I8(
+            .push_front(RecordTupleValue::Integer(RecordTupleValueInteger::from(
                 value,
             )));
     }
@@ -998,361 +982,625 @@ impl RecordTupleElementPush for UTCTimestampWithMaybeOffset {
 
 impl RecordTupleElementPush for Option<Bytes> {
     fn push_back(record_tuple: &mut RecordTuple, value: Option<Bytes>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::MaybeBytes(value));
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: Option<Bytes>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::MaybeBytes(value));
     }
 }
 
 impl RecordTupleElementPush for Option<String> {
     fn push_back(record_tuple: &mut RecordTuple, value: Option<String>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::MaybeString(value));
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: Option<String>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::MaybeString(value));
     }
 }
 
 impl RecordTupleElementPush for Option<RecordTuple> {
     fn push_back(record_tuple: &mut RecordTuple, value: Option<RecordTuple>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::MaybeRecordTuple(value));
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: Option<RecordTuple>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::MaybeRecordTuple(value));
     }
 }
 
 impl RecordTupleElementPush for Option<BigInt> {
     fn push_back(record_tuple: &mut RecordTuple, value: Option<BigInt>) {
-        todo!();
+        match value {
+            Some(v) => record_tuple
+                .elements
+                .push_back(RecordTupleValue::MaybeInteger(Some(
+                    RecordTupleValueInteger::from(v),
+                ))),
+            None => record_tuple
+                .elements
+                .push_back(RecordTupleValue::MaybeInteger(None)),
+        }
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: Option<BigInt>) {
-        todo!();
+        match value {
+            Some(v) => record_tuple
+                .elements
+                .push_front(RecordTupleValue::MaybeInteger(Some(
+                    RecordTupleValueInteger::from(v),
+                ))),
+            None => record_tuple
+                .elements
+                .push_front(RecordTupleValue::MaybeInteger(None)),
+        }
     }
 }
 
 impl RecordTupleElementPush for Option<i64> {
     fn push_back(record_tuple: &mut RecordTuple, value: Option<i64>) {
-        todo!();
+        match value {
+            Some(v) => record_tuple
+                .elements
+                .push_back(RecordTupleValue::MaybeInteger(Some(
+                    RecordTupleValueInteger::from(v),
+                ))),
+            None => record_tuple
+                .elements
+                .push_back(RecordTupleValue::MaybeInteger(None)),
+        }
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: Option<i64>) {
-        todo!();
+        match value {
+            Some(v) => record_tuple
+                .elements
+                .push_front(RecordTupleValue::MaybeInteger(Some(
+                    RecordTupleValueInteger::from(v),
+                ))),
+            None => record_tuple
+                .elements
+                .push_front(RecordTupleValue::MaybeInteger(None)),
+        }
     }
 }
 
 impl RecordTupleElementPush for Option<i32> {
     fn push_back(record_tuple: &mut RecordTuple, value: Option<i32>) {
-        todo!();
+        match value {
+            Some(v) => record_tuple
+                .elements
+                .push_back(RecordTupleValue::MaybeInteger(Some(
+                    RecordTupleValueInteger::from(v),
+                ))),
+            None => record_tuple
+                .elements
+                .push_back(RecordTupleValue::MaybeInteger(None)),
+        }
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: Option<i32>) {
-        todo!();
+        match value {
+            Some(v) => record_tuple
+                .elements
+                .push_front(RecordTupleValue::MaybeInteger(Some(
+                    RecordTupleValueInteger::from(v),
+                ))),
+            None => record_tuple
+                .elements
+                .push_front(RecordTupleValue::MaybeInteger(None)),
+        }
     }
 }
 
 impl RecordTupleElementPush for Option<i16> {
     fn push_back(record_tuple: &mut RecordTuple, value: Option<i16>) {
-        todo!();
+        match value {
+            Some(v) => record_tuple
+                .elements
+                .push_back(RecordTupleValue::MaybeInteger(Some(
+                    RecordTupleValueInteger::from(v),
+                ))),
+            None => record_tuple
+                .elements
+                .push_back(RecordTupleValue::MaybeInteger(None)),
+        }
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: Option<i16>) {
-        todo!();
+        match value {
+            Some(v) => record_tuple
+                .elements
+                .push_front(RecordTupleValue::MaybeInteger(Some(
+                    RecordTupleValueInteger::from(v),
+                ))),
+            None => record_tuple
+                .elements
+                .push_front(RecordTupleValue::MaybeInteger(None)),
+        }
     }
 }
 
 impl RecordTupleElementPush for Option<i8> {
     fn push_back(record_tuple: &mut RecordTuple, value: Option<i8>) {
-        todo!();
+        match value {
+            Some(v) => record_tuple
+                .elements
+                .push_back(RecordTupleValue::MaybeInteger(Some(
+                    RecordTupleValueInteger::from(v),
+                ))),
+            None => record_tuple
+                .elements
+                .push_back(RecordTupleValue::MaybeInteger(None)),
+        }
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: Option<i8>) {
-        todo!();
+        match value {
+            Some(v) => record_tuple
+                .elements
+                .push_front(RecordTupleValue::MaybeInteger(Some(
+                    RecordTupleValueInteger::from(v),
+                ))),
+            None => record_tuple
+                .elements
+                .push_front(RecordTupleValue::MaybeInteger(None)),
+        }
     }
 }
 
 impl RecordTupleElementPush for Option<f32> {
     fn push_back(record_tuple: &mut RecordTuple, value: Option<f32>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::MaybeFloat(value));
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: Option<f32>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::MaybeFloat(value));
     }
 }
 
 impl RecordTupleElementPush for Option<f64> {
     fn push_back(record_tuple: &mut RecordTuple, value: Option<f64>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::MaybeDouble(value));
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: Option<f64>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::MaybeDouble(value));
     }
 }
 
 impl RecordTupleElementPush for Option<bool> {
     fn push_back(record_tuple: &mut RecordTuple, value: Option<bool>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::MaybeBoolean(value));
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: Option<bool>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::MaybeBoolean(value));
     }
 }
 
 impl RecordTupleElementPush for Option<Uuid> {
     fn push_back(record_tuple: &mut RecordTuple, value: Option<Uuid>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::MaybeUuid(value));
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: Option<Uuid>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::MaybeUuid(value));
     }
 }
 
 impl RecordTupleElementPush for Option<Versionstamp> {
     fn push_back(record_tuple: &mut RecordTuple, value: Option<Versionstamp>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::MaybeVersionstamp(value));
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: Option<Versionstamp>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::MaybeVersionstamp(value));
     }
 }
 
 impl RecordTupleElementPush for Option<Date> {
     fn push_back(record_tuple: &mut RecordTuple, value: Option<Date>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::MaybeDate(value));
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: Option<Date>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::MaybeDate(value));
     }
 }
 
 impl RecordTupleElementPush for Option<Time> {
     fn push_back(record_tuple: &mut RecordTuple, value: Option<Time>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::MaybeTime(value));
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: Option<Time>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::MaybeTime(value));
     }
 }
 
 impl RecordTupleElementPush for Option<UTCTimeWithMaybeOffset> {
     fn push_back(record_tuple: &mut RecordTuple, value: Option<UTCTimeWithMaybeOffset>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::MaybeUTCTimeWithMaybeOffset(value));
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: Option<UTCTimeWithMaybeOffset>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::MaybeUTCTimeWithMaybeOffset(value));
     }
 }
 
 impl RecordTupleElementPush for Option<Timestamp> {
     fn push_back(record_tuple: &mut RecordTuple, value: Option<Timestamp>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::MaybeTimestamp(value));
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: Option<Timestamp>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::MaybeTimestamp(value));
     }
 }
 
 impl RecordTupleElementPush for Option<UTCTimestampWithMaybeOffset> {
     fn push_back(record_tuple: &mut RecordTuple, value: Option<UTCTimestampWithMaybeOffset>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::MaybeUTCTimestampWithMaybeOffset(value));
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: Option<UTCTimestampWithMaybeOffset>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::MaybeUTCTimestampWithMaybeOffset(value));
     }
 }
 
 impl RecordTupleElementPush for Vec<Bytes> {
     fn push_back(record_tuple: &mut RecordTuple, value: Vec<Bytes>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::ListOfBytes(value));
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: Vec<Bytes>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::ListOfBytes(value));
     }
 }
 
 impl RecordTupleElementPush for Vec<String> {
     fn push_back(record_tuple: &mut RecordTuple, value: Vec<String>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::ListOfString(value));
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: Vec<String>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::ListOfString(value));
     }
 }
 
 impl RecordTupleElementPush for Vec<RecordTuple> {
     fn push_back(record_tuple: &mut RecordTuple, value: Vec<RecordTuple>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::ListOfRecordTuple(value));
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: Vec<RecordTuple>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::ListOfRecordTuple(value));
     }
 }
 
 impl RecordTupleElementPush for Vec<BigInt> {
     fn push_back(record_tuple: &mut RecordTuple, value: Vec<BigInt>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::ListOfInteger(
+                value
+                    .into_iter()
+                    .map(RecordTupleValueInteger::from)
+                    .collect::<Vec<RecordTupleValueInteger>>(),
+            ));
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: Vec<BigInt>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::ListOfInteger(
+                value
+                    .into_iter()
+                    .map(RecordTupleValueInteger::from)
+                    .collect::<Vec<RecordTupleValueInteger>>(),
+            ));
     }
 }
 
 impl RecordTupleElementPush for Vec<i64> {
     fn push_back(record_tuple: &mut RecordTuple, value: Vec<i64>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::ListOfInteger(
+                value
+                    .into_iter()
+                    .map(RecordTupleValueInteger::from)
+                    .collect::<Vec<RecordTupleValueInteger>>(),
+            ));
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: Vec<i64>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::ListOfInteger(
+                value
+                    .into_iter()
+                    .map(RecordTupleValueInteger::from)
+                    .collect::<Vec<RecordTupleValueInteger>>(),
+            ));
     }
 }
 
 impl RecordTupleElementPush for Vec<i32> {
     fn push_back(record_tuple: &mut RecordTuple, value: Vec<i32>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::ListOfInteger(
+                value
+                    .into_iter()
+                    .map(RecordTupleValueInteger::from)
+                    .collect::<Vec<RecordTupleValueInteger>>(),
+            ));
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: Vec<i32>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::ListOfInteger(
+                value
+                    .into_iter()
+                    .map(RecordTupleValueInteger::from)
+                    .collect::<Vec<RecordTupleValueInteger>>(),
+            ));
     }
 }
 
 impl RecordTupleElementPush for Vec<i16> {
     fn push_back(record_tuple: &mut RecordTuple, value: Vec<i16>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::ListOfInteger(
+                value
+                    .into_iter()
+                    .map(RecordTupleValueInteger::from)
+                    .collect::<Vec<RecordTupleValueInteger>>(),
+            ));
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: Vec<i16>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::ListOfInteger(
+                value
+                    .into_iter()
+                    .map(RecordTupleValueInteger::from)
+                    .collect::<Vec<RecordTupleValueInteger>>(),
+            ));
     }
 }
 
 impl RecordTupleElementPush for Vec<i8> {
     fn push_back(record_tuple: &mut RecordTuple, value: Vec<i8>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::ListOfInteger(
+                value
+                    .into_iter()
+                    .map(RecordTupleValueInteger::from)
+                    .collect::<Vec<RecordTupleValueInteger>>(),
+            ));
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: Vec<i8>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::ListOfInteger(
+                value
+                    .into_iter()
+                    .map(RecordTupleValueInteger::from)
+                    .collect::<Vec<RecordTupleValueInteger>>(),
+            ));
     }
 }
 
 impl RecordTupleElementPush for Vec<f32> {
     fn push_back(record_tuple: &mut RecordTuple, value: Vec<f32>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::ListOfFloat(value));
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: Vec<f32>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::ListOfFloat(value));
     }
 }
 
 impl RecordTupleElementPush for Vec<f64> {
     fn push_back(record_tuple: &mut RecordTuple, value: Vec<f64>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::ListOfDouble(value));
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: Vec<f64>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::ListOfDouble(value));
     }
 }
 
 impl RecordTupleElementPush for Vec<bool> {
     fn push_back(record_tuple: &mut RecordTuple, value: Vec<bool>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::ListOfBoolean(value));
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: Vec<bool>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::ListOfBoolean(value));
     }
 }
 
 impl RecordTupleElementPush for Vec<Uuid> {
     fn push_back(record_tuple: &mut RecordTuple, value: Vec<Uuid>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::ListOfUuid(value));
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: Vec<Uuid>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::ListOfUuid(value));
     }
 }
 
 impl RecordTupleElementPush for Vec<Versionstamp> {
     fn push_back(record_tuple: &mut RecordTuple, value: Vec<Versionstamp>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::ListOfVersionstamp(value));
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: Vec<Versionstamp>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::ListOfVersionstamp(value));
     }
 }
 
 impl RecordTupleElementPush for Vec<Date> {
     fn push_back(record_tuple: &mut RecordTuple, value: Vec<Date>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::ListOfDate(value));
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: Vec<Date>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::ListOfDate(value));
     }
 }
 
 impl RecordTupleElementPush for Vec<Time> {
     fn push_back(record_tuple: &mut RecordTuple, value: Vec<Time>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::ListOfTime(value));
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: Vec<Time>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::ListOfTime(value));
     }
 }
 
 impl RecordTupleElementPush for Vec<UTCTimeWithMaybeOffset> {
     fn push_back(record_tuple: &mut RecordTuple, value: Vec<UTCTimeWithMaybeOffset>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::ListOfUTCTimeWithMaybeOffset(value));
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: Vec<UTCTimeWithMaybeOffset>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::ListOfUTCTimeWithMaybeOffset(value));
     }
 }
 
 impl RecordTupleElementPush for Vec<Timestamp> {
     fn push_back(record_tuple: &mut RecordTuple, value: Vec<Timestamp>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::ListOfTimestamp(value));
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: Vec<Timestamp>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::ListOfTimestamp(value));
     }
 }
 
 impl RecordTupleElementPush for Vec<UTCTimestampWithMaybeOffset> {
     fn push_back(record_tuple: &mut RecordTuple, value: Vec<UTCTimestampWithMaybeOffset>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_back(RecordTupleValue::ListOfUTCTimestampWithMaybeOffset(value));
     }
 
     fn push_front(record_tuple: &mut RecordTuple, value: Vec<UTCTimestampWithMaybeOffset>) {
-        todo!();
+        record_tuple
+            .elements
+            .push_front(RecordTupleValue::ListOfUTCTimestampWithMaybeOffset(value));
     }
 }
 
@@ -1446,6 +1694,44 @@ impl TryFrom<&RecordTupleValueInteger> for i8 {
             | RecordTupleValueInteger::I64(_)
             | RecordTupleValueInteger::BigInt(_) => Err(()),
         }
+    }
+}
+
+impl From<BigInt> for RecordTupleValueInteger {
+    fn from(value: BigInt) -> RecordTupleValueInteger {
+        i64::try_from(value.clone())
+            .map(RecordTupleValueInteger::from)
+            .unwrap_or_else(|_| RecordTupleValueInteger::BigInt(value))
+    }
+}
+
+impl From<i64> for RecordTupleValueInteger {
+    fn from(value: i64) -> RecordTupleValueInteger {
+        i32::try_from(value)
+            .map(RecordTupleValueInteger::from)
+            .unwrap_or_else(|_| RecordTupleValueInteger::I64(value))
+    }
+}
+
+impl From<i32> for RecordTupleValueInteger {
+    fn from(value: i32) -> RecordTupleValueInteger {
+        i16::try_from(value)
+            .map(RecordTupleValueInteger::from)
+            .unwrap_or_else(|_| RecordTupleValueInteger::I32(value))
+    }
+}
+
+impl From<i16> for RecordTupleValueInteger {
+    fn from(value: i16) -> RecordTupleValueInteger {
+        i8::try_from(value)
+            .map(RecordTupleValueInteger::from)
+            .unwrap_or_else(|_| RecordTupleValueInteger::I16(value))
+    }
+}
+
+impl From<i8> for RecordTupleValueInteger {
+    fn from(value: i8) -> RecordTupleValueInteger {
+        RecordTupleValueInteger::I8(value)
     }
 }
 
