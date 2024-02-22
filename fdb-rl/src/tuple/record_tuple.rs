@@ -138,6 +138,63 @@ mod private {
     impl SealedPush for Vec<UTCTimestampWithMaybeOffset> {}
 
     pub(crate) trait SealedPop {}
+
+    impl SealedPop for Bytes {}
+    impl SealedPop for String {}
+    impl SealedPop for RecordTuple {}
+    impl SealedPop for BigInt {}
+    impl SealedPop for i64 {}
+    impl SealedPop for i32 {}
+    impl SealedPop for i16 {}
+    impl SealedPop for i8 {}
+    impl SealedPop for f32 {}
+    impl SealedPop for f64 {}
+    impl SealedPop for bool {}
+    impl SealedPop for Uuid {}
+    impl SealedPop for Versionstamp {}
+    impl SealedPop for Date {}
+    impl SealedPop for Time {}
+    impl SealedPop for UTCTimeWithMaybeOffset {}
+    impl SealedPop for Timestamp {}
+    impl SealedPop for UTCTimestampWithMaybeOffset {}
+
+    impl SealedPop for Option<Bytes> {}
+    impl SealedPop for Option<String> {}
+    impl SealedPop for Option<RecordTuple> {}
+    impl SealedPop for Option<BigInt> {}
+    impl SealedPop for Option<i64> {}
+    impl SealedPop for Option<i32> {}
+    impl SealedPop for Option<i16> {}
+    impl SealedPop for Option<i8> {}
+    impl SealedPop for Option<f32> {}
+    impl SealedPop for Option<f64> {}
+    impl SealedPop for Option<bool> {}
+    impl SealedPop for Option<Uuid> {}
+    impl SealedPop for Option<Versionstamp> {}
+    impl SealedPop for Option<Date> {}
+    impl SealedPop for Option<Time> {}
+    impl SealedPop for Option<UTCTimeWithMaybeOffset> {}
+    impl SealedPop for Option<Timestamp> {}
+    impl SealedPop for Option<UTCTimestampWithMaybeOffset> {}
+
+    impl SealedPop for Vec<Bytes> {}
+    impl SealedPop for Vec<String> {}
+    impl SealedPop for Vec<RecordTuple> {}
+    impl SealedPop for Vec<BigInt> {}
+    impl SealedPop for Vec<i64> {}
+    impl SealedPop for Vec<i32> {}
+    impl SealedPop for Vec<i16> {}
+    impl SealedPop for Vec<i8> {}
+    impl SealedPop for Vec<f32> {}
+    impl SealedPop for Vec<f64> {}
+    impl SealedPop for Vec<bool> {}
+    impl SealedPop for Vec<Uuid> {}
+    impl SealedPop for Vec<Versionstamp> {}
+    impl SealedPop for Vec<Date> {}
+    impl SealedPop for Vec<Time> {}
+    impl SealedPop for Vec<UTCTimeWithMaybeOffset> {}
+    impl SealedPop for Vec<Timestamp> {}
+    impl SealedPop for Vec<UTCTimestampWithMaybeOffset> {}
 }
 
 /// TODO
@@ -1614,6 +1671,536 @@ pub(crate) trait RecordTupleElementPop: private::SealedPop {
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<Self>
     where
         Self: Sized;
+}
+
+impl RecordTupleElementPop for Bytes {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Bytes> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Bytes> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for String {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<String> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<String> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for RecordTuple {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<RecordTuple> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<RecordTuple> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for BigInt {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<BigInt> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<BigInt> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for i64 {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<i64> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<i64> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for i32 {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<i32> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<i32> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for i16 {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<i16> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<i16> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for i8 {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<i8> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<i8> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for f32 {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<f32> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<f32> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for f64 {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<f64> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<f64> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for bool {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<bool> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<bool> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Uuid {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Uuid> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Uuid> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Versionstamp {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Versionstamp> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Versionstamp> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Date {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Date> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Date> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Time {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Time> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Time> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for UTCTimeWithMaybeOffset {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<UTCTimeWithMaybeOffset> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<UTCTimeWithMaybeOffset> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Timestamp {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Timestamp> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Timestamp> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for UTCTimestampWithMaybeOffset {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<UTCTimestampWithMaybeOffset> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<UTCTimestampWithMaybeOffset> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Option<Bytes> {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Option<Bytes>> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Option<Bytes>> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Option<String> {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Option<String>> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Option<String>> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Option<RecordTuple> {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Option<RecordTuple>> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Option<RecordTuple>> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Option<BigInt> {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Option<BigInt>> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Option<BigInt>> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Option<i64> {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Option<i64>> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Option<i64>> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Option<i32> {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Option<i32>> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Option<i32>> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Option<i8> {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Option<i8>> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Option<i8>> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Option<f32> {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Option<f32>> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Option<f32>> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Option<f64> {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Option<f64>> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Option<f64>> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Option<bool> {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Option<bool>> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Option<bool>> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Option<Uuid> {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Option<Uuid>> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Option<Uuid>> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Option<Versionstamp> {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Option<Versionstamp>> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Option<Versionstamp>> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Option<Date> {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Option<Date>> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Option<Date>> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Option<Time> {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Option<Time>> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Option<Time>> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Option<UTCTimeWithMaybeOffset> {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Option<UTCTimeWithMaybeOffset>> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Option<UTCTimeWithMaybeOffset>> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Option<Timestamp> {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Option<Timestamp>> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Option<Timestamp>> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Option<UTCTimestampWithMaybeOffset> {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Option<UTCTimestampWithMaybeOffset>> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Option<UTCTimestampWithMaybeOffset>> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Vec<Bytes> {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Vec<Bytes>> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Vec<Bytes>> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Vec<String> {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Vec<String>> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Vec<String>> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Vec<RecordTuple> {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Vec<RecordTuple>> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Vec<RecordTuple>> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Vec<BigInt> {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Vec<BigInt>> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Vec<BigInt>> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Vec<i64> {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Vec<i64>> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Vec<i64>> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Vec<i32> {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Vec<i32>> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Vec<i32>> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Vec<i16> {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Vec<i16>> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Vec<i16>> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Vec<i8> {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Vec<i8>> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Vec<i8>> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Vec<f32> {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Vec<f32>> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Vec<f32>> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Vec<f64> {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Vec<f64>> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Vec<f64>> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Vec<bool> {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Vec<bool>> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Vec<bool>> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Vec<Uuid> {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Vec<Uuid>> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Vec<Uuid>> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Vec<Versionstamp> {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Vec<Versionstamp>> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Vec<Versionstamp>> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Vec<Date> {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Vec<Date>> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Vec<Date>> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Vec<Time> {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Vec<Time>> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Vec<Time>> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Vec<UTCTimeWithMaybeOffset> {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Vec<UTCTimeWithMaybeOffset>> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Vec<UTCTimeWithMaybeOffset>> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Vec<Timestamp> {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Vec<Timestamp>> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Vec<Timestamp>> {
+        todo!();
+    }
+}
+
+impl RecordTupleElementPop for Vec<UTCTimestampWithMaybeOffset> {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Vec<UTCTimestampWithMaybeOffset>> {
+        todo!();
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Vec<UTCTimestampWithMaybeOffset>> {
+        todo!();
+    }
 }
 
 /// Needed for [`RecordTupleSchemaElement::Integer`] variant because
