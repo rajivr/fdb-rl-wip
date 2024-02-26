@@ -1675,351 +1675,948 @@ pub(crate) trait RecordTupleElementPop: private::SealedPop {
 
 impl RecordTupleElementPop for Bytes {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<Bytes> {
-        todo!();
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Bytes`. In that
+            // case, we will need to push the `RecordTupleValue` back
+            // before returning `None`.
+            Bytes::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
     }
 
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<Bytes> {
-        todo!();
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Bytes`. In that
+            // case, we will need to push the `RecordTupleValue` to
+            // the front before returning `None`.
+            Bytes::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
     }
 }
 
 impl RecordTupleElementPop for String {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<String> {
-        todo!();
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `String`. In that
+            // case, we will need to push the `RecordTupleValue` back
+            // before returning `None`.
+            String::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
     }
 
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<String> {
-        todo!();
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `String`. In that
+            // case, we will need to push the `RecordTupleValue` to
+            // the front before returning `None`.
+            String::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
     }
 }
 
 impl RecordTupleElementPop for RecordTuple {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<RecordTuple> {
-        todo!();
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `RecordTuple`. In
+            // that case, we will need to push the `RecordTupleValue`
+            // back before returning `None`.
+            RecordTuple::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
     }
 
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<RecordTuple> {
-        todo!();
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `RecordTuple`. In
+            // that case, we will need to push the `RecordTupleValue`
+            // to the front before returning `None`.
+            RecordTuple::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
     }
 }
 
 impl RecordTupleElementPop for BigInt {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<BigInt> {
-        todo!();
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `BigInt`. In that
+            // case, we will need to push the `RecordTupleValue` back
+            // before returning `None`.
+            BigInt::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
     }
 
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<BigInt> {
-        todo!();
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `BigInt`. In that
+            // case, we will need to push the `RecordTupleValue` to
+            // the front before returning `None`.
+            BigInt::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
     }
 }
 
 impl RecordTupleElementPop for i64 {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<i64> {
-        todo!();
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `i64`. In that case,
+            // we will need to push the `RecordTupleValue` back before
+            // returning `None`.
+            i64::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
     }
 
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<i64> {
-        todo!();
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `i64`. In that case,
+            // we will need to push the `RecordTupleValue` to the
+            // front before returning `None`.
+            i64::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
     }
 }
 
 impl RecordTupleElementPop for i32 {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<i32> {
-        todo!();
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `i32`. In that case,
+            // we will need to push the `RecordTupleValue` back before
+            // returning `None`.
+            i32::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
     }
 
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<i32> {
-        todo!();
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `i32`. In that case,
+            // we will need to push the `RecordTupleValue` to the
+            // front before returning `None`.
+            i32::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
     }
 }
 
 impl RecordTupleElementPop for i16 {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<i16> {
-        todo!();
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `i16`. In that case,
+            // we will need to push the `RecordTupleValue` back before
+            // returning `None`.
+            i16::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
     }
 
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<i16> {
-        todo!();
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `i16`. In that case,
+            // we will need to push the `RecordTupleValue` to the
+            // front before returning `None`.
+            i16::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
     }
 }
 
 impl RecordTupleElementPop for i8 {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<i8> {
-        todo!();
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `i8`. In that case,
+            // we will need to push the `RecordTupleValue` back before
+            // returning `None`.
+            i8::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
     }
 
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<i8> {
-        todo!();
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `i8`. In that case,
+            // we will need to push the `RecordTupleValue` to the
+            // front before returning `None`.
+            i8::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
     }
 }
 
 impl RecordTupleElementPop for f32 {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<f32> {
-        todo!();
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `f32`. In that case,
+            // we will need to push the `RecordTupleValue` back before
+            // returning `None`.
+            f32::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
     }
 
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<f32> {
-        todo!();
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `f32`. In that case,
+            // we will need to push the `RecordTupleValue` to the
+            // front before returning `None`.
+            f32::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
     }
 }
 
 impl RecordTupleElementPop for f64 {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<f64> {
-        todo!();
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `f64`. In that case,
+            // we will need to push the `RecordTupleValue` back before
+            // returning `None`.
+            f64::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
     }
 
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<f64> {
-        todo!();
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `f64`. In that case,
+            // we will need to push the `RecordTupleValue` to the
+            // front before returning `None`.
+            f64::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
     }
 }
 
 impl RecordTupleElementPop for bool {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<bool> {
-        todo!();
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `bool`. In that case,
+            // we will need to push the `RecordTupleValue` back before
+            // returning `None`.
+            bool::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
     }
 
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<bool> {
-        todo!();
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `bool`. In that case,
+            // we will need to push the `RecordTupleValue` to the
+            // front before returning `None`.
+            bool::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
     }
 }
 
 impl RecordTupleElementPop for Uuid {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<Uuid> {
-        todo!();
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Uuid`. In that case,
+            // we will need to push the `RecordTupleValue` back before
+            // returning `None`.
+            Uuid::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
     }
 
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<Uuid> {
-        todo!();
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Uuid`. In that case,
+            // we will need to push the `RecordTupleValue` to the
+            // front before returning `None`.
+            Uuid::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
     }
 }
 
 impl RecordTupleElementPop for Versionstamp {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<Versionstamp> {
-        todo!();
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Versionstamp`. In
+            // that case, we will need to push the `RecordTupleValue`
+            // back before returning `None`.
+            Versionstamp::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
     }
 
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<Versionstamp> {
-        todo!();
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Versionstamp`. In
+            // that case, we will need to push the `RecordTupleValue`
+            // to the front before returning `None`.
+            Versionstamp::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
     }
 }
 
 impl RecordTupleElementPop for Date {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<Date> {
-        todo!();
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Date`. In that case,
+            // we will need to push the `RecordTupleValue` back before
+            // returning `None`.
+            Date::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
     }
 
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<Date> {
-        todo!();
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Date`. In that case,
+            // we will need to push the `RecordTupleValue` to the
+            // front before returning `None`.
+            Date::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
     }
 }
 
 impl RecordTupleElementPop for Time {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<Time> {
-        todo!();
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Time`. In that case,
+            // we will need to push the `RecordTupleValue` back before
+            // returning `None`.
+            Time::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
     }
 
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<Time> {
-        todo!();
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Time`. In that case,
+            // we will need to push the `RecordTupleValue` to the
+            // front before returning `None`.
+            Time::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
     }
 }
 
 impl RecordTupleElementPop for UTCTimeWithMaybeOffset {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<UTCTimeWithMaybeOffset> {
-        todo!();
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a
+            // `UTCTimeWithMaybeOffset`. In that case, we will need to
+            // push the `RecordTupleValue` back before returning
+            // `None`.
+            UTCTimeWithMaybeOffset::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
     }
 
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<UTCTimeWithMaybeOffset> {
-        todo!();
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a
+            // `UTCTimeWithMaybeOffset`. In that case, we will need to
+            // push the `RecordTupleValue` to the front before
+            // returning `None`.
+            UTCTimeWithMaybeOffset::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
     }
 }
 
 impl RecordTupleElementPop for Timestamp {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<Timestamp> {
-        todo!();
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Timestamp`. In that
+            // case, we will need to push the `RecordTupleValue` back
+            // before returning `None`.
+            Timestamp::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
     }
 
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<Timestamp> {
-        todo!();
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Timestamp`. In that
+            // case, we will need to push the `RecordTupleValue` to
+            // the front before returning `None`.
+            Timestamp::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
     }
 }
 
 impl RecordTupleElementPop for UTCTimestampWithMaybeOffset {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<UTCTimestampWithMaybeOffset> {
-        todo!();
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `UTCTimestampWithMaybeOffset`. In that
+            // case, we will need to push the `RecordTupleValue` back
+            // before returning `None`.
+            UTCTimestampWithMaybeOffset::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
     }
 
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<UTCTimestampWithMaybeOffset> {
-        todo!();
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `UTCTimestampWithMaybeOffset`. In that
+            // case, we will need to push the `RecordTupleValue` to
+            // the front before returning `None`.
+            UTCTimestampWithMaybeOffset::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
     }
 }
 
 impl RecordTupleElementPop for Option<Bytes> {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<Option<Bytes>> {
-        todo!();
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Option<Bytes>`. In
+            // that case, we will need to push the `RecordTupleValue`
+            // back before returning `None`.
+            Option::<Bytes>::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
     }
 
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<Option<Bytes>> {
-        todo!();
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Option<Bytes>`. In
+            // that case, we will need to push the `RecordTupleValue`
+            // to the front before returning `None`.
+            Option::<Bytes>::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
     }
 }
 
 impl RecordTupleElementPop for Option<String> {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<Option<String>> {
-        todo!();
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Option<String>`. In
+            // that case, we will need to push the `RecordTupleValue`
+            // back before returning `None`.
+            Option::<String>::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
     }
 
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<Option<String>> {
-        todo!();
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Option<String>`. In
+            // that case, we will need to push the `RecordTupleValue`
+            // to the front before returning `None`.
+            Option::<String>::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
     }
 }
 
 impl RecordTupleElementPop for Option<RecordTuple> {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<Option<RecordTuple>> {
-        todo!();
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a
+            // `Option<RecordTuple>`. In that case, we will need to
+            // push the `RecordTupleValue` back before returning
+            // `None`.
+            Option::<RecordTuple>::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
     }
 
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<Option<RecordTuple>> {
-        todo!();
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a
+            // `Option<RecordTuple>`. In that case, we will need to
+            // push the `RecordTupleValue` to the front before
+            // returning `None`.
+            Option::<RecordTuple>::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
     }
 }
 
 impl RecordTupleElementPop for Option<BigInt> {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<Option<BigInt>> {
-        todo!();
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Option<BigInt>`. In
+            // that case, we will need to push the `RecordTupleValue`
+            // back before returning `None`.
+            Option::<BigInt>::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
     }
 
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<Option<BigInt>> {
-        todo!();
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Option<BigInt>`. In
+            // that case, we will need to push the `RecordTupleValue`
+            // to the front before returning `None`.
+            Option::<BigInt>::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
     }
 }
 
 impl RecordTupleElementPop for Option<i64> {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<Option<i64>> {
-        todo!();
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Option<i64>`. In
+            // that case, we will need to push the `RecordTupleValue`
+            // back before returning `None`.
+            Option::<i64>::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
     }
 
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<Option<i64>> {
-        todo!();
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Option<i64>`. In
+            // that case, we will need to push the `RecordTupleValue`
+            // to the front before returning `None`.
+            Option::<i64>::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
     }
 }
 
 impl RecordTupleElementPop for Option<i32> {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<Option<i32>> {
-        todo!();
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Option<i32>`. In
+            // that case, we will need to push the `RecordTupleValue`
+            // back before returning `None`.
+            Option::<i32>::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
     }
 
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<Option<i32>> {
-        todo!();
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Option<i32>`. In
+            // that case, we will need to push the `RecordTupleValue`
+            // to the front before returning `None`.
+            Option::<i32>::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
+    }
+}
+
+impl RecordTupleElementPop for Option<i16> {
+    fn pop_back(record_tuple: &mut RecordTuple) -> Option<Option<i16>> {
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Option<i16>`. In
+            // that case, we will need to push the `RecordTupleValue`
+            // back before returning `None`.
+            Option::<i16>::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
+    }
+
+    fn pop_front(record_tuple: &mut RecordTuple) -> Option<Option<i16>> {
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Option<i16>`. In
+            // that case, we will need to push the `RecordTupleValue`
+            // to the front before returning `None`.
+            Option::<i16>::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
     }
 }
 
 impl RecordTupleElementPop for Option<i8> {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<Option<i8>> {
-        todo!();
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Option<i8>`. In that
+            // case, we will need to push the `RecordTupleValue` back
+            // before returning `None`.
+            Option::<i8>::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
     }
 
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<Option<i8>> {
-        todo!();
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Option<i8>`. In that
+            // case, we will need to push the `RecordTupleValue` to
+            // the front before returning `None`.
+            Option::<i8>::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
     }
 }
 
 impl RecordTupleElementPop for Option<f32> {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<Option<f32>> {
-        todo!();
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Option<f32>`. In
+            // that case, we will need to push the `RecordTupleValue`
+            // back before returning `None`.
+            Option::<f32>::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
     }
 
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<Option<f32>> {
-        todo!();
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Option<f32>`. In
+            // that case, we will need to push the `RecordTupleValue`
+            // to the front before returning `None`.
+            Option::<f32>::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
     }
 }
 
 impl RecordTupleElementPop for Option<f64> {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<Option<f64>> {
-        todo!();
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Option<f64>`. In
+            // that case, we will need to push the `RecordTupleValue`
+            // back before returning `None`.
+            Option::<f64>::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
     }
 
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<Option<f64>> {
-        todo!();
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Option<f64>`. In
+            // that case, we will need to push the `RecordTupleValue`
+            // to the front before returning `None`.
+            Option::<f64>::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
     }
 }
 
 impl RecordTupleElementPop for Option<bool> {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<Option<bool>> {
-        todo!();
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Option<bool>`. In
+            // that case, we will need to push the `RecordTupleValue`
+            // back before returning `None`.
+            Option::<bool>::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
     }
 
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<Option<bool>> {
-        todo!();
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Option<bool>`. In
+            // that case, we will need to push the `RecordTupleValue`
+            // to the front before returning `None`.
+            Option::<bool>::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
     }
 }
 
 impl RecordTupleElementPop for Option<Uuid> {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<Option<Uuid>> {
-        todo!();
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Option<Uuid>`. In
+            // that case, we will need to push the `RecordTupleValue`
+            // back before returning `None`.
+            Option::<Uuid>::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
     }
 
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<Option<Uuid>> {
-        todo!();
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Option<Uuid>`. In
+            // that case, we will need to push the `RecordTupleValue`
+            // to the front before returning `None`.
+            Option::<Uuid>::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
     }
 }
 
 impl RecordTupleElementPop for Option<Versionstamp> {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<Option<Versionstamp>> {
-        todo!();
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a
+            // `Option<Versionstamp>`. In that case, we will need to
+            // push the `RecordTupleValue` back before returning
+            // `None`.
+            Option::<Versionstamp>::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
     }
 
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<Option<Versionstamp>> {
-        todo!();
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a
+            // `Option<Versionstamp>`. In that case, we will need to
+            // push the `RecordTupleValue` to the front before
+            // returning `None`.
+            Option::<Versionstamp>::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
     }
 }
 
 impl RecordTupleElementPop for Option<Date> {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<Option<Date>> {
-        todo!();
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Option<Date>`. In
+            // that case, we will need to push the `RecordTupleValue`
+            // back before returning `None`.
+            Option::<Date>::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
     }
 
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<Option<Date>> {
-        todo!();
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Option<Date>`. In
+            // that case, we will need to push the `RecordTupleValue`
+            // to the front before returning `None`.
+            Option::<Date>::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
     }
 }
 
 impl RecordTupleElementPop for Option<Time> {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<Option<Time>> {
-        todo!();
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Option<Time>`. In
+            // that case, we will need to push the `RecordTupleValue`
+            // back before returning `None`.
+            Option::<Time>::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
     }
 
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<Option<Time>> {
-        todo!();
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Option<Time>`. In
+            // that case, we will need to push the `RecordTupleValue`
+            // to the front before returning `None`.
+            Option::<Time>::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
     }
 }
 
 impl RecordTupleElementPop for Option<UTCTimeWithMaybeOffset> {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<Option<UTCTimeWithMaybeOffset>> {
-        todo!();
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a
+            // `Option<UTCTimeWithMaybeOffset>`. In that case, we will
+            // need to push the `RecordTupleValue` back before
+            // returning `None`.
+            Option::<UTCTimeWithMaybeOffset>::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
     }
 
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<Option<UTCTimeWithMaybeOffset>> {
-        todo!();
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a
+            // `Option<UTCTimeWithMaybeOffset>`. In that case, we will
+            // need to push the `RecordTupleValue` to the front before
+            // returning `None`.
+            Option::<UTCTimeWithMaybeOffset>::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
     }
 }
 
 impl RecordTupleElementPop for Option<Timestamp> {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<Option<Timestamp>> {
-        todo!();
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a
+            // `Option<Timestamp>`. In that case, we will need to push
+            // the `RecordTupleValue` back before returning `None`.
+            Option::<Timestamp>::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
     }
 
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<Option<Timestamp>> {
-        todo!();
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a
+            // `Option<Timestamp>`. In that case, we will need to push
+            // the `RecordTupleValue` to the front before returning
+            // `None`.
+            Option::<Timestamp>::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
     }
 }
 
 impl RecordTupleElementPop for Option<UTCTimestampWithMaybeOffset> {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<Option<UTCTimestampWithMaybeOffset>> {
-        todo!();
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a
+            // `Option<UTCTimestampWithMaybeOffset>`. In that case, we
+            // will need to push the `RecordTupleValue` back before
+            // returning `None`.
+            Option::<UTCTimestampWithMaybeOffset>::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
     }
 
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<Option<UTCTimestampWithMaybeOffset>> {
-        todo!();
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a
+            // `Option<UTCTimestampWithMaybeOffset>`. In that case, we
+            // will need to push the `RecordTupleValue` to the front
+            // before returning `None`.
+            Option::<UTCTimestampWithMaybeOffset>::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
     }
 }
 
@@ -2380,6 +2977,416 @@ pub(crate) enum RecordTupleValue {
     ListOfTimestamp(Vec<Timestamp>),
     ListOfUTCTimestampWithMaybeOffset(Vec<UTCTimestampWithMaybeOffset>),
 }
+
+impl TryFrom<RecordTupleValue> for Bytes {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Bytes, ()> {
+        match value {
+            RecordTupleValue::Bytes(b) => Ok(b),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for String {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<String, ()> {
+        match value {
+            RecordTupleValue::String(s) => Ok(s),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for RecordTuple {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<RecordTuple, ()> {
+        match value {
+            RecordTupleValue::RecordTuple(t) => Ok(t),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for BigInt {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<BigInt, ()> {
+        match value {
+            RecordTupleValue::Integer(i) => Ok(BigInt::from(&i)),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for i64 {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<i64, ()> {
+        match value {
+            RecordTupleValue::Integer(i) => i64::try_from(&i),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for i32 {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<i32, ()> {
+        match value {
+            RecordTupleValue::Integer(i) => i32::try_from(&i),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for i16 {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<i16, ()> {
+        match value {
+            RecordTupleValue::Integer(i) => i16::try_from(&i),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for i8 {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<i8, ()> {
+        match value {
+            RecordTupleValue::Integer(i) => i8::try_from(&i),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for f32 {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<f32, ()> {
+        match value {
+            RecordTupleValue::Float(f) => Ok(f),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for f64 {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<f64, ()> {
+        match value {
+            RecordTupleValue::Double(d) => Ok(d),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for bool {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<bool, ()> {
+        match value {
+            RecordTupleValue::Boolean(b) => Ok(b),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Uuid {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Uuid, ()> {
+        match value {
+            RecordTupleValue::Uuid(u) => Ok(u),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Versionstamp {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Versionstamp, ()> {
+        match value {
+            RecordTupleValue::Versionstamp(vs) => Ok(vs),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Date {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Date, ()> {
+        match value {
+            RecordTupleValue::Date(d) => Ok(d),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Time {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Time, ()> {
+        match value {
+            RecordTupleValue::Time(t) => Ok(t),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for UTCTimeWithMaybeOffset {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<UTCTimeWithMaybeOffset, ()> {
+        match value {
+            RecordTupleValue::UTCTimeWithMaybeOffset(t) => Ok(t),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Timestamp {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Timestamp, ()> {
+        match value {
+            RecordTupleValue::Timestamp(dt) => Ok(dt),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for UTCTimestampWithMaybeOffset {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<UTCTimestampWithMaybeOffset, ()> {
+        match value {
+            RecordTupleValue::UTCTimestampWithMaybeOffset(dt) => Ok(dt),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Option<Bytes> {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Option<Bytes>, ()> {
+        match value {
+            RecordTupleValue::MaybeBytes(maybe_b) => Ok(maybe_b),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Option<String> {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Option<String>, ()> {
+        match value {
+            RecordTupleValue::MaybeString(maybe_s) => Ok(maybe_s),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Option<RecordTuple> {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Option<RecordTuple>, ()> {
+        match value {
+            RecordTupleValue::MaybeRecordTuple(maybe_t) => Ok(maybe_t),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Option<BigInt> {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Option<BigInt>, ()> {
+        match value {
+            RecordTupleValue::MaybeInteger(maybe_i) => Ok(maybe_i.as_ref().map(BigInt::from)),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Option<i64> {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Option<i64>, ()> {
+        match value {
+            RecordTupleValue::MaybeInteger(maybe_i) => match maybe_i {
+                Some(i) => i64::try_from(&i).map(Option::Some),
+                None => Ok(None),
+            },
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Option<i32> {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Option<i32>, ()> {
+        match value {
+            RecordTupleValue::MaybeInteger(maybe_i) => match maybe_i {
+                Some(i) => i32::try_from(&i).map(Option::Some),
+                None => Ok(None),
+            },
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Option<i16> {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Option<i16>, ()> {
+        match value {
+            RecordTupleValue::MaybeInteger(maybe_i) => match maybe_i {
+                Some(i) => i16::try_from(&i).map(Option::Some),
+                None => Ok(None),
+            },
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Option<i8> {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Option<i8>, ()> {
+        match value {
+            RecordTupleValue::MaybeInteger(maybe_i) => match maybe_i {
+                Some(i) => i8::try_from(&i).map(Option::Some),
+                None => Ok(None),
+            },
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Option<f32> {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Option<f32>, ()> {
+        match value {
+            RecordTupleValue::MaybeFloat(maybe_f) => Ok(maybe_f),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Option<f64> {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Option<f64>, ()> {
+        match value {
+            RecordTupleValue::MaybeDouble(maybe_d) => Ok(maybe_d),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Option<bool> {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Option<bool>, ()> {
+        match value {
+            RecordTupleValue::MaybeBoolean(maybe_b) => Ok(maybe_b),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Option<Uuid> {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Option<Uuid>, ()> {
+        match value {
+            RecordTupleValue::MaybeUuid(maybe_u) => Ok(maybe_u),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Option<Versionstamp> {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Option<Versionstamp>, ()> {
+        match value {
+            RecordTupleValue::MaybeVersionstamp(maybe_vs) => Ok(maybe_vs),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Option<Date> {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Option<Date>, ()> {
+        match value {
+            RecordTupleValue::MaybeDate(maybe_d) => Ok(maybe_d),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Option<Time> {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Option<Time>, ()> {
+        match value {
+            RecordTupleValue::MaybeTime(maybe_t) => Ok(maybe_t),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Option<UTCTimeWithMaybeOffset> {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Option<UTCTimeWithMaybeOffset>, ()> {
+        match value {
+            RecordTupleValue::MaybeUTCTimeWithMaybeOffset(maybe_t) => Ok(maybe_t),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Option<Timestamp> {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Option<Timestamp>, ()> {
+        match value {
+            RecordTupleValue::MaybeTimestamp(maybe_dt) => Ok(maybe_dt),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Option<UTCTimestampWithMaybeOffset> {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Option<UTCTimestampWithMaybeOffset>, ()> {
+        match value {
+            RecordTupleValue::MaybeUTCTimestampWithMaybeOffset(maybe_dt) => Ok(maybe_dt),
+            _ => Err(()),
+        }
+    }
+}
+
+// TODO: Continue from here.
 
 /// TODO
 #[derive(Clone, PartialEq, Debug)]
