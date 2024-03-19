@@ -63,7 +63,7 @@ struct NewEnumDescriptor(EnumDescriptor);
 /// If you have a value of type `WellFormedMessageDescriptor`, you can
 /// be sure that the provided `prost_reflect::MessageDescriptor` is
 /// well formed.
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub(crate) struct WellFormedMessageDescriptor {
     inner: MessageDescriptor,
 }

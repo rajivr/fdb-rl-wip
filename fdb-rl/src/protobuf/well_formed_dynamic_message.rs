@@ -26,7 +26,7 @@ use super::error::{
 use super::{WellFormedMessageDescriptor, FDB_RL_WKT_V1_UUID};
 
 /// Describes a valid `DynamicMessage`.
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub(crate) struct WellFormedDynamicMessage {
     inner: DynamicMessage,
 }
@@ -1179,6 +1179,36 @@ where
                     .map_err(|_| FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE))
             })
             .and_then(|dynamic_message| {
+                // Unlike Java RecordLayer [1], we no not allow the
+                // dynamic message to have unknown fields.
+                //
+                // In our case, when adding a new field, first the
+                // clients will need to be upgraded with the new
+                // field.
+                //
+                // Even though the field has been added to the client,
+                // its value *must* be `None`. If the client were to
+                // set a `Some(...)` value, that would result in
+                // unknown field in dynamic message, which is not
+                // allowed.
+                //
+                // Then using a transaction, the new field can be
+                // added to the metadata. At that point, all clients
+                // would need to refresh their metadata.
+                //
+                // We can then roll out the code that adds `Some(...)`
+                // value to the field, build indexes etc.,
+                //
+                // We also never remove a field.
+                //
+                // [1] https://github.com/FoundationDB/fdb-record-layer/blob/3.4.473.0/docs/SchemaEvolution.md#add-a-field-to-an-existing-record-type
+                if dynamic_message.unknown_fields().count() == 0 {
+                    Ok(dynamic_message)
+                } else {
+                    Err(FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE))
+                }
+            })
+            .and_then(|dynamic_message| {
                 // Check to make sure that any well known types
                 // that might be inside dynamic message is well
                 // formed. If any WKT is ill formed, do not return
@@ -1764,12 +1794,6 @@ mod tests {
                         hello_world: Some("hello_world".to_string()),
                     };
 
-                    let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
-                        well_formed_message_descriptor,
-                        &code_hello_world,
-                    ))
-                    .unwrap();
-
                     // The `DynamicMessageFieldSet` would have unknown
                     // fields [1] [2] for `hello_world`, as it is not
                     // present in `MetadataHelloWorld` message
@@ -1781,12 +1805,43 @@ mod tests {
                     // })
                     // ```
                     //
-                    // When the dynamic message is "merged" into
-                    // `CodeHelloWorld`, then unknown field is
-                    // properly resolved.
+                    // We do not allow unknown fields in dynamic
+                    // messages created using message descriptors
+                    // stored in metadata. Therefore it results in an
+                    // error.
                     //
                     // [1] https://protobuf.dev/programming-guides/proto3/#unknowns
                     // [2] https://protobuf.dev/programming-guides/proto2/#unknowns
+
+                    let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+                        well_formed_message_descriptor.clone(),
+                        &code_hello_world,
+                    ));
+
+                    assert_eq!(
+                        Err(FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE)),
+                        well_formed_dynamic_message
+                    );
+
+                    // The correct way to this is to first set
+                    // `hello_world` to `None` and then update the
+                    // metadata.
+
+                    let code_hello_world = CodeHelloWorld {
+                        primary_key: Some(FdbRLWktV1UuidProto::from(
+                            Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e").unwrap(),
+                        )),
+                        hello: Some("hello".to_string()),
+                        world: Some("world".to_string()),
+                        hello_world: None,
+                    };
+
+                    let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+                        well_formed_message_descriptor,
+                        &code_hello_world,
+                    ))
+                    .unwrap();
+
                     let dynamic_message = well_formed_dynamic_message.inner;
 
                     assert_eq!(
