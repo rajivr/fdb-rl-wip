@@ -614,8 +614,9 @@ where
                     // Ensure that data splits mentioned in the record
                     // header is consistent with the number of key
                     // values in record data.
+
                     if data_splits
-                        != kv_btree.len().try_into().map_err(|_| {
+                        != i8::try_from(kv_btree.len()).map_err(|_| {
                             FdbError::new(SPLIT_HELPER_LOAD_INVALID_SERIALIZED_BYTES)
                         })?
                     {

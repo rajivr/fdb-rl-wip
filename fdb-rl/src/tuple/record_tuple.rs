@@ -2622,24 +2622,57 @@ impl RecordTupleElementPop for Option<UTCTimestampWithMaybeOffset> {
 
 impl RecordTupleElementPop for Vec<Bytes> {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<Vec<Bytes>> {
-        todo!();
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Vec<Bytes>`. In that
+            // case, we will need to push the `RecordTupleValue` back
+            // before returning `None`.
+            Vec::<Bytes>::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
     }
 
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<Vec<Bytes>> {
-        todo!();
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Vec<Bytes>`. In that
+            // case, we will need to push the `RecordTupleValue` to
+            // the front before returning `None`.
+            Vec::<Bytes>::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
     }
 }
 
 impl RecordTupleElementPop for Vec<String> {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<Vec<String>> {
-        todo!();
+        record_tuple.elements.pop_back().and_then(|tail| {
+            // `.pop_back()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Vec<String>`. In
+            // that case, we will need to push the `RecordTupleValue`
+            // back before returning `None`.
+            Vec::<String>::try_from(tail.clone())
+                .map_err(|_| record_tuple.elements.push_back(tail))
+                .ok()
+        })
     }
 
     fn pop_front(record_tuple: &mut RecordTuple) -> Option<Vec<String>> {
-        todo!();
+        record_tuple.elements.pop_front().and_then(|head| {
+            // `.pop_front()` mutates the `VecDeque`. The returned
+            // `RecordTupleValue` might not be a `Vec<String>`. In
+            // that case, we will need to push the `RecordTupleValue`
+            // to the front before returning `None`.
+            Vec::<String>::try_from(head.clone())
+                .map_err(|_| record_tuple.elements.push_front(head))
+                .ok()
+        })
     }
 }
 
+// TODO: continue from here.
 impl RecordTupleElementPop for Vec<RecordTuple> {
     fn pop_back(record_tuple: &mut RecordTuple) -> Option<Vec<RecordTuple>> {
         todo!();
@@ -3386,7 +3419,158 @@ impl TryFrom<RecordTupleValue> for Option<UTCTimestampWithMaybeOffset> {
     }
 }
 
-// TODO: Continue from here.
+impl TryFrom<RecordTupleValue> for Vec<Bytes> {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Vec<Bytes>, ()> {
+        match value {
+            RecordTupleValue::ListOfBytes(vec_b) => Ok(vec_b),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Vec<String> {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Vec<String>, ()> {
+        match value {
+            RecordTupleValue::ListOfString(vec_s) => Ok(vec_s),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Vec<RecordTuple> {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Vec<RecordTuple>, ()> {
+        match value {
+            RecordTupleValue::ListOfRecordTuple(vec_t) => Ok(vec_t),
+            _ => Err(()),
+        }
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Vec<BigInt> {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Vec<BigInt>, ()> {
+        todo!();
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Vec<i64> {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Vec<i64>, ()> {
+        todo!();
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Vec<i32> {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Vec<i32>, ()> {
+        todo!();
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Vec<i16> {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Vec<i16>, ()> {
+        todo!();
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Vec<i8> {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Vec<i8>, ()> {
+        todo!();
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Vec<f32> {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Vec<f32>, ()> {
+        todo!();
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Vec<f64> {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Vec<f64>, ()> {
+        todo!();
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Vec<bool> {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Vec<bool>, ()> {
+        todo!();
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Vec<Uuid> {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Vec<Uuid>, ()> {
+        todo!();
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Vec<Versionstamp> {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Vec<Versionstamp>, ()> {
+        todo!();
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Vec<Date> {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Vec<Date>, ()> {
+        todo!();
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Vec<Time> {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Vec<Time>, ()> {
+        todo!();
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Vec<UTCTimeWithMaybeOffset> {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Vec<UTCTimeWithMaybeOffset>, ()> {
+        todo!();
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Vec<Timestamp> {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Vec<Timestamp>, ()> {
+        todo!();
+    }
+}
+
+impl TryFrom<RecordTupleValue> for Vec<UTCTimestampWithMaybeOffset> {
+    type Error = ();
+
+    fn try_from(value: RecordTupleValue) -> Result<Vec<UTCTimestampWithMaybeOffset>, ()> {
+        todo!();
+    }
+}
 
 /// TODO
 #[derive(Clone, PartialEq, Debug)]
