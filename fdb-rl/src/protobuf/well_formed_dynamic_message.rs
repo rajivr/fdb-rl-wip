@@ -1234,6 +1234,19 @@ impl TryFrom<WellFormedDynamicMessage> for Value {
     }
 }
 
+use fdb::tuple::{Tuple as FdbTuple};
+use std::collections::HashMap;
+
+/// TODO
+pub(crate) struct KeyAndIndexFunctions<FnPK, FnIdx>
+where
+    FnPK: Fn(WellFormedDynamicMessage) -> FdbResult<FdbTuple>,
+    FnIdx: Fn(WellFormedDynamicMessage) -> FdbResult<Vec<FdbTuple>>,
+{
+    primary_key_fn: FnPK,
+    indexes_fn: HashMap<String, FnIdx>,
+}
+
 #[cfg(test)]
 mod tests {
     mod well_formed_dynamic_message {

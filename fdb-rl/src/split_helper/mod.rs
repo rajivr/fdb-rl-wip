@@ -106,7 +106,7 @@ use fdb::transaction::{MutationType, ReadTransaction, Transaction};
 use fdb::tuple::{Null, Tuple, Versionstamp};
 use fdb::{Key, Value};
 
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 use std::ops::ControlFlow;
 
 use crate::cursor::{CursorError, KeyValueCursorBuilder, NoNextReason};
