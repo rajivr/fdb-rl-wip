@@ -48,6 +48,8 @@ pub(crate) mod split_helper;
 
 pub mod cursor;
 pub mod error;
+pub mod metadata;
+pub mod partiql;
 pub mod protobuf;
 pub mod range;
 pub mod scan;

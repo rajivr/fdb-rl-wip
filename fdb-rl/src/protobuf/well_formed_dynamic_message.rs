@@ -1234,19 +1234,6 @@ impl TryFrom<WellFormedDynamicMessage> for Value {
     }
 }
 
-use fdb::tuple::{Tuple as FdbTuple};
-use std::collections::HashMap;
-
-/// TODO
-pub(crate) struct KeyAndIndexFunctions<FnPK, FnIdx>
-where
-    FnPK: Fn(WellFormedDynamicMessage) -> FdbResult<FdbTuple>,
-    FnIdx: Fn(WellFormedDynamicMessage) -> FdbResult<Vec<FdbTuple>>,
-{
-    primary_key_fn: FnPK,
-    indexes_fn: HashMap<String, FnIdx>,
-}
-
 #[cfg(test)]
 mod tests {
     mod well_formed_dynamic_message {
@@ -3970,54 +3957,6 @@ mod tests {
                 ];
 
                 assert_eq!(result, expected.into(),);
-            }
-        }
-
-        #[test]
-        fn wip() {
-            {
-                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldString;
-
-                let hello_world_string = HelloWorldString {
-                    hello: Some("hello".to_string()),
-                    world: None,
-                };
-
-                let well_formed_message_descriptor =
-                    WellFormedMessageDescriptor::try_from(hello_world_string.descriptor()).unwrap();
-
-                let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
-                    well_formed_message_descriptor,
-                    &hello_world_string,
-                ))
-                .unwrap();
-
-                let result = Value::try_from(well_formed_dynamic_message).unwrap();
-
-                println!("{:#?}", result);
-
-                // SELECT VALUE [ { 'fdb_type': 'string', 'fdb_value': r.fdb_rl_value.hello.fdb_rl_value } ] FROM record AS r
-                // SELECT VALUE [ r.fdb_rl_value.hello.fdb_rl_value ] FROM record AS r
-
-                // SELECT VALUE [ { 'fdb_type': 'maybe_string', 'fdb_value': r.fdb_rl_value.world.fdb_rl_value}, { 'fdb_type': 'string', 'fdb_value': r.fdb_rl_value.hello.fdb_rl_value } ] FROM record AS r
-                // SELECT VALUE [ r.fdb_rl_value.world.fdb_rl_value, r.fdb_rl_value.hello.fdb_rl_value ] FROM record AS r
-
-                // let expected = tuple![
-                //     ("fdb_rl_type", "message_HelloWorldString"),
-                //     (
-                //         "fdb_rl_value",
-                //         tuple![
-                //             (
-                //                 "hello",
-                //                 tuple![("fdb_rl_type", "string"), ("fdb_rl_value", "hello"),]
-                //             ),
-                //             (
-                //                 "world",
-                //                 tuple![("fdb_rl_type", "string"), ("fdb_rl_value", Value::Null),]
-                //             ),
-                //         ]
-                //     ),
-                // ];
             }
         }
     }
