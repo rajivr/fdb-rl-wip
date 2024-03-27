@@ -76,6 +76,7 @@ mod tests {
 
         let evaluated = eval_plan.execute_mut(&context).unwrap();
 
+        // <<[{ 'fdb_type': 'string', 'fdb_value': 'hello' }]>>
         println!("{:?}", evaluated.result);
 
         Err(FdbError::new(123))

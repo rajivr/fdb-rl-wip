@@ -1,3 +1,5 @@
 //! TODO
 
-pub(crate) mod error;
+pub mod error;
+
+pub mod fdb_tuple;
