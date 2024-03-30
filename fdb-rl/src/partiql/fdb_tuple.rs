@@ -9,8 +9,41 @@ use std::iter::FromIterator;
 
 use super::error::PARTIQL_FDB_TUPLE_INVALID_PRIMARY_KEY_VALUE;
 
+// Following is the mapping between an `fdb_rl_type` (from protobuf)
+// and `fdb_type`.
+//
+// ```
+// |------------------------------+--------------------+----------|
+// | fdb_rl_type                  | TupleSchemaElement | fdb_type |
+// |------------------------------+--------------------+----------|
+// | double                       | Double             | double   |
+// | float                        | Float              | float    |
+// | int32                        | Integer            | integer  |
+// | int64                        | Integer            | integer  |
+// | sint32                       | Integer            | integer  |
+// | sint64                       | Integer            | integer  |
+// | sfixed32                     | Integer            | integer  |
+// | sfixed64                     | Integer            | integer  |
+// | bool                         | Boolean            | bool     |
+// | string                       | String             | string   |
+// | bytes                        | Bytes              | bytes    |
+// | message_fdb_rl.field.v1.UUID | Uuid               | uuid     |
+// |------------------------------+--------------------+----------|
+// ```
+
 /// TODO
 pub fn primary_key_value(value: Value) -> FdbResult<FdbTuple> {
+    // The form that we expect is as follows.
+    //
+    // ```
+    // <<[{ 'fdb_type': '...', 'fdb_value': '...' }, { ... }]>>
+    // ```
+    //
+    // It needs to be a bag. The bag must have one item. This item
+    // must be an array. Within the array, there must be a
+    // tuples. Each tuple must have two attributes - `fdb_type` and
+    // `fdb_value`.
+
     // Extract PartiQL array from Bag.
     let partiql_list = if let Value::Bag(boxed_bag) = value {
         Some(boxed_bag)
@@ -33,6 +66,7 @@ pub fn primary_key_value(value: Value) -> FdbResult<FdbTuple> {
     })
     .map(|boxed_list| *boxed_list)
     .map(List::to_vec)
+    .and_then(|vec| if vec.len() == 0 { None } else { Some(vec) })
     .ok_or_else(|| FdbError::new(PARTIQL_FDB_TUPLE_INVALID_PRIMARY_KEY_VALUE))?;
 
     let mut fdb_tuple = FdbTuple::new();
@@ -71,18 +105,169 @@ pub fn primary_key_value(value: Value) -> FdbResult<FdbTuple> {
                 })
                 .ok_or_else(|| FdbError::new(PARTIQL_FDB_TUPLE_INVALID_PRIMARY_KEY_VALUE))?;
 
-	    // TODO: continue from here.
-	    todo!();
+            match fdb_type.as_str() {
+                "string" => {
+                    let tuple_string = if let Value::String(boxed_string) = fdb_value {
+                        Some(boxed_string)
+                    } else {
+                        None
+                    }
+                    .map(|boxed_string| *boxed_string)
+                    .ok_or_else(|| FdbError::new(PARTIQL_FDB_TUPLE_INVALID_PRIMARY_KEY_VALUE))?;
 
+                    fdb_tuple.push_back(tuple_string);
+                }
+                // TODO: Continue from here.
+                _ => return Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_PRIMARY_KEY_VALUE)),
+            }
         } else {
             return Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_PRIMARY_KEY_VALUE));
         }
     }
 
-    todo!();
+    Ok(fdb_tuple)
 }
 
 /// TODO
 pub fn index_value(value: Value) -> FdbResult<Vec<FdbTuple>> {
     todo!();
+}
+
+#[cfg(test)]
+mod tests {
+    use fdb::error::FdbError;
+    use fdb::tuple::Tuple as FdbTuple;
+
+    use partiql_value::{bag, list, tuple, Value};
+
+    use super::super::error::PARTIQL_FDB_TUPLE_INVALID_PRIMARY_KEY_VALUE;
+
+    #[test]
+    fn primary_key_value() {
+        // Valid cases.
+        {
+            // string
+            {
+                // single
+                {
+                    let result = super::primary_key_value(
+                        bag![list![tuple![
+                            ("fdb_type", "string"),
+                            ("fdb_value", "hello"),
+                        ],],]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = {
+                        let tup: (&'static str,) = ("hello",);
+
+                        let mut t = FdbTuple::new();
+                        t.push_back(tup.0.to_string());
+                        t
+                    };
+
+                    assert_eq!(result, expected);
+                }
+
+                // multiple
+                {
+                    let result = super::primary_key_value(
+                        bag![list![
+                            tuple![("fdb_type", "string"), ("fdb_value", "hello"),],
+                            tuple![("fdb_type", "string"), ("fdb_value", "world"),]
+                        ],]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = {
+                        let tup: (&'static str, &'static str) = ("hello", "world");
+
+                        let mut t = FdbTuple::new();
+                        t.push_back(tup.0.to_string());
+                        t.push_back(tup.1.to_string());
+                        t
+                    };
+
+                    assert_eq!(result, expected);
+                }
+
+                // change order inside `tuple!`
+                {
+                    let result = super::primary_key_value(
+                        bag![list![tuple![
+                            ("fdb_value", "hello"),
+                            ("fdb_type", "string"),
+                        ],],]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = {
+                        let tup: (&'static str,) = ("hello",);
+
+                        let mut t = FdbTuple::new();
+                        t.push_back(tup.0.to_string());
+                        t
+                    };
+
+                    assert_eq!(result, expected);
+                }
+            }
+        }
+        // Invaild cases
+        {
+            let table: Vec<Value> = vec![
+                // Passed value not a bag
+                //
+                // Pass a tuple instead.
+                tuple![("fdb_type", "string"), ("fdb_value", "hello"),].into(),
+                // Empty bag
+                bag![].into(),
+                // Bag with more than one item.
+                bag![
+                    list![tuple![("fdb_type", "string"), ("fdb_value", "hello"),],],
+                    list![tuple![("fdb_type", "string"), ("fdb_value", "world"),],]
+                ]
+                .into(),
+                // Bag without a list
+                bag![tuple![("fdb_type", "string"), ("fdb_value", "hello"),]].into(),
+                // Bag with empty list (this list *must* have atleast one tuple)
+                bag![list![]].into(),
+                // List with non-tuple element.
+                bag![list![
+                    tuple![("fdb_type", "string"), ("fdb_value", "hello"),],
+                    "world"
+                ]]
+                .into(),
+                // Missing tuple attributes
+                bag![list![tuple![]]].into(),
+                bag![list![tuple![("fdb_type", "string")]]].into(),
+                bag![list![tuple![("fdb_value", "hello")]]].into(),
+                // Superfluous tuple attributes
+                bag![list![tuple![
+                    ("fdb_type", "string"),
+                    ("fdb_value", "hello"),
+                    ("abcd", "efgh")
+                ],]]
+                .into(),
+                // Invalid tuple type
+                bag![list![tuple![
+                    ("fdb_type", "unknown"),
+                    ("fdb_value", "hello"),
+                ],]]
+                .into(),
+                // Invalid string value
+                bag![list![tuple![("fdb_type", "string"), ("fdb_value", 3.14),],]].into(),
+            ];
+
+            for value in table {
+                assert_eq!(
+                    super::primary_key_value(value.into()),
+                    Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_PRIMARY_KEY_VALUE))
+                );
+            }
+        }
+    }
 }

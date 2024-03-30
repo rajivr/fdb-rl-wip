@@ -48,6 +48,7 @@ mod tests {
     use std::ops::Deref;
     use std::sync::LazyLock;
 
+    use crate::partiql::fdb_tuple::primary_key_value;
     use crate::protobuf::{WellFormedDynamicMessage, WellFormedMessageDescriptor};
 
     use super::PrimaryKeyAndIndexFunctions;
@@ -77,7 +78,7 @@ mod tests {
         let evaluated = eval_plan.execute_mut(&context).unwrap();
 
         // <<[{ 'fdb_type': 'string', 'fdb_value': 'hello' }]>>
-        println!("{:?}", evaluated.result);
+        println!("{:?}", primary_key_value(evaluated.result));
 
         Err(FdbError::new(123))
     }
