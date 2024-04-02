@@ -5,6 +5,7 @@ use fdb::tuple::Tuple as FdbTuple;
 use partiql_value::{Bag, List, Value};
 
 use std::collections::HashMap;
+use std::convert::TryFrom;
 use std::iter::FromIterator;
 
 use super::error::PARTIQL_FDB_TUPLE_INVALID_PRIMARY_KEY_VALUE;
@@ -117,6 +118,58 @@ pub fn primary_key_value(value: Value) -> FdbResult<FdbTuple> {
 
                     fdb_tuple.push_back(tuple_string);
                 }
+                "double" => {
+                    // While we do not create `Value::Real` variant in
+                    // `partiql_value_double`, it may get created when
+                    // using macros. So, we check for it as well.
+                    let f = match fdb_value {
+                        Value::Real(ordered_float) => Ok(ordered_float.into_inner()),
+                        Value::Decimal(boxed_decimal) => {
+                            f64::try_from(*boxed_decimal).map_err(|_| {
+                                FdbError::new(PARTIQL_FDB_TUPLE_INVALID_PRIMARY_KEY_VALUE)
+                            })
+                        }
+                        _ => Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_PRIMARY_KEY_VALUE)),
+                    }?;
+
+                    fdb_tuple.push_back(f);
+                }
+                "float" => {
+                    // While we do not create `Value::Real` variant in
+                    // `partiql_value_float`, it may get created when
+                    // using macros. So, we check for it as well.
+                    let f = match fdb_value {
+                        Value::Real(ordered_float) => Ok(ordered_float.into_inner() as f32),
+                        Value::Decimal(boxed_decimal) => {
+                            f32::try_from(*boxed_decimal).map_err(|_| {
+                                FdbError::new(PARTIQL_FDB_TUPLE_INVALID_PRIMARY_KEY_VALUE)
+                            })
+                        }
+                        _ => Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_PRIMARY_KEY_VALUE)),
+                    }?;
+
+                    fdb_tuple.push_back(f);
+                }
+                "integer" => {
+                    let i = if let Value::Integer(i) = fdb_value {
+                        Some(i)
+                    } else {
+                        None
+                    }
+                    .ok_or_else(|| FdbError::new(PARTIQL_FDB_TUPLE_INVALID_PRIMARY_KEY_VALUE))?;
+
+                    fdb_tuple.push_back(i);
+                }
+                "bool" => {
+                    let b = if let Value::Boolean(i) = fdb_value {
+                        Some(i)
+                    } else {
+                        None
+                    }
+                    .ok_or_else(|| FdbError::new(PARTIQL_FDB_TUPLE_INVALID_PRIMARY_KEY_VALUE))?;
+
+                    fdb_tuple.push_back(b);
+                }
                 // TODO: Continue from here.
                 _ => return Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_PRIMARY_KEY_VALUE)),
             }
@@ -146,7 +199,7 @@ mod tests {
     fn primary_key_value() {
         // Valid cases.
         {
-            // string
+            // string type
             {
                 // single
                 {
@@ -169,7 +222,6 @@ mod tests {
 
                     assert_eq!(result, expected);
                 }
-
                 // multiple
                 {
                     let result = super::primary_key_value(
@@ -192,7 +244,6 @@ mod tests {
 
                     assert_eq!(result, expected);
                 }
-
                 // change order inside `tuple!`
                 {
                     let result = super::primary_key_value(
@@ -209,6 +260,262 @@ mod tests {
 
                         let mut t = FdbTuple::new();
                         t.push_back(tup.0.to_string());
+                        t
+                    };
+
+                    assert_eq!(result, expected);
+                }
+            }
+            // double type
+            {
+                // single
+                {
+                    let result = super::primary_key_value(
+                        bag![list![tuple![("fdb_type", "double"), ("fdb_value", 3.14),],],].into(),
+                    )
+                    .unwrap();
+
+                    let expected = {
+                        let tup: (f64,) = (3.14,);
+
+                        let mut t = FdbTuple::new();
+                        t.push_back(tup.0);
+                        t
+                    };
+
+                    assert_eq!(result, expected);
+                }
+                // multiple
+                {
+                    let result = super::primary_key_value(
+                        bag![list![
+                            tuple![("fdb_type", "double"), ("fdb_value", 3.14),],
+                            tuple![("fdb_type", "double"), ("fdb_value", 6.28),]
+                        ],]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = {
+                        let tup: (f64, f64) = (3.14, 6.28);
+
+                        let mut t = FdbTuple::new();
+                        t.push_back(tup.0);
+                        t.push_back(tup.1);
+                        t
+                    };
+
+                    assert_eq!(result, expected);
+                }
+                // mixed
+                {
+                    let result = super::primary_key_value(
+                        bag![list![
+                            tuple![("fdb_type", "string"), ("fdb_value", "hello"),],
+                            tuple![("fdb_type", "double"), ("fdb_value", 3.14),]
+                        ],]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = {
+                        let tup: (&'static str, f64) = ("hello", 3.14);
+
+                        let mut t = FdbTuple::new();
+                        t.push_back(tup.0.to_string());
+                        t.push_back(tup.1);
+                        t
+                    };
+
+                    assert_eq!(result, expected);
+                }
+            }
+            // float type
+            {
+                // single
+                {
+                    let result = super::primary_key_value(
+                        bag![list![tuple![("fdb_type", "float"), ("fdb_value", 3.14),],],].into(),
+                    )
+                    .unwrap();
+
+                    let expected = {
+                        let tup: (f32,) = (3.14,);
+
+                        let mut t = FdbTuple::new();
+                        t.push_back(tup.0);
+                        t
+                    };
+
+                    assert_eq!(result, expected);
+                }
+                // multiple
+                {
+                    let result = super::primary_key_value(
+                        bag![list![
+                            tuple![("fdb_type", "float"), ("fdb_value", 3.14),],
+                            tuple![("fdb_type", "float"), ("fdb_value", 6.28),]
+                        ],]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = {
+                        let tup: (f32, f32) = (3.14, 6.28);
+
+                        let mut t = FdbTuple::new();
+                        t.push_back(tup.0);
+                        t.push_back(tup.1);
+                        t
+                    };
+
+                    assert_eq!(result, expected);
+                }
+                // mixed
+                {
+                    let result = super::primary_key_value(
+                        bag![list![
+                            tuple![("fdb_type", "float"), ("fdb_value", 3.14),],
+                            tuple![("fdb_type", "double"), ("fdb_value", 3.14),]
+                        ],]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = {
+                        let tup: (f32, f64) = (3.14, 3.14);
+
+                        let mut t = FdbTuple::new();
+                        t.push_back(tup.0);
+                        t.push_back(tup.1);
+                        t
+                    };
+
+                    assert_eq!(result, expected);
+                }
+            }
+            // integer type
+            {
+                // single
+                {
+                    let result = super::primary_key_value(
+                        bag![list![tuple![("fdb_type", "integer"), ("fdb_value", 108),],],].into(),
+                    )
+                    .unwrap();
+
+                    let expected = {
+                        let tup: (i8,) = (108,);
+
+                        let mut t = FdbTuple::new();
+                        t.push_back(tup.0);
+                        t
+                    };
+
+                    assert_eq!(result, expected);
+                }
+                // multiple
+                {
+                    let result = super::primary_key_value(
+                        bag![list![
+                            tuple![("fdb_type", "integer"), ("fdb_value", 108),],
+                            tuple![("fdb_type", "integer"), ("fdb_value", 216),]
+                        ],]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = {
+                        let tup: (i16, i32) = (108, 216);
+
+                        let mut t = FdbTuple::new();
+                        t.push_back(tup.0);
+                        t.push_back(tup.1);
+                        t
+                    };
+
+                    assert_eq!(result, expected);
+                }
+                // mixed
+                {
+                    let result = super::primary_key_value(
+                        bag![list![
+                            tuple![("fdb_type", "integer"), ("fdb_value", 108),],
+                            tuple![("fdb_type", "double"), ("fdb_value", 3.14),]
+                        ],]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = {
+                        let tup: (i64, f64) = (108, 3.14);
+
+                        let mut t = FdbTuple::new();
+                        t.push_back(tup.0);
+                        t.push_back(tup.1);
+                        t
+                    };
+
+                    assert_eq!(result, expected);
+                }
+            }
+            // bool type
+            {
+                // single
+                {
+                    let result = super::primary_key_value(
+                        bag![list![tuple![("fdb_type", "bool"), ("fdb_value", true),],],].into(),
+                    )
+                    .unwrap();
+
+                    let expected = {
+                        let tup: (bool,) = (true,);
+
+                        let mut t = FdbTuple::new();
+                        t.push_back(tup.0);
+                        t
+                    };
+
+                    assert_eq!(result, expected);
+                }
+                // multiple
+                {
+                    let result = super::primary_key_value(
+                        bag![list![
+                            tuple![("fdb_type", "bool"), ("fdb_value", true),],
+                            tuple![("fdb_type", "bool"), ("fdb_value", false),]
+                        ],]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = {
+                        let tup: (bool, bool) = (true, false);
+
+                        let mut t = FdbTuple::new();
+                        t.push_back(tup.0);
+                        t.push_back(tup.1);
+                        t
+                    };
+
+                    assert_eq!(result, expected);
+                }
+                // mixed
+                {
+                    let result = super::primary_key_value(
+                        bag![list![
+                            tuple![("fdb_type", "integer"), ("fdb_value", 108),],
+                            tuple![("fdb_type", "bool"), ("fdb_value", true),]
+                        ],]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = {
+                        let tup: (i64, bool) = (108, true);
+
+                        let mut t = FdbTuple::new();
+                        t.push_back(tup.0);
+                        t.push_back(tup.1);
                         t
                     };
 
@@ -260,6 +567,25 @@ mod tests {
                 .into(),
                 // Invalid string value
                 bag![list![tuple![("fdb_type", "string"), ("fdb_value", 3.14),],]].into(),
+                // Invalid double value
+                bag![list![tuple![
+                    ("fdb_type", "double"),
+                    ("fdb_value", "hello"),
+                ],]]
+                .into(),
+                // Invalid float value
+                bag![list![
+                    tuple![("fdb_type", "float"), ("fdb_value", "hello"),],
+                ]]
+                .into(),
+                // Invalid float value
+                bag![list![tuple![
+                    ("fdb_type", "integer"),
+                    ("fdb_value", "hello"),
+                ],]]
+                .into(),
+                // Invalid float value
+                bag![list![tuple![("fdb_type", "bool"), ("fdb_value", "hello"),],]].into(),
             ];
 
             for value in table {
