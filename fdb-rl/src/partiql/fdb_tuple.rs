@@ -1,8 +1,12 @@
 //! TODO
+use bytes::Bytes;
+
 use fdb::error::{FdbError, FdbResult};
 use fdb::tuple::Tuple as FdbTuple;
 
-use partiql_value::{Bag, List, Value};
+use partiql_value::{Bag, BindingsName, List, Value};
+
+use uuid::Uuid;
 
 use std::collections::HashMap;
 use std::convert::TryFrom;
@@ -17,6 +21,7 @@ use super::error::PARTIQL_FDB_TUPLE_INVALID_PRIMARY_KEY_VALUE;
 // |------------------------------+--------------------+----------|
 // | fdb_rl_type                  | TupleSchemaElement | fdb_type |
 // |------------------------------+--------------------+----------|
+// | string                       | String             | string   |
 // | double                       | Double             | double   |
 // | float                        | Float              | float    |
 // | int32                        | Integer            | integer  |
@@ -26,9 +31,8 @@ use super::error::PARTIQL_FDB_TUPLE_INVALID_PRIMARY_KEY_VALUE;
 // | sfixed32                     | Integer            | integer  |
 // | sfixed64                     | Integer            | integer  |
 // | bool                         | Boolean            | bool     |
-// | string                       | String             | string   |
 // | bytes                        | Bytes              | bytes    |
-// | message_fdb_rl.field.v1.UUID | Uuid               | uuid     |
+// | message_fdb_rl.field.v1.UUID | Uuid               | v1_uuid  |
 // |------------------------------+--------------------+----------|
 // ```
 
@@ -170,7 +174,40 @@ pub fn primary_key_value(value: Value) -> FdbResult<FdbTuple> {
 
                     fdb_tuple.push_back(b);
                 }
-                // TODO: Continue from here.
+                "bytes" => {
+                    let b = if let Value::Blob(boxed_bytes) = fdb_value {
+                        Some(boxed_bytes)
+                    } else {
+                        None
+                    }
+                    .map(|boxed_bytes| *boxed_bytes)
+                    .map(Bytes::from)
+                    .ok_or_else(|| FdbError::new(PARTIQL_FDB_TUPLE_INVALID_PRIMARY_KEY_VALUE))?;
+
+                    fdb_tuple.push_back(b);
+                }
+                "v1_uuid" => {
+                    let uuid = if let Value::Tuple(boxed_tuple) = fdb_value {
+                        Some(boxed_tuple)
+                    } else {
+                        None
+                    }
+                    .map(|boxed_tuple| *boxed_tuple)
+                    .and_then(|tuple| if tuple.len() == 1 { Some(tuple) } else { None })
+                    .and_then(|t| t.take_val(&BindingsName::CaseSensitive("uuid_value".into())))
+                    .and_then(|v| {
+                        if let Value::Blob(boxed_bytes) = v {
+                            Some(boxed_bytes)
+                        } else {
+                            None
+                        }
+                    })
+                    .map(|boxed_bytes| *boxed_bytes)
+                    .and_then(|b| Uuid::from_slice(b.as_slice()).ok())
+                    .ok_or_else(|| FdbError::new(PARTIQL_FDB_TUPLE_INVALID_PRIMARY_KEY_VALUE))?;
+
+                    fdb_tuple.push_back(uuid);
+                }
                 _ => return Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_PRIMARY_KEY_VALUE)),
             }
         } else {
@@ -183,15 +220,20 @@ pub fn primary_key_value(value: Value) -> FdbResult<FdbTuple> {
 
 /// TODO
 pub fn index_value(value: Value) -> FdbResult<Vec<FdbTuple>> {
+    // TODO: Continue from here.
     todo!();
 }
 
 #[cfg(test)]
 mod tests {
+    use bytes::Bytes;
+
     use fdb::error::FdbError;
     use fdb::tuple::Tuple as FdbTuple;
 
     use partiql_value::{bag, list, tuple, Value};
+
+    use uuid::Uuid;
 
     use super::super::error::PARTIQL_FDB_TUPLE_INVALID_PRIMARY_KEY_VALUE;
 
@@ -522,6 +564,234 @@ mod tests {
                     assert_eq!(result, expected);
                 }
             }
+            // bytes type
+            {
+                // single
+                {
+                    let result = super::primary_key_value(
+                        bag![list![tuple![
+                            ("fdb_type", "bytes"),
+                            (
+                                "fdb_value",
+                                Value::Blob(Vec::<u8>::from(Bytes::from_static(b"hello")).into())
+                            ),
+                        ],],]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = {
+                        let tup: (Bytes,) = (Bytes::from_static(b"hello"),);
+
+                        let mut t = FdbTuple::new();
+                        t.push_back(tup.0);
+                        t
+                    };
+
+                    assert_eq!(result, expected);
+                }
+                // multiple
+                {
+                    let result = super::primary_key_value(
+                        bag![list![
+                            tuple![
+                                ("fdb_type", "bytes"),
+                                (
+                                    "fdb_value",
+                                    Value::Blob(
+                                        Vec::<u8>::from(Bytes::from_static(b"hello")).into()
+                                    )
+                                ),
+                            ],
+                            tuple![
+                                ("fdb_type", "bytes"),
+                                (
+                                    "fdb_value",
+                                    Value::Blob(
+                                        Vec::<u8>::from(Bytes::from_static(b"world")).into()
+                                    )
+                                ),
+                            ]
+                        ],]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = {
+                        let tup: (Bytes, Bytes) =
+                            (Bytes::from_static(b"hello"), Bytes::from_static(b"world"));
+
+                        let mut t = FdbTuple::new();
+                        t.push_back(tup.0);
+                        t.push_back(tup.1);
+                        t
+                    };
+
+                    assert_eq!(result, expected);
+                }
+                // mixed
+                {
+                    let result = super::primary_key_value(
+                        bag![list![
+                            tuple![("fdb_type", "integer"), ("fdb_value", 108),],
+                            tuple![
+                                ("fdb_type", "bytes"),
+                                (
+                                    "fdb_value",
+                                    Value::Blob(
+                                        Vec::<u8>::from(Bytes::from_static(b"hello")).into()
+                                    )
+                                ),
+                            ]
+                        ],]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = {
+                        let tup: (i64, Bytes) = (108, Bytes::from_static(b"hello"));
+
+                        let mut t = FdbTuple::new();
+                        t.push_back(tup.0);
+                        t.push_back(tup.1);
+                        t
+                    };
+
+                    assert_eq!(result, expected);
+                }
+            }
+            // v1_uuid type
+            {
+                // single
+                {
+                    let result = super::primary_key_value(
+                        bag![list![tuple![
+                            ("fdb_type", "v1_uuid"),
+                            (
+                                "fdb_value",
+                                tuple![(
+                                    "uuid_value",
+                                    Value::Blob(
+                                        Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
+                                            .unwrap()
+                                            .as_bytes()
+                                            .to_vec()
+                                            .into(),
+                                    )
+                                )]
+                            ),
+                        ],],]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = {
+                        let tup: (Uuid,) =
+                            (Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e").unwrap(),);
+
+                        let mut t = FdbTuple::new();
+                        t.push_back(tup.0);
+                        t
+                    };
+
+                    assert_eq!(result, expected);
+                }
+                // multiple
+                {
+                    let result = super::primary_key_value(
+                        bag![list![
+                            tuple![
+                                ("fdb_type", "v1_uuid"),
+                                (
+                                    "fdb_value",
+                                    tuple![(
+                                        "uuid_value",
+                                        Value::Blob(
+                                            Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
+                                                .unwrap()
+                                                .as_bytes()
+                                                .to_vec()
+                                                .into(),
+                                        )
+                                    )]
+                                ),
+                            ],
+                            tuple![
+                                ("fdb_type", "v1_uuid"),
+                                (
+                                    "fdb_value",
+                                    tuple![(
+                                        "uuid_value",
+                                        Value::Blob(
+                                            Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
+                                                .unwrap()
+                                                .as_bytes()
+                                                .to_vec()
+                                                .into(),
+                                        )
+                                    )]
+                                ),
+                            ]
+                        ],]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = {
+                        let tup: (Uuid, Uuid) = (
+                            Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e").unwrap(),
+                            Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e").unwrap(),
+                        );
+
+                        let mut t = FdbTuple::new();
+                        t.push_back(tup.0);
+                        t.push_back(tup.1);
+                        t
+                    };
+
+                    assert_eq!(result, expected);
+                }
+                // mixed
+                {
+                    let result = super::primary_key_value(
+                        bag![list![
+                            tuple![("fdb_type", "integer"), ("fdb_value", 108),],
+                            tuple![
+                                ("fdb_type", "v1_uuid"),
+                                (
+                                    "fdb_value",
+                                    tuple![(
+                                        "uuid_value",
+                                        Value::Blob(
+                                            Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
+                                                .unwrap()
+                                                .as_bytes()
+                                                .to_vec()
+                                                .into(),
+                                        )
+                                    )]
+                                ),
+                            ]
+                        ],]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = {
+                        let tup: (i64, Uuid) = (
+                            108,
+                            Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e").unwrap(),
+                        );
+
+                        let mut t = FdbTuple::new();
+                        t.push_back(tup.0);
+                        t.push_back(tup.1);
+                        t
+                    };
+
+                    assert_eq!(result, expected);
+                }
+            }
         }
         // Invaild cases
         {
@@ -578,14 +848,25 @@ mod tests {
                     tuple![("fdb_type", "float"), ("fdb_value", "hello"),],
                 ]]
                 .into(),
-                // Invalid float value
+                // Invalid integer value
                 bag![list![tuple![
                     ("fdb_type", "integer"),
                     ("fdb_value", "hello"),
                 ],]]
                 .into(),
-                // Invalid float value
+                // Invalid bool value
                 bag![list![tuple![("fdb_type", "bool"), ("fdb_value", "hello"),],]].into(),
+                // Invalid bytes value
+                bag![list![
+                    tuple![("fdb_type", "bytes"), ("fdb_value", "hello"),],
+                ]]
+                .into(),
+                // Invalid v1_uuid value
+                bag![list![tuple![
+                    ("fdb_type", "v1_uuid"),
+                    ("fdb_value", "hello"),
+                ],]]
+                .into(),
             ];
 
             for value in table {

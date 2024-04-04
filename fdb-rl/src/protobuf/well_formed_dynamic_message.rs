@@ -2333,17 +2333,17 @@ mod tests {
             {
                 use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldBytes;
 
-                let hello_world_bool = HelloWorldBytes {
+                let hello_world_bytes = HelloWorldBytes {
                     hello: Some(Bytes::from_static(b"hello")),
                     world: None,
                 };
 
                 let well_formed_message_descriptor =
-                    WellFormedMessageDescriptor::try_from(hello_world_bool.descriptor()).unwrap();
+                    WellFormedMessageDescriptor::try_from(hello_world_bytes.descriptor()).unwrap();
 
                 let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
                     well_formed_message_descriptor,
-                    &hello_world_bool,
+                    &hello_world_bytes,
                 ))
                 .unwrap();
 
