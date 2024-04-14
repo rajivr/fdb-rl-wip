@@ -2,7 +2,7 @@
 use bytes::Bytes;
 
 use fdb::error::{FdbError, FdbResult};
-use fdb::tuple::Tuple as FdbTuple;
+use fdb::tuple::{Null as FdbTupleNull, Tuple as FdbTuple};
 
 use partiql_value::{Bag, BindingsName, List, Value};
 
@@ -12,7 +12,9 @@ use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::iter::FromIterator;
 
-use super::error::PARTIQL_FDB_TUPLE_INVALID_PRIMARY_KEY_VALUE;
+use super::error::{
+    PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE, PARTIQL_FDB_TUPLE_INVALID_PRIMARY_KEY_VALUE,
+};
 
 // Following is the mapping between an `fdb_rl_type` (from protobuf)
 // and `fdb_type`.
@@ -37,18 +39,17 @@ use super::error::PARTIQL_FDB_TUPLE_INVALID_PRIMARY_KEY_VALUE;
 // ```
 
 /// TODO
+//
+// The form that we expect is as follows.
+//
+// ```
+// <<[{ 'fdb_type': '...', 'fdb_value': '...' }, { ... }]>>
+// ```
+//
+// It is a bag of arrays. The bag must contain atleast one array.
+// Within the array, there must be a tuples. Each tuple must have two
+// attributes - `fdb_type` and `fdb_value`.
 pub fn primary_key_value(value: Value) -> FdbResult<FdbTuple> {
-    // The form that we expect is as follows.
-    //
-    // ```
-    // <<[{ 'fdb_type': '...', 'fdb_value': '...' }, { ... }]>>
-    // ```
-    //
-    // It needs to be a bag. The bag must have one item. This item
-    // must be an array. Within the array, there must be a
-    // tuples. Each tuple must have two attributes - `fdb_type` and
-    // `fdb_value`.
-
     // Extract PartiQL array from Bag.
     let partiql_list = if let Value::Bag(boxed_bag) = value {
         Some(boxed_bag)
@@ -219,9 +220,177 @@ pub fn primary_key_value(value: Value) -> FdbResult<FdbTuple> {
 }
 
 /// TODO
-pub fn index_value(value: Value) -> FdbResult<Vec<FdbTuple>> {
-    // TODO: Continue from here.
-    todo!();
+
+// There are two forms that we can accept.  Both forms are bag of
+// tuples. This bag must contain atleast one tuple. It is an error if
+// you call with an empty bag.
+//
+// The first form is as follows.
+//
+// ```
+// <<
+//   { key: [{ 'fdb_type': '...', 'fdb_value': '...' }, { ... }] },
+//   { key: [{ 'fdb_type': '...', 'fdb_value': '...' }, { ... }] },
+//   { key: [{ 'fdb_type': '...', 'fdb_value': '...' }, { ... }] },
+//   { ... },
+// >>
+// ```
+//
+// In this form only the key part of the index is generated, and the
+// value is empty (It would be an empty FoundationDB Tuple).
+//
+// The second form is similar to the first from but now there will be
+// an additional attribute `value`.
+//
+// ```
+// <<
+//   { key: [{ 'fdb_type': '...', 'fdb_value': '...' }, { ... }],
+//     value: [{ 'fdb_type': '...', 'fdb_value': '...' }, { ... }] },
+//   { key: [{ 'fdb_type': '...', 'fdb_value': '...' }, { ... }] },
+//     value: [{ 'fdb_type': '...', 'fdb_value': '...' }, { ... }] },
+//   { key: [{ 'fdb_type': '...', 'fdb_value': '...' }, { ... }] },
+//     value: [{ 'fdb_type': '...', 'fdb_value': '...' }, { ... }] },
+//   { ... },
+// >>
+// ```
+//
+// The second form can be used to build "covering index".
+pub fn index_value(value: Value) -> FdbResult<Vec<(FdbTuple, Option<FdbTuple>)>> {
+    let partiql_bag_vec = if let Value::Bag(boxed_bag) = value {
+        Some(boxed_bag)
+    } else {
+        None
+    }
+    .map(|boxed_bag| *boxed_bag)
+    .map(Bag::to_vec)
+    .ok_or_else(|| FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE))?;
+
+    let mut res = Vec::new();
+
+    for val in partiql_bag_vec {
+        let (partiql_list_key, maybe_partiql_list_value) = if let Value::Tuple(boxed_tuple) = val {
+            Some(boxed_tuple)
+        } else {
+            None
+        }
+        .map(|boxed_tuple| *boxed_tuple)
+        .map(|tuple| HashMap::<String, Value>::from_iter(tuple.into_pairs()))
+        .and_then(|mut tuple_hash_map| {
+            // `None` would indicate an error. We can have either
+            // `Some((partiql_list, None))` when we have only `key` or
+            // `Some((partiql_list, Some(partiql_List)))` when we have
+            // `key` *and* `value`.
+            //
+            // First we check if `tuple_hash_map` is well formed.
+            //
+            // Then we attempt to extract `partiql_list`.
+            if tuple_hash_map.len() == 1 && tuple_hash_map.contains_key("key") {
+                Some((tuple_hash_map.remove("key")?, None))
+            } else if tuple_hash_map.len() == 2
+                && tuple_hash_map.contains_key("key")
+                && tuple_hash_map.contains_key("value")
+            {
+                tuple_hash_map.remove("key").and_then(|key| {
+                    tuple_hash_map
+                        .remove("value")
+                        .map(|value| (key, Some(value)))
+                })
+            } else {
+                None
+            }
+            .and_then(|(key, maybe_value)| {
+                // `None` would be an error. Otherwise we would need
+                // to return `Some((partiql_list,
+                // maybe_partial_list))`. The `maybe_partial_list` can
+                // be a `Some(partiql_list)` or `None`.
+                if let Value::List(boxed_list) = key {
+                    Some(boxed_list)
+                } else {
+                    None
+                }
+                .map(|boxed_list| *boxed_list)
+                .ok_or_else(|| ())
+                .and_then(|key_list| match maybe_value {
+                    Some(value) => if let Value::List(boxed_list) = value {
+                        Some(boxed_list)
+                    } else {
+                        None
+                    }
+                    .map(|boxed_list| *boxed_list)
+                    .map(|value_list| (key_list, Some(value_list)))
+                    .ok_or_else(|| ()),
+                    None => Ok((key_list, None)),
+                })
+                .ok()
+            })
+        })
+        .ok_or_else(|| FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE))?;
+
+        let fdb_tuple_key = index_value_inner(partiql_list_key)?;
+
+        let maybe_fdb_tuple_value = match maybe_partiql_list_value {
+            Some(partiql_list_value) => Some(index_value_inner(partiql_list_value)?),
+            None => None,
+        };
+
+        res.push((fdb_tuple_key, maybe_fdb_tuple_value));
+    }
+
+    Ok(res)
+}
+
+fn index_value_inner(list: List) -> FdbResult<FdbTuple> {
+    let mut fdb_tuple = FdbTuple::new();
+
+    for val in list {
+        let mut partiql_tuple = if let Value::Tuple(boxed_tuple) = val {
+            Some(boxed_tuple)
+        } else {
+            None
+        }
+        .map(|boxed_tuple| *boxed_tuple)
+        .and_then(|tuple| {
+            if tuple.len() == 2 {
+                Some(HashMap::<String, Value>::from_iter(tuple.into_pairs()))
+            } else {
+                None
+            }
+        })
+        .ok_or_else(|| FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE))?;
+
+        if partiql_tuple.contains_key("fdb_type") && partiql_tuple.contains_key("fdb_value") {
+            let (fdb_type, fdb_value) = partiql_tuple
+                .remove("fdb_type")
+                .and_then(|x| {
+                    if let Value::String(boxed_string) = x {
+                        Some(boxed_string)
+                    } else {
+                        None
+                    }
+                    .map(|boxed_string| *boxed_string)
+                })
+                .and_then(|fdb_type| {
+                    partiql_tuple
+                        .remove("fdb_value")
+                        .map(|fdb_value| (fdb_type, fdb_value))
+                })
+                .ok_or_else(|| FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE))?;
+
+            match fdb_type.as_str() {
+                "string" => match fdb_value {
+                    Value::String(boxed_string) => fdb_tuple.push_back(*boxed_string),
+                    Value::Null => fdb_tuple.push_back(FdbTupleNull),
+                    _ => return Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE)),
+                },
+                // TODO: additional types will come here.
+                _ => return Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE)),
+            }
+        } else {
+            return Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE));
+        }
+    }
+
+    Ok(fdb_tuple)
 }
 
 #[cfg(test)]
