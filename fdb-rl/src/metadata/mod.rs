@@ -142,6 +142,7 @@ mod tests {
 
         let evaluated = eval_plan.execute_mut(&context).unwrap();
 
+        println!("{:?}", evaluated.result);
         println!("{:?}", index_value(evaluated.result));
 
         Err(FdbError::new(123))

@@ -255,6 +255,10 @@ pub fn primary_key_value(value: Value) -> FdbResult<FdbTuple> {
 // ```
 //
 // The second form can be used to build "covering index".
+//
+// We allow the bag to be empty. We will get an empty bag when we
+// attempt to build an index by unnesting a repeated field that is
+// empty. In protobuf we are not allowed to have `optional repeated`.
 pub fn index_value(value: Value) -> FdbResult<Vec<(FdbTuple, Option<FdbTuple>)>> {
     let partiql_bag_vec = if let Value::Bag(boxed_bag) = value {
         Some(boxed_bag)
@@ -276,10 +280,10 @@ pub fn index_value(value: Value) -> FdbResult<Vec<(FdbTuple, Option<FdbTuple>)>>
         .map(|boxed_tuple| *boxed_tuple)
         .map(|tuple| HashMap::<String, Value>::from_iter(tuple.into_pairs()))
         .and_then(|mut tuple_hash_map| {
-            // `None` would indicate an error. We can have either
-            // `Some((partiql_list, None))` when we have only `key` or
-            // `Some((partiql_list, Some(partiql_List)))` when we have
-            // `key` *and* `value`.
+            // Returning `None` would indicate an error. We can have
+            // either `Some((partiql_list, None))` when we have only
+            // `key` or `Some((partiql_list, Some(partiql_List)))`
+            // when we have `key` *and* `value`.
             //
             // First we check if `tuple_hash_map` is well formed.
             //
@@ -299,10 +303,14 @@ pub fn index_value(value: Value) -> FdbResult<Vec<(FdbTuple, Option<FdbTuple>)>>
                 None
             }
             .and_then(|(key, maybe_value)| {
-                // `None` would be an error. Otherwise we would need
-                // to return `Some((partiql_list,
+                // Returning `None` would be an error. Otherwise we
+                // would need to return `Some((partiql_list,
                 // maybe_partial_list))`. The `maybe_partial_list` can
                 // be a `Some(partiql_list)` or `None`.
+                //
+                // We use `.ok_or_else(...)` to temporarily create a
+                // value of `Result` type and then use `.ok()` to
+                // convert back to a value of `Option` type.
                 if let Value::List(boxed_list) = key {
                     Some(boxed_list)
                 } else {
@@ -340,6 +348,10 @@ pub fn index_value(value: Value) -> FdbResult<Vec<(FdbTuple, Option<FdbTuple>)>>
 }
 
 fn index_value_inner(list: List) -> FdbResult<FdbTuple> {
+    if list.len() == 0 {
+        return Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE));
+    }
+
     let mut fdb_tuple = FdbTuple::new();
 
     for val in list {
@@ -398,13 +410,15 @@ mod tests {
     use bytes::Bytes;
 
     use fdb::error::FdbError;
-    use fdb::tuple::Tuple as FdbTuple;
+    use fdb::tuple::{Null as FdbTupleNull, Tuple as FdbTuple};
 
     use partiql_value::{bag, list, tuple, Value};
 
     use uuid::Uuid;
 
-    use super::super::error::PARTIQL_FDB_TUPLE_INVALID_PRIMARY_KEY_VALUE;
+    use super::super::error::{
+        PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE, PARTIQL_FDB_TUPLE_INVALID_PRIMARY_KEY_VALUE,
+    };
 
     #[test]
     fn primary_key_value() {
@@ -1042,6 +1056,324 @@ mod tests {
                 assert_eq!(
                     super::primary_key_value(value.into()),
                     Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_PRIMARY_KEY_VALUE))
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn index_value() {
+        // Valid cases.
+        {
+            // empty bag
+            {
+                let result = super::index_value(bag![].into()).unwrap();
+
+                let expected = vec![];
+
+                assert_eq!(result, expected);
+            }
+            // multiple inner tuple elements
+            {
+                let result = super::index_value(
+                    bag![tuple![(
+                        "key",
+                        list![
+                            tuple![("fdb_type", "string"), ("fdb_value", "hello"),],
+                            tuple![("fdb_type", "string"), ("fdb_value", "world"),],
+                            tuple![("fdb_type", "string"), ("fdb_value", Value::Null),]
+                        ]
+                    )],]
+                    .into(),
+                )
+                .unwrap();
+
+                let expected = vec![(
+                    {
+                        let tup: (&'static str, &'static str, FdbTupleNull) =
+                            ("hello", "world", FdbTupleNull);
+
+                        let mut t = FdbTuple::new();
+                        t.push_back(tup.0.to_string());
+                        t.push_back(tup.1.to_string());
+                        t.push_back(tup.2);
+                        t
+                    },
+                    Option::<FdbTuple>::None,
+                )];
+
+                assert_eq!(result, expected);
+            }
+            // string
+            {
+                // with `key` only
+                {
+                    let result = super::index_value(
+                        bag![
+                            tuple![(
+                                "key",
+                                list![tuple![("fdb_type", "string"), ("fdb_value", "hello"),]]
+                            )],
+                            tuple![(
+                                "key",
+                                list![tuple![("fdb_type", "string"), ("fdb_value", Value::Null),]]
+                            )],
+                        ]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = vec![
+                        (
+                            {
+                                let tup: (&'static str,) = ("hello",);
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(tup.0.to_string());
+                                t
+                            },
+                            Option::<FdbTuple>::None,
+                        ),
+                        (
+                            {
+                                let tup: (FdbTupleNull,) = (FdbTupleNull,);
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(tup.0);
+                                t
+                            },
+                            Option::<FdbTuple>::None,
+                        ),
+                    ];
+
+                    assert_eq!(result, expected);
+                }
+                // with `key` and `value` value
+                {
+                    let result = super::index_value(
+                        bag![
+                            tuple![
+                                (
+                                    "key",
+                                    list![tuple![("fdb_type", "string"), ("fdb_value", "hello"),]]
+                                ),
+                                (
+                                    "value",
+                                    list![tuple![
+                                        ("fdb_type", "string"),
+                                        ("fdb_value", Value::Null),
+                                    ]]
+                                )
+                            ],
+                            tuple![
+                                (
+                                    "key",
+                                    list![tuple![
+                                        ("fdb_type", "string"),
+                                        ("fdb_value", Value::Null),
+                                    ]]
+                                ),
+                                (
+                                    "value",
+                                    list![tuple![("fdb_type", "string"), ("fdb_value", "world"),]]
+                                )
+                            ],
+                        ]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = vec![
+                        (
+                            {
+                                let tup: (&'static str,) = ("hello",);
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(tup.0.to_string());
+                                t
+                            },
+                            Some({
+                                let tup: (FdbTupleNull,) = (FdbTupleNull,);
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(tup.0);
+                                t
+                            }),
+                        ),
+                        (
+                            {
+                                let tup: (FdbTupleNull,) = (FdbTupleNull,);
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(tup.0);
+                                t
+                            },
+                            Some({
+                                let tup: (&'static str,) = ("world",);
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(tup.0.to_string());
+                                t
+                            }),
+                        ),
+                    ];
+
+                    assert_eq!(result, expected);
+                }
+            }
+            // // wip (remove later)
+            // {
+            //     let value = bag![
+            //         tuple![(
+            //             "key",
+            //             list![tuple![("fdb_type", "string"), ("fdb_value", "hello"),]]
+            //         )],
+            //         tuple![(
+            //             "key",
+            //             list![tuple![("fdb_type", "string"), ("fdb_value", Value::Null),]]
+            //         )]
+            //     ];
+            //     println!("value: {:?}", value);
+            //     println!("index_value: {:?}", super::index_value(value.into()));
+
+            //     let value = bag![
+            //         tuple![
+            //             (
+            //                 "key",
+            //                 list![tuple![("fdb_type", "string"), ("fdb_value", "hello"),]]
+            //             ),
+            //             (
+            //                 "value",
+            //                 list![tuple![("fdb_type", "string"), ("fdb_value", "world"),]]
+            //             ),
+            //         ],
+            //         tuple![(
+            //             "key",
+            //             list![tuple![("fdb_type", "string"), ("fdb_value", Value::Null),]]
+            //         )]
+            //     ];
+            //     println!("value: {:?}", value);
+            //     println!("index_value: {:?}", super::index_value(value.into()));
+            // }
+        }
+        // Invalid cases
+        {
+            let table: Vec<Value> = vec![
+                // Passed value not a bag
+                //
+                // Pass a tuple instead.
+                tuple![("fdb_type", "string"), ("fdb_value", "hello"),].into(),
+                // Bag with a item that is not a tuple
+                bag![list![tuple![
+                    ("fdb_type", "string"),
+                    ("fdb_value", "hello"),
+                ],],]
+                .into(),
+                // Mislabeled `key`
+                bag![tuple![(
+                    "mislabled_key",
+                    list![tuple![("fdb_type", "string"), ("fdb_value", "hello"),]]
+                )],]
+                .into(),
+                // Mislabeled `value`
+                bag![tuple![
+                    (
+                        "key",
+                        list![tuple![("fdb_type", "string"), ("fdb_value", "hello"),]]
+                    ),
+                    (
+                        "mislabeled_value",
+                        list![tuple![("fdb_type", "string"), ("fdb_value", "world"),]]
+                    ),
+                ],]
+                .into(),
+                // Spurious attribute
+                bag![tuple![
+                    (
+                        "key",
+                        list![tuple![("fdb_type", "string"), ("fdb_value", "hello"),]]
+                    ),
+                    (
+                        "value",
+                        list![tuple![("fdb_type", "string"), ("fdb_value", "world"),]]
+                    ),
+                    (
+                        "spurious_attribute",
+                        list![tuple![("fdb_type", "string"), ("fdb_value", "world"),]]
+                    ),
+                ],]
+                .into(),
+                // No attribute
+                bag![tuple![],].into(),
+                // `key` attribute not a list
+                bag![tuple![(
+                    "key",
+                    tuple![("fdb_type", "string"), ("fdb_value", "hello"),]
+                ),],]
+                .into(),
+                // `value` attribute not a list
+                bag![tuple![
+                    (
+                        "key",
+                        list![tuple![("fdb_type", "string"), ("fdb_value", "hello"),]]
+                    ),
+                    (
+                        "value",
+                        tuple![("fdb_type", "string"), ("fdb_value", "world"),]
+                    ),
+                ],]
+                .into(),
+                // Empty `key` attribute
+                bag![tuple![
+                    ("key", list![]),
+                    (
+                        "value",
+                        list![tuple![("fdb_type", "string"), ("fdb_value", "world"),]]
+                    ),
+                ],]
+                .into(),
+                // Empty `value` attribute
+                bag![tuple![
+                    (
+                        "key",
+                        list![tuple![("fdb_type", "string"), ("fdb_value", "world"),]]
+                    ),
+                    ("value", list![]),
+                ],]
+                .into(),
+                // Missing `fdb_type` and `fdb_value` attributes
+                bag![tuple![("key", list![tuple![]]),],].into(),
+                bag![tuple![("key", list![tuple![("fdb_type", "string")]])],].into(),
+                bag![tuple![("key", list![tuple![("fdb_value", "world"),]])],].into(),
+                // Superfluous tuple attributes
+                bag![tuple![(
+                    "key",
+                    list![tuple![
+                        ("fdb_type", "string"),
+                        ("fdb_value", "world"),
+                        ("abcd", "efgh")
+                    ]]
+                )],]
+                .into(),
+                // Invalid tuple type
+                bag![tuple![(
+                    "key",
+                    list![tuple![("fdb_type", "unknown"), ("fdb_value", "world")]]
+                )],]
+                .into(),
+                // Invalid string type
+                bag![tuple![(
+                    "key",
+                    list![tuple![("fdb_type", "string"), ("fdb_value", 3.14)]]
+                )],]
+                .into(),
+                // TODO: Add additional invalid types here.
+            ];
+
+            for value in table {
+                assert_eq!(
+                    super::index_value(value.into()),
+                    Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE))
                 );
             }
         }
