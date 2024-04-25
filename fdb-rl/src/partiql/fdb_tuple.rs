@@ -394,6 +394,18 @@ fn index_value_inner(list: List) -> FdbResult<FdbTuple> {
                     Value::Null => fdb_tuple.push_back(FdbTupleNull),
                     _ => return Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE)),
                 },
+                // While we do not create `Value::Real` variant in
+                // `partiql_value_double`, it may get created when
+                // using macros. So, we check for it as well.
+                "double" => match fdb_value {
+                    Value::Real(ordered_float) => fdb_tuple.push_back(ordered_float.into_inner()),
+                    Value::Decimal(boxed_decimal) => fdb_tuple.push_back(
+                        f64::try_from(*boxed_decimal)
+                            .map_err(|_| FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE))?,
+                    ),
+                    Value::Null => fdb_tuple.push_back(FdbTupleNull),
+                    _ => return Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE)),
+                },
                 // TODO: additional types will come here.
                 _ => return Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE)),
             }
