@@ -406,6 +406,22 @@ fn index_value_inner(list: List) -> FdbResult<FdbTuple> {
                     Value::Null => fdb_tuple.push_back(FdbTupleNull),
                     _ => return Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE)),
                 },
+                "float" => match fdb_value {
+                    Value::Real(ordered_float) => {
+                        fdb_tuple.push_back(ordered_float.into_inner() as f32)
+                    }
+                    Value::Decimal(boxed_decimal) => fdb_tuple.push_back(
+                        f32::try_from(*boxed_decimal)
+                            .map_err(|_| FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE))?,
+                    ),
+                    Value::Null => fdb_tuple.push_back(FdbTupleNull),
+                    _ => return Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE)),
+                },
+                "integer" => match fdb_value {
+                    Value::Integer(i) => fdb_tuple.push_back(i),
+                    Value::Null => fdb_tuple.push_back(FdbTupleNull),
+                    _ => return Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE)),
+                },
                 // TODO: additional types will come here.
                 _ => return Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE)),
             }
@@ -1233,6 +1249,357 @@ mod tests {
                     assert_eq!(result, expected);
                 }
             }
+            // double
+            {
+                // with `key` only
+                {
+                    let result = super::index_value(
+                        bag![
+                            tuple![(
+                                "key",
+                                list![tuple![("fdb_type", "double"), ("fdb_value", 3.14),]]
+                            )],
+                            tuple![(
+                                "key",
+                                list![tuple![("fdb_type", "double"), ("fdb_value", Value::Null),]]
+                            )],
+                        ]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = vec![
+                        (
+                            {
+                                let tup: (f64,) = (3.14,);
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(tup.0);
+                                t
+                            },
+                            Option::<FdbTuple>::None,
+                        ),
+                        (
+                            {
+                                let tup: (FdbTupleNull,) = (FdbTupleNull,);
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(tup.0);
+                                t
+                            },
+                            Option::<FdbTuple>::None,
+                        ),
+                    ];
+
+                    assert_eq!(result, expected);
+                }
+                // with `key` and `value` value
+                {
+                    let result = super::index_value(
+                        bag![
+                            tuple![
+                                (
+                                    "key",
+                                    list![tuple![("fdb_type", "double"), ("fdb_value", 3.14),]]
+                                ),
+                                (
+                                    "value",
+                                    list![tuple![
+                                        ("fdb_type", "double"),
+                                        ("fdb_value", Value::Null),
+                                    ]]
+                                )
+                            ],
+                            tuple![
+                                (
+                                    "key",
+                                    list![tuple![
+                                        ("fdb_type", "double"),
+                                        ("fdb_value", Value::Null),
+                                    ]]
+                                ),
+                                (
+                                    "value",
+                                    list![tuple![("fdb_type", "double"), ("fdb_value", 6.28),]]
+                                )
+                            ],
+                        ]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = vec![
+                        (
+                            {
+                                let tup: (f64,) = (3.14,);
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(tup.0);
+                                t
+                            },
+                            Some({
+                                let tup: (FdbTupleNull,) = (FdbTupleNull,);
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(tup.0);
+                                t
+                            }),
+                        ),
+                        (
+                            {
+                                let tup: (FdbTupleNull,) = (FdbTupleNull,);
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(tup.0);
+                                t
+                            },
+                            Some({
+                                let tup: (f64,) = (6.28,);
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(tup.0);
+                                t
+                            }),
+                        ),
+                    ];
+
+                    assert_eq!(result, expected);
+                }
+            }
+            // float
+            {
+                // with `key` only
+                {
+                    let result = super::index_value(
+                        bag![
+                            tuple![(
+                                "key",
+                                list![tuple![("fdb_type", "float"), ("fdb_value", 3.14),]]
+                            )],
+                            tuple![(
+                                "key",
+                                list![tuple![("fdb_type", "float"), ("fdb_value", Value::Null),]]
+                            )],
+                        ]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = vec![
+                        (
+                            {
+                                let tup: (f32,) = (3.14,);
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(tup.0);
+                                t
+                            },
+                            Option::<FdbTuple>::None,
+                        ),
+                        (
+                            {
+                                let tup: (FdbTupleNull,) = (FdbTupleNull,);
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(tup.0);
+                                t
+                            },
+                            Option::<FdbTuple>::None,
+                        ),
+                    ];
+
+                    assert_eq!(result, expected);
+                }
+                // with `key` and `value` value
+                {
+                    let result = super::index_value(
+                        bag![
+                            tuple![
+                                (
+                                    "key",
+                                    list![tuple![("fdb_type", "float"), ("fdb_value", 3.14),]]
+                                ),
+                                (
+                                    "value",
+                                    list![tuple![
+                                        ("fdb_type", "float"),
+                                        ("fdb_value", Value::Null),
+                                    ]]
+                                )
+                            ],
+                            tuple![
+                                (
+                                    "key",
+                                    list![tuple![
+                                        ("fdb_type", "float"),
+                                        ("fdb_value", Value::Null),
+                                    ]]
+                                ),
+                                (
+                                    "value",
+                                    list![tuple![("fdb_type", "float"), ("fdb_value", 6.28),]]
+                                )
+                            ],
+                        ]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = vec![
+                        (
+                            {
+                                let tup: (f32,) = (3.14,);
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(tup.0);
+                                t
+                            },
+                            Some({
+                                let tup: (FdbTupleNull,) = (FdbTupleNull,);
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(tup.0);
+                                t
+                            }),
+                        ),
+                        (
+                            {
+                                let tup: (FdbTupleNull,) = (FdbTupleNull,);
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(tup.0);
+                                t
+                            },
+                            Some({
+                                let tup: (f32,) = (6.28,);
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(tup.0);
+                                t
+                            }),
+                        ),
+                    ];
+
+                    assert_eq!(result, expected);
+                }
+            }
+            // integer
+            {
+                // with `key` only
+                {
+                    let result = super::index_value(
+                        bag![
+                            tuple![(
+                                "key",
+                                list![tuple![("fdb_type", "integer"), ("fdb_value", 108),]]
+                            )],
+                            tuple![(
+                                "key",
+                                list![tuple![("fdb_type", "integer"), ("fdb_value", Value::Null),]]
+                            )],
+                        ]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = vec![
+                        (
+                            {
+                                let tup: (i8,) = (108,);
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(tup.0);
+                                t
+                            },
+                            Option::<FdbTuple>::None,
+                        ),
+                        (
+                            {
+                                let tup: (FdbTupleNull,) = (FdbTupleNull,);
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(tup.0);
+                                t
+                            },
+                            Option::<FdbTuple>::None,
+                        ),
+                    ];
+
+                    assert_eq!(result, expected);
+                }
+                // with `key` and `value` value
+                {
+                    let result = super::index_value(
+                        bag![
+                            tuple![
+                                (
+                                    "key",
+                                    list![tuple![("fdb_type", "integer"), ("fdb_value", 108),]]
+                                ),
+                                (
+                                    "value",
+                                    list![tuple![
+                                        ("fdb_type", "float"),
+                                        ("fdb_value", Value::Null),
+                                    ]]
+                                )
+                            ],
+                            tuple![
+                                (
+                                    "key",
+                                    list![tuple![
+                                        ("fdb_type", "float"),
+                                        ("fdb_value", Value::Null),
+                                    ]]
+                                ),
+                                (
+                                    "value",
+                                    list![tuple![("fdb_type", "integer"), ("fdb_value", 216),]]
+                                )
+                            ],
+                        ]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = vec![
+                        (
+                            {
+                                let tup: (i16,) = (108,);
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(tup.0);
+                                t
+                            },
+                            Some({
+                                let tup: (FdbTupleNull,) = (FdbTupleNull,);
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(tup.0);
+                                t
+                            }),
+                        ),
+                        (
+                            {
+                                let tup: (FdbTupleNull,) = (FdbTupleNull,);
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(tup.0);
+                                t
+                            },
+                            Some({
+                                let tup: (i32,) = (216,);
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(tup.0);
+                                t
+                            }),
+                        ),
+                    ];
+
+                    assert_eq!(result, expected);
+                }
+            }
             // // wip (remove later)
             // {
             //     let value = bag![
@@ -1373,10 +1740,28 @@ mod tests {
                     list![tuple![("fdb_type", "unknown"), ("fdb_value", "world")]]
                 )],]
                 .into(),
-                // Invalid string type
+                // Invalid string value
                 bag![tuple![(
                     "key",
                     list![tuple![("fdb_type", "string"), ("fdb_value", 3.14)]]
+                )],]
+                .into(),
+                // Invalid double value
+                bag![tuple![(
+                    "key",
+                    list![tuple![("fdb_type", "double"), ("fdb_value", "hello")]]
+                )],]
+                .into(),
+                // Invalid float value
+                bag![tuple![(
+                    "key",
+                    list![tuple![("fdb_type", "float"), ("fdb_value", "hello")]]
+                )],]
+                .into(),
+                // Invalid integer value
+                bag![tuple![(
+                    "key",
+                    list![tuple![("fdb_type", "integer"), ("fdb_value", "hello")]]
                 )],]
                 .into(),
                 // TODO: Add additional invalid types here.
