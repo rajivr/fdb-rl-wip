@@ -24,8 +24,10 @@ use crate::protobuf::WellFormedDynamicMessage;
 /// TODO
 pub(crate) struct PrimaryKeyAndIndexFunctions {
     primary_key_fn: fn(WellFormedDynamicMessage) -> FdbResult<Tuple>,
-    index_fns:
-        HashMap<String, fn(WellFormedDynamicMessage) -> FdbResult<Vec<(Tuple, Option<Tuple>)>>>,
+    index_fns: HashMap<
+        String,
+        fn(WellFormedDynamicMessage, Option<u64>, u16) -> FdbResult<Vec<(Tuple, Option<Tuple>)>>,
+    >,
 }
 
 #[cfg(test)]
@@ -118,7 +120,11 @@ mod tests {
 
     fn index_fn_1(
         well_formed_dynamic_message: WellFormedDynamicMessage,
+        incarnation_version: Option<u64>,
+        local_version: u16,
     ) -> FdbResult<Vec<(Tuple, Option<Tuple>)>> {
+        // println!("{:?}", Value::try_from(well_formed_dynamic_message)?);
+
         let mut bindings = MapBindings::default();
         bindings.insert("record", Value::try_from(well_formed_dynamic_message)?);
 
@@ -128,7 +134,7 @@ mod tests {
         let mut eval_planner = EvaluatorPlanner::new(EvaluationMode::Permissive, &catalog);
 
         let parser = Parser::default();
-        let parsed_ast = parser.parse("SELECT VALUE { 'key': [ { 'fdb_type': 'string', 'fdb_value': r.fdb_rl_value.field.fdb_rl_value } ] } FROM record AS r").unwrap();
+        let parsed_ast = parser.parse("SELECT VALUE { 'key': [ { 'fdb_type': 'v1_uuid', 'fdb_value': r.fdb_rl_value.primary_key.fdb_rl_value } ], 'value': [ { 'fdb_type': 'string', 'fdb_value':  r.fdb_rl_value.hello.fdb_rl_value } ] } FROM record AS r").unwrap();
 
         let logical_plan = logical_planner.lower(&parsed_ast).unwrap();
         let mut eval_plan = eval_planner.compile(&logical_plan).unwrap();
@@ -148,11 +154,19 @@ mod tests {
         Err(FdbError::new(123))
     }
 
-    fn index_fn_2(_: WellFormedDynamicMessage) -> FdbResult<Vec<(Tuple, Option<Tuple>)>> {
+    fn index_fn_2(
+        _: WellFormedDynamicMessage,
+        _: Option<u64>,
+        _: u16,
+    ) -> FdbResult<Vec<(Tuple, Option<Tuple>)>> {
         todo!();
     }
 
-    fn index_fn_3(_: WellFormedDynamicMessage) -> FdbResult<Vec<(Tuple, Option<Tuple>)>> {
+    fn index_fn_3(
+        _: WellFormedDynamicMessage,
+        _: Option<u64>,
+        _: u16,
+    ) -> FdbResult<Vec<(Tuple, Option<Tuple>)>> {
         todo!();
     }
 
@@ -164,40 +178,53 @@ mod tests {
             (
                 "one".to_string(),
                 index_fn_1
-                    as fn(WellFormedDynamicMessage) -> FdbResult<Vec<(Tuple, Option<Tuple>)>>,
+                    as fn(
+                        WellFormedDynamicMessage,
+                        Option<u64>,
+                        u16,
+                    ) -> FdbResult<Vec<(Tuple, Option<Tuple>)>>,
             ),
             (
                 "two".to_string(),
                 index_fn_2
-                    as fn(WellFormedDynamicMessage) -> FdbResult<Vec<(Tuple, Option<Tuple>)>>,
+                    as fn(
+                        WellFormedDynamicMessage,
+                        Option<u64>,
+                        u16,
+                    ) -> FdbResult<Vec<(Tuple, Option<Tuple>)>>,
             ),
             (
                 "three".to_string(),
                 index_fn_3
-                    as fn(WellFormedDynamicMessage) -> FdbResult<Vec<(Tuple, Option<Tuple>)>>,
+                    as fn(
+                        WellFormedDynamicMessage,
+                        Option<u64>,
+                        u16,
+                    ) -> FdbResult<Vec<(Tuple, Option<Tuple>)>>,
             ),
         ]),
     });
 
     #[test]
     fn wip() {
-        use fdb_rl_proto::fdb_rl_test::java::proto::expression_tests::v1::TestScalarFieldAccess;
+        use fdb_rl_proto::fdb_rl::field::v1::Uuid as FdbRLWktV1UuidProto;
+        use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldWktV1Uuid;
+        use uuid::Uuid;
 
-        let plants_boxes_and_bowls = {
-            let mut x = TestScalarFieldAccess::default();
-            x.field = Some("Plants".to_string());
-            x.repeat_me.push("Boxes".to_string());
-            x.repeat_me.push("Bowls".to_string());
-
-            x
+        let hello_world_wkt_v1_uuid = HelloWorldWktV1Uuid {
+            primary_key: Some(FdbRLWktV1UuidProto::from(
+                Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e").unwrap(),
+            )),
+            hello: Some("hello".to_string()),
+            world: None,
         };
 
         let well_formed_message_descriptor =
-            WellFormedMessageDescriptor::try_from(plants_boxes_and_bowls.descriptor()).unwrap();
+            WellFormedMessageDescriptor::try_from(hello_world_wkt_v1_uuid.descriptor()).unwrap();
 
         let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
             well_formed_message_descriptor,
-            &plants_boxes_and_bowls,
+            &hello_world_wkt_v1_uuid,
         ))
         .unwrap();
 
@@ -206,13 +233,48 @@ mod tests {
             .deref()
             .index_fns)
             .get("one")
-            .unwrap())(well_formed_dynamic_message);
+            .unwrap())(well_formed_dynamic_message, None, 0);
 
         // // invoke primary key function
         // let _ = (ABCD_RECORD_STORE_METADATA_PRIMARY_KEY_AND_INDEX_FUNCTIONS
         //     .deref()
         //     .primary_key_fn)(well_formed_dynamic_message);
     }
+
+    // #[test]
+    // fn wip() {
+    //     use fdb_rl_proto::fdb_rl_test::java::proto::expression_tests::v1::TestScalarFieldAccess;
+
+    //     let plants_boxes_and_bowls = {
+    //         let mut x = TestScalarFieldAccess::default();
+    //         x.field = Some("Plants".to_string());
+    //         x.repeat_me.push("Boxes".to_string());
+    //         x.repeat_me.push("Bowls".to_string());
+
+    //         x
+    //     };
+
+    //     let well_formed_message_descriptor =
+    //         WellFormedMessageDescriptor::try_from(plants_boxes_and_bowls.descriptor()).unwrap();
+
+    //     let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+    //         well_formed_message_descriptor,
+    //         &plants_boxes_and_bowls,
+    //     ))
+    //     .unwrap();
+
+    //     // invoke secondary key function
+    //     let _ = ((ABCD_RECORD_STORE_METADATA_PRIMARY_KEY_AND_INDEX_FUNCTIONS
+    //         .deref()
+    //         .index_fns)
+    //         .get("one")
+    //         .unwrap())(well_formed_dynamic_message);
+
+    //     // // invoke primary key function
+    //     // let _ = (ABCD_RECORD_STORE_METADATA_PRIMARY_KEY_AND_INDEX_FUNCTIONS
+    //     //     .deref()
+    //     //     .primary_key_fn)(well_formed_dynamic_message);
+    // }
 
     // // string
     // #[test]
