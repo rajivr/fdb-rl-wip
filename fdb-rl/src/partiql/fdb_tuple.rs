@@ -2,7 +2,7 @@
 use bytes::Bytes;
 
 use fdb::error::{FdbError, FdbResult};
-use fdb::tuple::{Null as FdbTupleNull, Tuple as FdbTuple};
+use fdb::tuple::{Null as FdbTupleNull, Tuple as FdbTuple, Versionstamp};
 
 use partiql_value::{Bag, BindingsName, List, Value};
 
@@ -20,25 +20,45 @@ use super::error::{
 // and `fdb_type`.
 //
 // ```
-// |------------------------------+--------------------+----------|
-// | fdb_rl_type                  | TupleSchemaElement | fdb_type |
-// |------------------------------+--------------------+----------|
-// | string                       | String             | string   |
-// | double                       | Double             | double   |
-// | float                        | Float              | float    |
-// | int32                        | Integer            | integer  |
-// | int64                        | Integer            | integer  |
-// | sint32                       | Integer            | integer  |
-// | sint64                       | Integer            | integer  |
-// | sfixed32                     | Integer            | integer  |
-// | sfixed64                     | Integer            | integer  |
-// | bool                         | Boolean            | bool     |
-// | bytes                        | Bytes              | bytes    |
-// | message_fdb_rl.field.v1.UUID | Uuid               | v1_uuid  |
-// |------------------------------+--------------------+----------|
+// |------------------------------+--------------------+--------------|
+// | fdb_rl_type                  | TupleSchemaElement | fdb_type     |
+// |------------------------------+--------------------+--------------|
+// | double                       | Double             | double       |
+// | float                        | Float              | float        |
+// | int32                        | Integer            | integer      |
+// | int64                        | Integer            | integer      |
+// | sint32                       | Integer            | integer      |
+// | sint64                       | Integer            | integer      |
+// | sfixed32                     | Integer            | integer      |
+// | sfixed64                     | Integer            | integer      |
+// | bool                         | Boolean            | bool         |
+// | string                       | String             | string       |
+// | bytes                        | Bytes              | bytes        |
+// | message_fdb_rl.field.v1.UUID | Uuid               | uuid         |
+// | ...                          | Versionstamp       | versionstamp |
+// |------------------------------+--------------------+--------------|
+// ```
+//
+// `fdb_type` of `versionstamp` is only supported for secondary index
+// and not primary key. Additionally it *cannot* be `NULL`. It has the
+// following structure for `fdb_value`.
+//
+// ```
+// { 'incarnation_version': <number>|NULL, 'local_version': <number> }
+// ```
+//
+// Since `incarnation_version` is passed into index function as an
+// `Option<u64>` you can create `<number>|NULL` by doing the following
+// in the index function query.
+//
+// ```
+// incarnation_version
+//     .map(|x| format!("{}", x))
+//     .unwrap_or_else(|| "NULL".to_string())
 // ```
 
 /// TODO
+
 //
 // The form that we expect is as follows.
 //
@@ -454,7 +474,74 @@ fn index_value_inner(list: List) -> FdbResult<FdbTuple> {
                     Value::Null => fdb_tuple.push_back(FdbTupleNull),
                     _ => return Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE)),
                 },
-                // TODO: additional types will come here.
+                "versionstamp" => match fdb_value {
+                    Value::Tuple(boxed_tuple) => {
+                        let (incarnation_version, local_version) = {
+                            // We attempt to return
+                            // `Option<(Option<i64>, u16)>`. Returning
+                            // `None` would indicate an error. `None`
+                            // is converted into an
+                            // `Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE))`
+                            // at the end.
+                            //
+                            // When we return
+                            // `Some((incarnation_version,
+                            // local_version))`, `incarnation_version`
+                            // has to be a value of type
+                            // `Option<i64>`. `local_version` has to
+                            // be a value of type `u16`.
+                            Some(*boxed_tuple)
+                        }
+                        .map(|tuple| HashMap::<String, Value>::from_iter(tuple.into_pairs()))
+                        .and_then(|mut tuple_hash_map| {
+                            if tuple_hash_map.len() == 2
+                                && tuple_hash_map.contains_key("incarnation_version")
+                                && tuple_hash_map.contains_key("local_version")
+                            {
+                                tuple_hash_map
+                                    .remove("incarnation_version")
+                                    .and_then(|incarnation_version| match incarnation_version {
+                                        Value::Integer(i) => Some(Some(i)),
+                                        Value::Null => Some(None),
+                                        _ => None,
+                                    })
+                                    .and_then(|incarnation_version| {
+                                        tuple_hash_map
+                                            .remove("local_version")
+                                            .and_then(|local_version| {
+                                                if let Value::Integer(i) = local_version {
+                                                    u16::try_from(i).ok()
+                                                } else {
+                                                    None
+                                                }
+                                            })
+                                            .map(|local_version| {
+                                                (incarnation_version, local_version)
+                                            })
+                                    })
+                            } else {
+                                None
+                            }
+                        })
+                        .ok_or_else(|| FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE))?;
+
+                        match incarnation_version {
+                            Some(iv) => {
+                                let tup: (i64, Versionstamp) =
+                                    (iv, Versionstamp::incomplete(local_version));
+                                fdb_tuple.push_back(tup.0);
+                                fdb_tuple.push_back(tup.1);
+                            }
+                            None => {
+                                let tup: (FdbTupleNull, Versionstamp) =
+                                    (FdbTupleNull, Versionstamp::incomplete(local_version));
+                                fdb_tuple.push_back(tup.0);
+                                fdb_tuple.push_back(tup.1);
+                            }
+                        }
+                    }
+                    _ => return Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE)),
+                },
                 _ => return Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE)),
             }
         } else {
@@ -470,7 +557,7 @@ mod tests {
     use bytes::Bytes;
 
     use fdb::error::FdbError;
-    use fdb::tuple::{Null as FdbTupleNull, Tuple as FdbTuple};
+    use fdb::tuple::{Null as FdbTupleNull, Tuple as FdbTuple, Versionstamp};
 
     use partiql_value::{bag, list, tuple, Value};
 
@@ -2064,6 +2151,167 @@ mod tests {
                     assert_eq!(result, expected);
                 }
             }
+            // versionstamp
+            {
+                // with `key` only
+                {
+                    // In the following example we are specifying
+                    // `incarnation_version` to be non-null and
+                    // null. At this layer we are allowing this, but
+                    // we should not see such a scenario. This needs
+                    // to get checked at the higher layer.
+                    //
+                    // Also in most cases we should only see one one
+                    // tuple entry in the bag.
+                    let result = super::index_value(
+                        bag![
+                            tuple![(
+                                "key",
+                                list![tuple![
+                                    ("fdb_type", "versionstamp"),
+                                    (
+                                        "fdb_value",
+                                        tuple![("incarnation_version", 10), ("local_version", 20),]
+                                    ),
+                                ]]
+                            )],
+                            tuple![(
+                                "key",
+                                list![tuple![
+                                    ("fdb_type", "versionstamp"),
+                                    (
+                                        "fdb_value",
+                                        tuple![
+                                            ("incarnation_version", Value::Null),
+                                            ("local_version", 20),
+                                        ]
+                                    ),
+                                ]]
+                            )],
+                        ]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = vec![
+                        (
+                            {
+                                let tup: (i64, Versionstamp) = (10, Versionstamp::incomplete(20));
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(tup.0);
+                                t.push_back(tup.1);
+                                t
+                            },
+                            Option::<FdbTuple>::None,
+                        ),
+                        (
+                            {
+                                let tup: (FdbTupleNull, Versionstamp) =
+                                    (FdbTupleNull, Versionstamp::incomplete(20));
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(tup.0);
+                                t.push_back(tup.1);
+                                t
+                            },
+                            Option::<FdbTuple>::None,
+                        ),
+                    ];
+
+                    assert_eq!(result, expected);
+                }
+                // with `key` and `value` value
+                {
+                    let result = super::index_value(
+                        bag![
+                            tuple![
+                                (
+                                    "key",
+                                    list![tuple![("fdb_type", "string"), ("fdb_value", "hello"),]]
+                                ),
+                                (
+                                    "value",
+                                    list![tuple![
+                                        ("fdb_type", "versionstamp"),
+                                        (
+                                            "fdb_value",
+                                            tuple![
+                                                ("incarnation_version", 10),
+                                                ("local_version", 20),
+                                            ]
+                                        ),
+                                    ]]
+                                )
+                            ],
+                            tuple![
+                                (
+                                    "key",
+                                    list![tuple![
+                                        ("fdb_type", "string"),
+                                        ("fdb_value", Value::Null),
+                                    ]]
+                                ),
+                                (
+                                    "value",
+                                    list![tuple![
+                                        ("fdb_type", "versionstamp"),
+                                        (
+                                            "fdb_value",
+                                            tuple![
+                                                ("incarnation_version", Value::Null),
+                                                ("local_version", 20),
+                                            ]
+                                        ),
+                                    ]]
+                                )
+                            ],
+                        ]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = vec![
+                        (
+                            {
+                                let tup: (&'static str,) = ("hello",);
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(tup.0.to_string());
+                                t
+                            },
+                            Some({
+                                let tup: (i64, Versionstamp) = (10, Versionstamp::incomplete(20));
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(tup.0);
+                                t.push_back(tup.1);
+                                t
+                            }),
+                        ),
+                        (
+                            {
+                                let tup: (FdbTupleNull,) = (FdbTupleNull,);
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(tup.0);
+                                t
+                            },
+                            Some({
+                                let tup: (FdbTupleNull, Versionstamp) =
+                                    (FdbTupleNull, Versionstamp::incomplete(20));
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(tup.0);
+                                t.push_back(tup.1);
+                                t
+                            }),
+                        ),
+                    ];
+
+                    assert_eq!(result, expected);
+                }
+            }
             // // wip (remove later)
             // {
             //     let value = bag![
@@ -2244,6 +2492,115 @@ mod tests {
                 bag![tuple![(
                     "key",
                     list![tuple![("fdb_type", "v1_uuid"), ("fdb_value", "hello")]]
+                )],]
+                .into(),
+                // Invalid versionstamp value (not a tuple)
+                bag![tuple![(
+                    "key",
+                    list![tuple![("fdb_type", "versionstamp"), ("fdb_value", "hello")]]
+                )],]
+                .into(),
+                // Invalid versionstamp value (tuple, but with NULL)
+                bag![tuple![(
+                    "key",
+                    list![tuple![
+                        ("fdb_type", "versionstamp"),
+                        ("fdb_value", Value::Null)
+                    ]]
+                )],]
+                .into(),
+                // Invalid versionstamp value (mis-spelling incarnation_version)
+                bag![tuple![(
+                    "key",
+                    list![tuple![
+                        ("fdb_type", "versionstamp"),
+                        (
+                            "fdb_value",
+                            tuple![("incarnation_version1", 10), ("local_version", 20),]
+                        )
+                    ]]
+                )],]
+                .into(),
+                // Invalid versionstamp value (mis-spelling local_version)
+                bag![tuple![(
+                    "key",
+                    list![tuple![
+                        ("fdb_type", "versionstamp"),
+                        (
+                            "fdb_value",
+                            tuple![("incarnation_version", 10), ("local_version1", 20),]
+                        )
+                    ]]
+                )],]
+                .into(),
+                // Invalid versionstamp value (invalid incarnation_version type)
+                bag![tuple![(
+                    "key",
+                    list![tuple![
+                        ("fdb_type", "versionstamp"),
+                        (
+                            "fdb_value",
+                            tuple![("incarnation_version", "hello"), ("local_version", 20),]
+                        )
+                    ]]
+                )],]
+                .into(),
+                // Invalid versionstamp value (invalid local_version type)
+                bag![tuple![(
+                    "key",
+                    list![tuple![
+                        ("fdb_type", "versionstamp"),
+                        (
+                            "fdb_value",
+                            tuple![("incarnation_version", 10), ("local_version", "hello"),]
+                        )
+                    ]]
+                )],]
+                .into(),
+                // Invalid versionstamp value (invalid local_version value)
+                bag![tuple![(
+                    "key",
+                    list![tuple![
+                        ("fdb_type", "versionstamp"),
+                        (
+                            "fdb_value",
+                            tuple![("incarnation_version", 10), ("local_version", -1),]
+                        )
+                    ]]
+                )],]
+                .into(),
+                // Invalid versionstamp value (missing incarnation_version)
+                bag![tuple![(
+                    "key",
+                    list![tuple![
+                        ("fdb_type", "versionstamp"),
+                        ("fdb_value", tuple![("local_version", 20),])
+                    ]]
+                )],]
+                .into(),
+                // Invalid versionstamp value (missing local_version)
+                bag![tuple![(
+                    "key",
+                    list![tuple![
+                        ("fdb_type", "versionstamp"),
+                        ("fdb_value", tuple![("incarnation_version", 10),])
+                    ]]
+                )],]
+                .into(),
+                // Invalid versionstamp value (spurious attribute)
+                bag![tuple![(
+                    "key",
+                    list![tuple![
+                        ("fdb_type", "versionstamp"),
+                        (
+                            "fdb_value",
+                            tuple![
+                                ("incarnation_version", 10),
+                                ("local_version", 20),
+                                ("spurious_attribute", 30),
+                            ]
+                        )
+                    ]]
                 )],]
                 .into(),
                 // TODO: Add additional invalid types here.

@@ -134,7 +134,17 @@ mod tests {
         let mut eval_planner = EvaluatorPlanner::new(EvaluationMode::Permissive, &catalog);
 
         let parser = Parser::default();
-        let parsed_ast = parser.parse("SELECT VALUE { 'key': [ { 'fdb_type': 'v1_uuid', 'fdb_value': r.fdb_rl_value.primary_key.fdb_rl_value } ], 'value': [ { 'fdb_type': 'string', 'fdb_value':  r.fdb_rl_value.hello.fdb_rl_value } ] } FROM record AS r").unwrap();
+        // let parsed_ast = parser.parse("SELECT VALUE { 'key': [ { 'fdb_type': 'v1_uuid', 'fdb_value': r.fdb_rl_value.primary_key.fdb_rl_value }, { 'fdb_type': 'versionstamp', 'fdb_value': {'incarnation_version': 10, 'local_version': 20} } ], 'value': [ { 'fdb_type': 'string', 'fdb_value':  r.fdb_rl_value.hello.fdb_rl_value } ] } FROM record AS r").unwrap();
+
+        let query = format!(
+	    "SELECT VALUE {{ 'key': [ {{ 'fdb_type': 'v1_uuid', 'fdb_value': r.fdb_rl_value.primary_key.fdb_rl_value }}, {{ 'fdb_type': 'versionstamp', 'fdb_value': {{ 'incarnation_version': {incarnation_version}, 'local_version': {local_version} }} }} ], 'value': [ {{ 'fdb_type': 'string', 'fdb_value':  r.fdb_rl_value.world.fdb_rl_value }} ] }} FROM record AS r",
+	    incarnation_version=incarnation_version
+		.map(|x| format!("{}", x))
+		.unwrap_or_else(|| "NULL".to_string()),
+	    local_version=local_version
+	);
+
+        let parsed_ast = parser.parse(query.as_str()).unwrap();
 
         let logical_plan = logical_planner.lower(&parsed_ast).unwrap();
         let mut eval_plan = eval_planner.compile(&logical_plan).unwrap();
@@ -233,7 +243,8 @@ mod tests {
             .deref()
             .index_fns)
             .get("one")
-            .unwrap())(well_formed_dynamic_message, None, 0);
+            // .unwrap())(well_formed_dynamic_message, Some(10), 20);
+            .unwrap())(well_formed_dynamic_message, None, 20);
 
         // // invoke primary key function
         // let _ = (ABCD_RECORD_STORE_METADATA_PRIMARY_KEY_AND_INDEX_FUNCTIONS
