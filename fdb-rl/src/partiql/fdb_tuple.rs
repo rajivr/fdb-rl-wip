@@ -20,24 +20,43 @@ use super::error::{
 // and `fdb_type`.
 //
 // ```
-// |------------------------------+--------------------+--------------|
-// | fdb_rl_type                  | TupleSchemaElement | fdb_type     |
-// |------------------------------+--------------------+--------------|
-// | double                       | Double             | double       |
-// | float                        | Float              | float        |
-// | int32                        | Integer            | integer      |
-// | int64                        | Integer            | integer      |
-// | sint32                       | Integer            | integer      |
-// | sint64                       | Integer            | integer      |
-// | sfixed32                     | Integer            | integer      |
-// | sfixed64                     | Integer            | integer      |
-// | bool                         | Boolean            | bool         |
-// | string                       | String             | string       |
-// | bytes                        | Bytes              | bytes        |
-// | message_fdb_rl.field.v1.UUID | Uuid               | uuid         |
-// | ...                          | Versionstamp       | versionstamp |
-// |------------------------------+--------------------+--------------|
+// |---------------------------------------+-------------------------+-----------------|
+// | fdb_rl_type                           | TupleSchemaElement      | fdb_type        |
+// |---------------------------------------+-------------------------+-----------------|
+// | double                                | Double  or MaybeDouble  | double          |
+// | float                                 | Float   or MaybeFloat   | float           |
+// | int32                                 | Integer or MaybeInteger | integer         |
+// | int64                                 | Integer or MaybeInteger | integer         |
+// | sint32                                | Integer or MaybeInteger | integer         |
+// | sint64                                | Integer or MaybeInteger | integer         |
+// | sfixed32                              | Integer or MaybeInteger | integer         |
+// | sfixed64                              | Integer or MaybeInteger | integer         |
+// | bool                                  | Boolean or MaybeBoolean | bool            |
+// | string                                | String  or MaybeString  | string          |
+// | bytes                                 | Bytes   or MaybeBytes   | bytes           |
+// | message_fdb_rl.field.v1.UUID          | Uuid    or MaybeUuid    | v1_uuid         |
+// | ...                                   | Versionstamp            | versionstamp    |
+// | repeated_double                       | ListOfDouble            | list_of_double  |
+// | repeated_float                        | ListOfFloat             | list_of_float   |
+// | repeated_int32                        | ListOfInteger           | list_of_integer |
+// | repeated_int64                        | ListOfInteger           | list_of_integer |
+// | repeated_sint32                       | ListOfInteger           | list_of_integer |
+// | repeated_sint64                       | ListOfInteger           | list_of_integer |
+// | repeated_sfixed32                     | ListOfInteger           | list_of_integer |
+// | repeated_sfixed64                     | ListOfInteger           | list_of_integer |
+// | repeated_bool                         | ListOfBoolean           | list_of_bool    |
+// | repeated_string                       | ListOfString            | list_of_string  |
+// | repeated_bytes                        | ListOfBytes             | list_of_bytes   |
+// | repeated_message_fdb_rl.field.v1.UUID | ListOfUuid              | list_of_v1_uuid |
+// |---------------------------------------+-------------------------+-----------------|
 // ```
+//
+// Primary key cannot have `NULL`. So `TupleSchemaElement` of
+// `Maybe...` will not work for primary key.
+//
+// `fdb_type` of `list_of_...` is only supported for secondary
+// index. Additionally it *cannot* be `NULL`. While the list can be
+// empty, Protobuf does not allow `repeated` along with `optional`.
 //
 // `fdb_type` of `versionstamp` is only supported for secondary index
 // and not primary key. Additionally it *cannot* be `NULL`. It has the
@@ -542,6 +561,14 @@ fn index_value_inner(list: List) -> FdbResult<FdbTuple> {
                     }
                     _ => return Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE)),
                 },
+                // TODO:
+                // `list_of_string`
+                // `list_of_double`
+                // `list_of_float`
+                // `list_of_integer`
+                // `list_of_bool`
+                // `list_of_bytes`
+                // `list_of_v1_uuid`
                 _ => return Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE)),
             }
         } else {
