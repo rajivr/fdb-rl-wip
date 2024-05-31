@@ -561,10 +561,128 @@ fn index_value_inner(list: List) -> FdbResult<FdbTuple> {
                     }
                     _ => return Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE)),
                 },
+                "list_of_string" => match fdb_value {
+                    Value::List(boxed_list) => {
+                        let string_vec = {
+                            // We attempt to return an
+                            // `Option<Vec<String>>`. Returning `None`
+                            // would indicate an error. `None` is
+                            // converted into an
+                            // `Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE))`
+                            // at the end.
+                            Some(*boxed_list)
+                        }
+                        .map(List::to_vec)
+                        .and_then(|value_vec| {
+                            let mut res = Vec::<String>::new();
+
+                            for v in value_vec {
+                                let s = if let Value::String(boxed_string) = v {
+                                    *boxed_string
+                                } else {
+                                    return None;
+                                };
+
+                                res.push(s);
+                            }
+
+                            Some(res)
+                        })
+                        .ok_or_else(|| FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE))?;
+
+                        let mut list_tup = FdbTuple::new();
+
+                        for s in string_vec {
+                            list_tup.push_back(s);
+                        }
+
+                        fdb_tuple.push_back(list_tup);
+                    }
+                    _ => return Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE)),
+                },
+                "list_of_double" => match fdb_value {
+                    Value::List(boxed_list) => {
+                        let double_vec = {
+                            // We attempt to return an
+                            // `Option<Vec<f64>>`. Returning `None`
+                            // would indicate an error. `None` is
+                            // converted into an
+                            // `Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE))`
+                            // at the end.
+                            Some(*boxed_list)
+                        }
+                        .map(List::to_vec)
+                        .and_then(|value_vec| {
+                            let mut res = Vec::<f64>::new();
+
+                            for v in value_vec {
+                                let d = match v {
+                                    Value::Real(ordered_float) => ordered_float.into_inner(),
+                                    Value::Decimal(boxed_decimal) => {
+                                        f64::try_from(*boxed_decimal).ok()?
+                                    }
+                                    _ => return None,
+                                };
+
+                                res.push(d);
+                            }
+
+                            Some(res)
+                        })
+                        .ok_or_else(|| FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE))?;
+
+                        let mut list_tup = FdbTuple::new();
+
+                        for d in double_vec {
+                            list_tup.push_back(d);
+                        }
+
+                        fdb_tuple.push_back(list_tup);
+                    }
+                    _ => return Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE)),
+                },
+                "list_of_float" => match fdb_value {
+                    Value::List(boxed_list) => {
+                        let float_vec = {
+                            // We attempt to return an
+                            // `Option<Vec<f32>>`. Returning `None`
+                            // would indicate an error. `None` is
+                            // converted into an
+                            // `Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE))`
+                            // at the end.
+                            Some(*boxed_list)
+                        }
+                        .map(List::to_vec)
+                        .and_then(|value_vec| {
+                            let mut res = Vec::<f32>::new();
+
+                            for v in value_vec {
+                                let f = match v {
+                                    Value::Real(ordered_float) => ordered_float.into_inner() as f32,
+                                    Value::Decimal(boxed_decimal) => {
+                                        f32::try_from(*boxed_decimal).ok()?
+                                    }
+                                    _ => return None,
+                                };
+
+                                res.push(f);
+                            }
+
+                            Some(res)
+                        })
+                        .ok_or_else(|| FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE))?;
+
+                        let mut list_tup = FdbTuple::new();
+
+                        for f in float_vec {
+                            list_tup.push_back(f);
+                        }
+
+                        fdb_tuple.push_back(list_tup);
+                    }
+                    _ => return Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE)),
+                },
                 // TODO:
-                // `list_of_string`
-                // `list_of_double`
-                // `list_of_float`
                 // `list_of_integer`
                 // `list_of_bool`
                 // `list_of_bytes`
@@ -2339,6 +2457,466 @@ mod tests {
                     assert_eq!(result, expected);
                 }
             }
+            // list_of_string
+            {
+                // with `key` only
+                {
+                    let result = super::index_value(
+                        bag![
+                            tuple![(
+                                "key",
+                                list![tuple![
+                                    ("fdb_type", "list_of_string"),
+                                    ("fdb_value", list![]),
+                                ]]
+                            )],
+                            tuple![(
+                                "key",
+                                list![tuple![
+                                    ("fdb_type", "list_of_string"),
+                                    ("fdb_value", list!["hello", "world"]),
+                                ]]
+                            )],
+                        ]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = vec![
+                        (
+                            {
+                                // Empty tuple
+                                let list_tup = { FdbTuple::new() };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            },
+                            Option::<FdbTuple>::None,
+                        ),
+                        (
+                            {
+                                let list_tup = {
+                                    let tup: (&'static str, &'static str) = ("hello", "world");
+
+                                    let mut t = FdbTuple::new();
+                                    t.push_back(tup.0.to_string());
+                                    t.push_back(tup.1.to_string());
+                                    t
+                                };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            },
+                            Option::<FdbTuple>::None,
+                        ),
+                    ];
+
+                    assert_eq!(result, expected);
+                }
+                // with `key` and `value` value
+                {
+                    let result = super::index_value(
+                        bag![
+                            tuple![
+                                (
+                                    "key",
+                                    list![tuple![
+                                        ("fdb_type", "list_of_string"),
+                                        ("fdb_value", list![]),
+                                    ]]
+                                ),
+                                (
+                                    "value",
+                                    list![tuple![
+                                        ("fdb_type", "list_of_string"),
+                                        ("fdb_value", list!["hello", "world"]),
+                                    ]]
+                                )
+                            ],
+                            tuple![
+                                (
+                                    "key",
+                                    list![tuple![
+                                        ("fdb_type", "list_of_string"),
+                                        ("fdb_value", list!["hello", "world"]),
+                                    ]]
+                                ),
+                                (
+                                    "value",
+                                    list![tuple![
+                                        ("fdb_type", "list_of_string"),
+                                        ("fdb_value", list![]),
+                                    ]]
+                                ),
+                            ],
+                        ]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = vec![
+                        (
+                            {
+                                // Empty tuple
+                                let list_tup = { FdbTuple::new() };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            },
+                            Some({
+                                let list_tup = {
+                                    let tup: (&'static str, &'static str) = ("hello", "world");
+
+                                    let mut t = FdbTuple::new();
+                                    t.push_back(tup.0.to_string());
+                                    t.push_back(tup.1.to_string());
+                                    t
+                                };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            }),
+                        ),
+                        (
+                            {
+                                let list_tup = {
+                                    let tup: (&'static str, &'static str) = ("hello", "world");
+
+                                    let mut t = FdbTuple::new();
+                                    t.push_back(tup.0.to_string());
+                                    t.push_back(tup.1.to_string());
+                                    t
+                                };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            },
+                            Some({
+                                // Empty tuple
+                                let list_tup = { FdbTuple::new() };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            }),
+                        ),
+                    ];
+
+                    assert_eq!(result, expected);
+                }
+            }
+            // list_of_double
+            {
+                // with `key` only
+                {
+                    let result = super::index_value(
+                        bag![
+                            tuple![(
+                                "key",
+                                list![tuple![
+                                    ("fdb_type", "list_of_double"),
+                                    ("fdb_value", list![]),
+                                ]]
+                            )],
+                            tuple![(
+                                "key",
+                                list![tuple![
+                                    ("fdb_type", "list_of_double"),
+                                    ("fdb_value", list![3.14, 6.28]),
+                                ]]
+                            )],
+                        ]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = vec![
+                        (
+                            {
+                                // Empty tuple
+                                let list_tup = { FdbTuple::new() };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            },
+                            Option::<FdbTuple>::None,
+                        ),
+                        (
+                            {
+                                let list_tup = {
+                                    let tup: (f64, f64) = (3.14, 6.28);
+
+                                    let mut t = FdbTuple::new();
+                                    t.push_back(tup.0);
+                                    t.push_back(tup.1);
+                                    t
+                                };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            },
+                            Option::<FdbTuple>::None,
+                        ),
+                    ];
+
+                    assert_eq!(result, expected);
+                }
+                // with `key` and `value` value
+                {
+                    let result = super::index_value(
+                        bag![
+                            tuple![
+                                (
+                                    "key",
+                                    list![tuple![
+                                        ("fdb_type", "list_of_double"),
+                                        ("fdb_value", list![]),
+                                    ]]
+                                ),
+                                (
+                                    "value",
+                                    list![tuple![
+                                        ("fdb_type", "list_of_double"),
+                                        ("fdb_value", list![3.14, 6.28]),
+                                    ]]
+                                )
+                            ],
+                            tuple![
+                                (
+                                    "key",
+                                    list![tuple![
+                                        ("fdb_type", "list_of_double"),
+                                        ("fdb_value", list![3.14, 6.28]),
+                                    ]]
+                                ),
+                                (
+                                    "value",
+                                    list![tuple![
+                                        ("fdb_type", "list_of_double"),
+                                        ("fdb_value", list![]),
+                                    ]]
+                                ),
+                            ],
+                        ]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = vec![
+                        (
+                            {
+                                // Empty tuple
+                                let list_tup = { FdbTuple::new() };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            },
+                            Some({
+                                let list_tup = {
+                                    let tup: (f64, f64) = (3.14, 6.28);
+
+                                    let mut t = FdbTuple::new();
+                                    t.push_back(tup.0);
+                                    t.push_back(tup.1);
+                                    t
+                                };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            }),
+                        ),
+                        (
+                            {
+                                let list_tup = {
+                                    let tup: (f64, f64) = (3.14, 6.28);
+
+                                    let mut t = FdbTuple::new();
+                                    t.push_back(tup.0);
+                                    t.push_back(tup.1);
+                                    t
+                                };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            },
+                            Some({
+                                // Empty tuple
+                                let list_tup = { FdbTuple::new() };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            }),
+                        ),
+                    ];
+
+                    assert_eq!(result, expected);
+                }
+            }
+            // list_of_float
+            {
+                // with `key` only
+                {
+                    let result = super::index_value(
+                        bag![
+                            tuple![(
+                                "key",
+                                list![tuple![
+                                    ("fdb_type", "list_of_float"),
+                                    ("fdb_value", list![]),
+                                ]]
+                            )],
+                            tuple![(
+                                "key",
+                                list![tuple![
+                                    ("fdb_type", "list_of_float"),
+                                    ("fdb_value", list![3.14, 6.28]),
+                                ]]
+                            )],
+                        ]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = vec![
+                        (
+                            {
+                                // Empty tuple
+                                let list_tup = { FdbTuple::new() };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            },
+                            Option::<FdbTuple>::None,
+                        ),
+                        (
+                            {
+                                let list_tup = {
+                                    let tup: (f32, f32) = (3.14, 6.28);
+
+                                    let mut t = FdbTuple::new();
+                                    t.push_back(tup.0);
+                                    t.push_back(tup.1);
+                                    t
+                                };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            },
+                            Option::<FdbTuple>::None,
+                        ),
+                    ];
+
+                    assert_eq!(result, expected);
+                }
+                // with `key` and `value` value
+                {
+                    let result = super::index_value(
+                        bag![
+                            tuple![
+                                (
+                                    "key",
+                                    list![tuple![
+                                        ("fdb_type", "list_of_float"),
+                                        ("fdb_value", list![]),
+                                    ]]
+                                ),
+                                (
+                                    "value",
+                                    list![tuple![
+                                        ("fdb_type", "list_of_float"),
+                                        ("fdb_value", list![3.14, 6.28]),
+                                    ]]
+                                )
+                            ],
+                            tuple![
+                                (
+                                    "key",
+                                    list![tuple![
+                                        ("fdb_type", "list_of_float"),
+                                        ("fdb_value", list![3.14, 6.28]),
+                                    ]]
+                                ),
+                                (
+                                    "value",
+                                    list![tuple![
+                                        ("fdb_type", "list_of_float"),
+                                        ("fdb_value", list![]),
+                                    ]]
+                                ),
+                            ],
+                        ]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = vec![
+                        (
+                            {
+                                // Empty tuple
+                                let list_tup = { FdbTuple::new() };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            },
+                            Some({
+                                let list_tup = {
+                                    let tup: (f32, f32) = (3.14, 6.28);
+
+                                    let mut t = FdbTuple::new();
+                                    t.push_back(tup.0);
+                                    t.push_back(tup.1);
+                                    t
+                                };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            }),
+                        ),
+                        (
+                            {
+                                let list_tup = {
+                                    let tup: (f32, f32) = (3.14, 6.28);
+
+                                    let mut t = FdbTuple::new();
+                                    t.push_back(tup.0);
+                                    t.push_back(tup.1);
+                                    t
+                                };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            },
+                            Some({
+                                // Empty tuple
+                                let list_tup = { FdbTuple::new() };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            }),
+                        ),
+                    ];
+
+                    assert_eq!(result, expected);
+                }
+            }
+
             // // wip (remove later)
             // {
             //     let value = bag![
@@ -2627,6 +3205,60 @@ mod tests {
                                 ("spurious_attribute", 30),
                             ]
                         )
+                    ]]
+                )],]
+                .into(),
+                // Invalid list_of_string value (not a list)
+                bag![tuple![(
+                    "key",
+                    list![tuple![
+                        ("fdb_type", "list_of_string"),
+                        ("fdb_value", "not_a_list")
+                    ]]
+                )],]
+                .into(),
+                // Invalid list_of_string value (in the list)
+                bag![tuple![(
+                    "key",
+                    list![tuple![
+                        ("fdb_type", "list_of_string"),
+                        ("fdb_value", list!["hello", 3.14])
+                    ]]
+                )],]
+                .into(),
+                // Invalid list_of_double value (not a list)
+                bag![tuple![(
+                    "key",
+                    list![tuple![
+                        ("fdb_type", "list_of_double"),
+                        ("fdb_value", "not_a_list")
+                    ]]
+                )],]
+                .into(),
+                // Invalid list_of_double value (in the list)
+                bag![tuple![(
+                    "key",
+                    list![tuple![
+                        ("fdb_type", "list_of_double"),
+                        ("fdb_value", list!["hello", 3.14])
+                    ]]
+                )],]
+                .into(),
+                // Invalid list_of_float value (not a list)
+                bag![tuple![(
+                    "key",
+                    list![tuple![
+                        ("fdb_type", "list_of_float"),
+                        ("fdb_value", "not_a_list")
+                    ]]
+                )],]
+                .into(),
+                // Invalid list_of_float value (in the list)
+                bag![tuple![(
+                    "key",
+                    list![tuple![
+                        ("fdb_type", "list_of_float"),
+                        ("fdb_value", list!["hello", 3.14])
                     ]]
                 )],]
                 .into(),
