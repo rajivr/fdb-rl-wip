@@ -462,7 +462,7 @@ fn index_value_inner(list: List) -> FdbResult<FdbTuple> {
                     _ => return Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE)),
                 },
                 "bool" => match fdb_value {
-                    Value::Boolean(i) => fdb_tuple.push_back(i),
+                    Value::Boolean(b) => fdb_tuple.push_back(b),
                     Value::Null => fdb_tuple.push_back(FdbTupleNull),
                     _ => return Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE)),
                 },
@@ -682,11 +682,190 @@ fn index_value_inner(list: List) -> FdbResult<FdbTuple> {
                     }
                     _ => return Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE)),
                 },
-                // TODO:
-                // `list_of_integer`
-                // `list_of_bool`
-                // `list_of_bytes`
-                // `list_of_v1_uuid`
+                "list_of_integer" => match fdb_value {
+                    Value::List(boxed_list) => {
+                        let integer_vec = {
+                            // We attempt to return an
+                            // `Option<Vec<i64>>`. Returning `None`
+                            // would indicate an error. `None` is
+                            // converted into an
+                            // `Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE))`
+                            // at the end.
+                            Some(*boxed_list)
+                        }
+                        .map(List::to_vec)
+                        .and_then(|value_vec| {
+                            let mut res = Vec::<i64>::new();
+
+                            for v in value_vec {
+                                let i = if let Value::Integer(inner_i) = v {
+                                    inner_i
+                                } else {
+                                    return None;
+                                };
+
+                                res.push(i);
+                            }
+
+                            Some(res)
+                        })
+                        .ok_or_else(|| FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE))?;
+
+                        let mut list_tup = FdbTuple::new();
+
+                        for i in integer_vec {
+                            list_tup.push_back(i);
+                        }
+
+                        fdb_tuple.push_back(list_tup);
+                    }
+                    _ => return Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE)),
+                },
+                "list_of_bool" => match fdb_value {
+                    Value::List(boxed_list) => {
+                        let bool_vec = {
+                            // We attempt to return an
+                            // `Option<Vec<bool>>`. Returning `None`
+                            // would indicate an error. `None` is
+                            // converted into an
+                            // `Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE))`
+                            // at the end.
+                            Some(*boxed_list)
+                        }
+                        .map(List::to_vec)
+                        .and_then(|value_vec| {
+                            let mut res = Vec::<bool>::new();
+
+                            for v in value_vec {
+                                let b = if let Value::Boolean(inner_b) = v {
+                                    inner_b
+                                } else {
+                                    return None;
+                                };
+
+                                res.push(b)
+                            }
+
+                            Some(res)
+                        })
+                        .ok_or_else(|| FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE))?;
+
+                        let mut list_tup = FdbTuple::new();
+
+                        for b in bool_vec {
+                            list_tup.push_back(b);
+                        }
+
+                        fdb_tuple.push_back(list_tup);
+                    }
+                    _ => return Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE)),
+                },
+                "list_of_bytes" => match fdb_value {
+                    Value::List(boxed_list) => {
+                        let bytes_vec = {
+                            // We attempt to return an
+                            // `Option<Vec<Bytes>>`. Returning `None`
+                            // would indicate an error. `None` is
+                            // converted into an
+                            // `Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE))`
+                            // at the end.
+                            Some(*boxed_list)
+                        }
+                        .map(List::to_vec)
+                        .and_then(|value_vec| {
+                            let mut res = Vec::<Bytes>::new();
+
+                            for v in value_vec {
+                                let b = if let Value::Blob(boxed_bytes) = v {
+                                    Bytes::from(*boxed_bytes)
+                                } else {
+                                    return None;
+                                };
+
+                                res.push(b)
+                            }
+
+                            Some(res)
+                        })
+                        .ok_or_else(|| FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE))?;
+
+                        let mut list_tup = FdbTuple::new();
+
+                        for b in bytes_vec {
+                            list_tup.push_back(b);
+                        }
+
+                        fdb_tuple.push_back(list_tup);
+                    }
+                    _ => return Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE)),
+                },
+                "list_of_v1_uuid" => match fdb_value {
+                    Value::List(boxed_list) => {
+                        let uuid_vec = {
+                            // We attempt to return an
+                            // `Option<Vec<Uuid>>`. Returning `None`
+                            // would indicate an error. `None` is
+                            // converted into an
+                            // `Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE))`
+                            // at the end.
+                            Some(*boxed_list)
+                        }
+                        .map(List::to_vec)
+                        .and_then(|value_vec| {
+                            let mut res = Vec::<Uuid>::new();
+
+                            for v in value_vec {
+                                let u = if let Value::Tuple(boxed_tuple) = v {
+                                    let maybe_uuid =
+                                        Some(*boxed_tuple)
+                                            .and_then(|tuple| {
+                                                if tuple.len() == 1 {
+                                                    Some(tuple)
+                                                } else {
+                                                    None
+                                                }
+                                            })
+                                            .and_then(|t| {
+                                                t.take_val(&BindingsName::CaseSensitive(
+                                                    "uuid_value".into(),
+                                                ))
+                                            })
+                                            .and_then(|v| {
+                                                if let Value::Blob(boxed_bytes) = v {
+                                                    Some(boxed_bytes)
+                                                } else {
+                                                    None
+                                                }
+                                            })
+                                            .map(|boxed_bytes| *boxed_bytes)
+                                            .and_then(|b| Uuid::from_slice(b.as_slice()).ok());
+
+                                    if let Some(uuid) = maybe_uuid {
+                                        uuid
+                                    } else {
+                                        return None;
+                                    }
+                                } else {
+                                    return None;
+                                };
+
+                                res.push(u);
+                            }
+
+                            Some(res)
+                        })
+                        .ok_or_else(|| FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE))?;
+
+                        let mut list_tup = FdbTuple::new();
+
+                        for u in uuid_vec {
+                            list_tup.push_back(u);
+                        }
+
+                        fdb_tuple.push_back(list_tup);
+                    }
+                    _ => return Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE)),
+                },
                 _ => return Err(FdbError::new(PARTIQL_FDB_TUPLE_INVALID_INDEX_VALUE)),
             }
         } else {
@@ -2916,41 +3095,761 @@ mod tests {
                     assert_eq!(result, expected);
                 }
             }
+            // list_of_integer
+            {
+                // with `key` only
+                {
+                    let result = super::index_value(
+                        bag![
+                            tuple![(
+                                "key",
+                                list![tuple![
+                                    ("fdb_type", "list_of_integer"),
+                                    ("fdb_value", list![]),
+                                ]]
+                            )],
+                            tuple![(
+                                "key",
+                                list![tuple![
+                                    ("fdb_type", "list_of_integer"),
+                                    ("fdb_value", list![108, 216]),
+                                ]]
+                            )],
+                        ]
+                        .into(),
+                    )
+                    .unwrap();
 
-            // // wip (remove later)
-            // {
-            //     let value = bag![
-            //         tuple![(
-            //             "key",
-            //             list![tuple![("fdb_type", "string"), ("fdb_value", "hello"),]]
-            //         )],
-            //         tuple![(
-            //             "key",
-            //             list![tuple![("fdb_type", "string"), ("fdb_value", Value::Null),]]
-            //         )]
-            //     ];
-            //     println!("value: {:?}", value);
-            //     println!("index_value: {:?}", super::index_value(value.into()));
+                    let expected = vec![
+                        (
+                            {
+                                // Empty tuple
+                                let list_tup = { FdbTuple::new() };
 
-            //     let value = bag![
-            //         tuple![
-            //             (
-            //                 "key",
-            //                 list![tuple![("fdb_type", "string"), ("fdb_value", "hello"),]]
-            //             ),
-            //             (
-            //                 "value",
-            //                 list![tuple![("fdb_type", "string"), ("fdb_value", "world"),]]
-            //             ),
-            //         ],
-            //         tuple![(
-            //             "key",
-            //             list![tuple![("fdb_type", "string"), ("fdb_value", Value::Null),]]
-            //         )]
-            //     ];
-            //     println!("value: {:?}", value);
-            //     println!("index_value: {:?}", super::index_value(value.into()));
-            // }
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            },
+                            Option::<FdbTuple>::None,
+                        ),
+                        (
+                            {
+                                let list_tup = {
+                                    let tup: (i64, i64) = (108, 216);
+
+                                    let mut t = FdbTuple::new();
+                                    t.push_back(tup.0);
+                                    t.push_back(tup.1);
+                                    t
+                                };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            },
+                            Option::<FdbTuple>::None,
+                        ),
+                    ];
+
+                    assert_eq!(result, expected);
+                }
+                // with `key` and `value` value
+                {
+                    let result = super::index_value(
+                        bag![
+                            tuple![
+                                (
+                                    "key",
+                                    list![tuple![
+                                        ("fdb_type", "list_of_integer"),
+                                        ("fdb_value", list![]),
+                                    ]]
+                                ),
+                                (
+                                    "value",
+                                    list![tuple![
+                                        ("fdb_type", "list_of_integer"),
+                                        ("fdb_value", list![108, 216]),
+                                    ]]
+                                )
+                            ],
+                            tuple![
+                                (
+                                    "key",
+                                    list![tuple![
+                                        ("fdb_type", "list_of_integer"),
+                                        ("fdb_value", list![108, 216]),
+                                    ]]
+                                ),
+                                (
+                                    "value",
+                                    list![tuple![
+                                        ("fdb_type", "list_of_integer"),
+                                        ("fdb_value", list![]),
+                                    ]]
+                                ),
+                            ],
+                        ]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = vec![
+                        (
+                            {
+                                // Empty tuple
+                                let list_tup = { FdbTuple::new() };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            },
+                            Some({
+                                let list_tup = {
+                                    let tup: (i64, i64) = (108, 216);
+
+                                    let mut t = FdbTuple::new();
+                                    t.push_back(tup.0);
+                                    t.push_back(tup.1);
+                                    t
+                                };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            }),
+                        ),
+                        (
+                            {
+                                let list_tup = {
+                                    let tup: (i64, i64) = (108, 216);
+
+                                    let mut t = FdbTuple::new();
+                                    t.push_back(tup.0);
+                                    t.push_back(tup.1);
+                                    t
+                                };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            },
+                            Some({
+                                // Empty tuple
+                                let list_tup = { FdbTuple::new() };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            }),
+                        ),
+                    ];
+
+                    assert_eq!(result, expected);
+                }
+            }
+            // list_of_bool
+            {
+                // with `key` only
+                {
+                    let result = super::index_value(
+                        bag![
+                            tuple![(
+                                "key",
+                                list![
+                                    tuple![("fdb_type", "list_of_bool"), ("fdb_value", list![]),]
+                                ]
+                            )],
+                            tuple![(
+                                "key",
+                                list![tuple![
+                                    ("fdb_type", "list_of_bool"),
+                                    ("fdb_value", list![true, false]),
+                                ]]
+                            )],
+                        ]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = vec![
+                        (
+                            {
+                                // Empty tuple
+                                let list_tup = { FdbTuple::new() };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            },
+                            Option::<FdbTuple>::None,
+                        ),
+                        (
+                            {
+                                let list_tup = {
+                                    let tup: (bool, bool) = (true, false);
+
+                                    let mut t = FdbTuple::new();
+                                    t.push_back(tup.0);
+                                    t.push_back(tup.1);
+                                    t
+                                };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            },
+                            Option::<FdbTuple>::None,
+                        ),
+                    ];
+
+                    assert_eq!(result, expected);
+                }
+                // with `key` and `value` value
+                {
+                    let result = super::index_value(
+                        bag![
+                            tuple![
+                                (
+                                    "key",
+                                    list![tuple![
+                                        ("fdb_type", "list_of_bool"),
+                                        ("fdb_value", list![]),
+                                    ]]
+                                ),
+                                (
+                                    "value",
+                                    list![tuple![
+                                        ("fdb_type", "list_of_bool"),
+                                        ("fdb_value", list![true, false]),
+                                    ]]
+                                )
+                            ],
+                            tuple![
+                                (
+                                    "key",
+                                    list![tuple![
+                                        ("fdb_type", "list_of_bool"),
+                                        ("fdb_value", list![true, false]),
+                                    ]]
+                                ),
+                                (
+                                    "value",
+                                    list![tuple![
+                                        ("fdb_type", "list_of_bool"),
+                                        ("fdb_value", list![]),
+                                    ]]
+                                ),
+                            ],
+                        ]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = vec![
+                        (
+                            {
+                                // Empty tuple
+                                let list_tup = { FdbTuple::new() };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            },
+                            Some({
+                                let list_tup = {
+                                    let tup: (bool, bool) = (true, false);
+
+                                    let mut t = FdbTuple::new();
+                                    t.push_back(tup.0);
+                                    t.push_back(tup.1);
+                                    t
+                                };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            }),
+                        ),
+                        (
+                            {
+                                let list_tup = {
+                                    let tup: (bool, bool) = (true, false);
+
+                                    let mut t = FdbTuple::new();
+                                    t.push_back(tup.0);
+                                    t.push_back(tup.1);
+                                    t
+                                };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            },
+                            Some({
+                                // Empty tuple
+                                let list_tup = { FdbTuple::new() };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            }),
+                        ),
+                    ];
+
+                    assert_eq!(result, expected);
+                }
+            }
+            // list_of_bytes
+            {
+                // with `key` only
+                {
+                    let result = super::index_value(
+                        bag![
+                            tuple![(
+                                "key",
+                                list![tuple![
+                                    ("fdb_type", "list_of_bytes"),
+                                    ("fdb_value", list![]),
+                                ]]
+                            )],
+                            tuple![(
+                                "key",
+                                list![tuple![
+                                    ("fdb_type", "list_of_bytes"),
+                                    (
+                                        "fdb_value",
+                                        list![
+                                            Value::Blob(
+                                                Vec::<u8>::from(Bytes::from_static(b"hello"))
+                                                    .into()
+                                            ),
+                                            Value::Blob(
+                                                Vec::<u8>::from(Bytes::from_static(b"world"))
+                                                    .into()
+                                            )
+                                        ]
+                                    ),
+                                ]]
+                            )],
+                        ]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = vec![
+                        (
+                            {
+                                // Empty tuple
+                                let list_tup = { FdbTuple::new() };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            },
+                            Option::<FdbTuple>::None,
+                        ),
+                        (
+                            {
+                                let list_tup = {
+                                    let tup: (Bytes, Bytes) = (
+                                        Bytes::from_static(b"hello"),
+                                        Bytes::from_static(b"world"),
+                                    );
+
+                                    let mut t = FdbTuple::new();
+                                    t.push_back(tup.0);
+                                    t.push_back(tup.1);
+                                    t
+                                };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            },
+                            Option::<FdbTuple>::None,
+                        ),
+                    ];
+
+                    assert_eq!(result, expected);
+                }
+                // with `key` and `value` value
+                {
+                    let result = super::index_value(
+                        bag![
+                            tuple![
+                                (
+                                    "key",
+                                    list![tuple![
+                                        ("fdb_type", "list_of_bytes"),
+                                        ("fdb_value", list![]),
+                                    ]]
+                                ),
+                                (
+                                    "value",
+                                    list![tuple![
+                                        ("fdb_type", "list_of_bytes"),
+                                        (
+                                            "fdb_value",
+                                            list![
+                                                Value::Blob(
+                                                    Vec::<u8>::from(Bytes::from_static(b"hello"))
+                                                        .into()
+                                                ),
+                                                Value::Blob(
+                                                    Vec::<u8>::from(Bytes::from_static(b"world"))
+                                                        .into()
+                                                )
+                                            ]
+                                        ),
+                                    ]]
+                                )
+                            ],
+                            tuple![
+                                (
+                                    "key",
+                                    list![tuple![
+                                        ("fdb_type", "list_of_bytes"),
+                                        (
+                                            "fdb_value",
+                                            list![
+                                                Value::Blob(
+                                                    Vec::<u8>::from(Bytes::from_static(b"hello"))
+                                                        .into()
+                                                ),
+                                                Value::Blob(
+                                                    Vec::<u8>::from(Bytes::from_static(b"world"))
+                                                        .into()
+                                                )
+                                            ]
+                                        ),
+                                    ]]
+                                ),
+                                (
+                                    "value",
+                                    list![tuple![
+                                        ("fdb_type", "list_of_bytes"),
+                                        ("fdb_value", list![]),
+                                    ]]
+                                ),
+                            ],
+                        ]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = vec![
+                        (
+                            {
+                                // Empty tuple
+                                let list_tup = { FdbTuple::new() };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            },
+                            Some({
+                                let list_tup = {
+                                    let tup: (Bytes, Bytes) = (
+                                        Bytes::from_static(b"hello"),
+                                        Bytes::from_static(b"world"),
+                                    );
+
+                                    let mut t = FdbTuple::new();
+                                    t.push_back(tup.0);
+                                    t.push_back(tup.1);
+                                    t
+                                };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            }),
+                        ),
+                        (
+                            {
+                                let list_tup = {
+                                    let tup: (Bytes, Bytes) = (
+                                        Bytes::from_static(b"hello"),
+                                        Bytes::from_static(b"world"),
+                                    );
+
+                                    let mut t = FdbTuple::new();
+                                    t.push_back(tup.0);
+                                    t.push_back(tup.1);
+                                    t
+                                };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            },
+                            Some({
+                                // Empty tuple
+                                let list_tup = { FdbTuple::new() };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            }),
+                        ),
+                    ];
+
+                    assert_eq!(result, expected);
+                }
+            }
+            // list_of_v1_uuid
+            {
+                // with `key` only
+                {
+                    let result = super::index_value(
+                        bag![
+                            tuple![(
+                                "key",
+                                list![tuple![
+                                    ("fdb_type", "list_of_v1_uuid"),
+                                    ("fdb_value", list![]),
+                                ]]
+                            )],
+                            tuple![(
+                                "key",
+                                list![tuple![
+                                    ("fdb_type", "list_of_v1_uuid"),
+                                    (
+                                        "fdb_value",
+                                        list![
+                                            tuple![(
+                                                "uuid_value",
+                                                Value::Blob(
+                                                    Uuid::parse_str(
+                                                        "ffffffff-ba5e-ba11-0000-00005ca1ab1e"
+                                                    )
+                                                    .unwrap()
+                                                    .as_bytes()
+                                                    .to_vec()
+                                                    .into(),
+                                                )
+                                            )],
+                                            tuple![(
+                                                "uuid_value",
+                                                Value::Blob(
+                                                    Uuid::parse_str(
+                                                        "ffffffff-ba5e-ba11-0000-00005ca1ab1e"
+                                                    )
+                                                    .unwrap()
+                                                    .as_bytes()
+                                                    .to_vec()
+                                                    .into(),
+                                                )
+                                            )]
+                                        ]
+                                    ),
+                                ]]
+                            )],
+                        ]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = vec![
+                        (
+                            {
+                                // Empty tuple
+                                let list_tup = { FdbTuple::new() };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            },
+                            Option::<FdbTuple>::None,
+                        ),
+                        (
+                            {
+                                let list_tup = {
+                                    let tup: (Uuid, Uuid) = (
+                                        Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
+                                            .unwrap(),
+                                        Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
+                                            .unwrap(),
+                                    );
+
+                                    let mut t = FdbTuple::new();
+                                    t.push_back(tup.0);
+                                    t.push_back(tup.1);
+                                    t
+                                };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            },
+                            Option::<FdbTuple>::None,
+                        ),
+                    ];
+
+                    assert_eq!(result, expected);
+                }
+                // with `key` and `value` value
+                {
+                    let result = super::index_value(
+                        bag![
+                            tuple![
+                                (
+                                    "key",
+                                    list![tuple![
+                                        ("fdb_type", "list_of_v1_uuid"),
+                                        ("fdb_value", list![]),
+                                    ]]
+                                ),
+                                (
+                                    "value",
+                                    list![tuple![
+                                        ("fdb_type", "list_of_v1_uuid"),
+                                        (
+                                            "fdb_value",
+                                            list![
+                                                tuple![(
+                                                    "uuid_value",
+                                                    Value::Blob(
+                                                        Uuid::parse_str(
+                                                            "ffffffff-ba5e-ba11-0000-00005ca1ab1e"
+                                                        )
+                                                        .unwrap()
+                                                        .as_bytes()
+                                                        .to_vec()
+                                                        .into(),
+                                                    )
+                                                )],
+                                                tuple![(
+                                                    "uuid_value",
+                                                    Value::Blob(
+                                                        Uuid::parse_str(
+                                                            "ffffffff-ba5e-ba11-0000-00005ca1ab1e"
+                                                        )
+                                                        .unwrap()
+                                                        .as_bytes()
+                                                        .to_vec()
+                                                        .into(),
+                                                    )
+                                                )]
+                                            ]
+                                        ),
+                                    ]]
+                                )
+                            ],
+                            tuple![
+                                (
+                                    "key",
+                                    list![tuple![
+                                        ("fdb_type", "list_of_v1_uuid"),
+                                        (
+                                            "fdb_value",
+                                            list![
+                                                tuple![(
+                                                    "uuid_value",
+                                                    Value::Blob(
+                                                        Uuid::parse_str(
+                                                            "ffffffff-ba5e-ba11-0000-00005ca1ab1e"
+                                                        )
+                                                        .unwrap()
+                                                        .as_bytes()
+                                                        .to_vec()
+                                                        .into(),
+                                                    )
+                                                )],
+                                                tuple![(
+                                                    "uuid_value",
+                                                    Value::Blob(
+                                                        Uuid::parse_str(
+                                                            "ffffffff-ba5e-ba11-0000-00005ca1ab1e"
+                                                        )
+                                                        .unwrap()
+                                                        .as_bytes()
+                                                        .to_vec()
+                                                        .into(),
+                                                    )
+                                                )]
+                                            ]
+                                        ),
+                                    ]]
+                                ),
+                                (
+                                    "value",
+                                    list![tuple![
+                                        ("fdb_type", "list_of_v1_uuid"),
+                                        ("fdb_value", list![]),
+                                    ]]
+                                ),
+                            ],
+                        ]
+                        .into(),
+                    )
+                    .unwrap();
+
+                    let expected = vec![
+                        (
+                            {
+                                // Empty tuple
+                                let list_tup = { FdbTuple::new() };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            },
+                            Some({
+                                let list_tup = {
+                                    let tup: (Uuid, Uuid) = (
+                                        Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
+                                            .unwrap(),
+                                        Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
+                                            .unwrap(),
+                                    );
+
+                                    let mut t = FdbTuple::new();
+                                    t.push_back(tup.0);
+                                    t.push_back(tup.1);
+                                    t
+                                };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            }),
+                        ),
+                        (
+                            {
+                                let list_tup = {
+                                    let tup: (Uuid, Uuid) = (
+                                        Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
+                                            .unwrap(),
+                                        Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
+                                            .unwrap(),
+                                    );
+
+                                    let mut t = FdbTuple::new();
+                                    t.push_back(tup.0);
+                                    t.push_back(tup.1);
+                                    t
+                                };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            },
+                            Some({
+                                // Empty tuple
+                                let list_tup = { FdbTuple::new() };
+
+                                let mut t = FdbTuple::new();
+                                t.push_back(list_tup);
+                                t
+                            }),
+                        ),
+                    ];
+
+                    assert_eq!(result, expected);
+                }
+            }
         }
         // Invalid cases
         {
@@ -3093,10 +3992,73 @@ mod tests {
                     list![tuple![("fdb_type", "bytes"), ("fdb_value", "hello")]]
                 )],]
                 .into(),
-                // Invalid v1_uuid value
+                // Invalid v1_uuid value (not a tuple)
                 bag![tuple![(
                     "key",
                     list![tuple![("fdb_type", "v1_uuid"), ("fdb_value", "hello")]]
+                )],]
+                .into(),
+                // Invalid v1_uuid value (mis-spelling of uuid_value)
+                bag![tuple![(
+                    "key",
+                    list![tuple![
+                        ("fdb_type", "v1_uuid"),
+                        (
+                            "fdb_value",
+                            tuple![(
+                                "uuid_value1",
+                                Value::Blob(
+                                    Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
+                                        .unwrap()
+                                        .as_bytes()
+                                        .to_vec()
+                                        .into(),
+                                )
+                            )]
+                        )
+                    ]]
+                )],]
+                .into(),
+                // Invalid v1_uuid value (invalid uuid_value type)
+                bag![tuple![(
+                    "key",
+                    list![tuple![
+                        ("fdb_type", "v1_uuid"),
+                        (
+                            "fdb_value",
+                            tuple![("uuid_value", "ffffffff-ba5e-ba11-0000-00005ca1ab1e")]
+                        )
+                    ]]
+                )],]
+                .into(),
+                // Invalid v1_uuid value (spurious attribue)
+                bag![tuple![(
+                    "key",
+                    list![tuple![
+                        ("fdb_type", "v1_uuid"),
+                        (
+                            "fdb_value",
+                            tuple![
+                                (
+                                    "uuid_value",
+                                    Value::Blob(
+                                        Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
+                                            .unwrap()
+                                            .as_bytes()
+                                            .to_vec()
+                                            .into(),
+                                    )
+                                ),
+                                ("spurious", "attribute"),
+                            ]
+                        )
+                    ]]
+                )],]
+                .into(),
+                // Invalid v1_uuid value (empty tuple)
+                bag![tuple![(
+                    "key",
+                    list![tuple![("fdb_type", "v1_uuid"), ("fdb_value", tuple![])]]
                 )],]
                 .into(),
                 // Invalid versionstamp value (not a tuple)
@@ -3262,7 +4224,99 @@ mod tests {
                     ]]
                 )],]
                 .into(),
-                // TODO: Add additional invalid types here.
+                // Invalid list_of_integer value (not a list)
+                bag![tuple![(
+                    "key",
+                    list![tuple![
+                        ("fdb_type", "list_of_integer"),
+                        ("fdb_value", "not_a_list")
+                    ]]
+                )],]
+                .into(),
+                // Invalid list_of_integer value (in the list)
+                bag![tuple![(
+                    "key",
+                    list![tuple![
+                        ("fdb_type", "list_of_integer"),
+                        ("fdb_value", list!["hello", 108])
+                    ]]
+                )],]
+                .into(),
+                // Invalid list_of_bool value (not a list)
+                bag![tuple![(
+                    "key",
+                    list![tuple![
+                        ("fdb_type", "list_of_bool"),
+                        ("fdb_value", "not_a_list")
+                    ]]
+                )],]
+                .into(),
+                // Invalid list_of_bool value (in the list)
+                bag![tuple![(
+                    "key",
+                    list![tuple![
+                        ("fdb_type", "list_of_bool"),
+                        ("fdb_value", list!["hello", true])
+                    ]]
+                )],]
+                .into(),
+                // Invalid list_of_bytes value (not a list)
+                bag![tuple![(
+                    "key",
+                    list![tuple![
+                        ("fdb_type", "list_of_bytes"),
+                        ("fdb_value", "not_a_list")
+                    ]]
+                )],]
+                .into(),
+                // Invalid list_of_bytes value (in the list)
+                bag![tuple![(
+                    "key",
+                    list![tuple![
+                        ("fdb_type", "list_of_bytes"),
+                        (
+                            "fdb_value",
+                            list![
+                                "hello",
+                                Value::Blob(Vec::<u8>::from(Bytes::from_static(b"world")).into())
+                            ]
+                        )
+                    ]]
+                )],]
+                .into(),
+                // Invalid list_of_v1_uuid value (not a list)
+                bag![tuple![(
+                    "key",
+                    list![tuple![
+                        ("fdb_type", "list_of_v1_uuid"),
+                        ("fdb_value", "not_a_list")
+                    ]]
+                )],]
+                .into(),
+                // Invalid list_of_v1_uuid value (in the list)
+                bag![tuple![(
+                    "key",
+                    list![tuple![
+                        ("fdb_type", "list_of_v1_uuid"),
+                        (
+                            "fdb_value",
+                            list![
+                                "hello",
+                                tuple![(
+                                    "uuid_value",
+                                    Value::Blob(
+                                        Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e")
+                                            .unwrap()
+                                            .as_bytes()
+                                            .to_vec()
+                                            .into(),
+                                    )
+                                )]
+                            ]
+                        )
+                    ]]
+                )],]
+                .into(),
             ];
 
             for value in table {
