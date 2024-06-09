@@ -101,6 +101,12 @@ pub mod fdb_rl {
             include_proto!("fdb_rl.record_metadata.v1");
         }
     }
+
+    pub mod tuple_schema {
+        pub mod v1 {
+            include_proto!("fdb_rl.tuple_schema.v1");
+        }
+    }
 }
 
 pub(crate) const TEST_FILE_DESCRIPTOR_SET: &[u8] =

@@ -1,0 +1,130 @@
+syntax = "proto3";
+
+package fdb_rl.tuple_schema.v1;
+
+// Protobuf adaptation of `fdb::tuple::TupleSchemaElement`.
+//
+// We only have support a subset of `fdb::tuple::TupleSchemaElement`
+// variants that are useful for primary key and index key and value.
+
+// `TupleSchemaElement::Double`
+message Double {}
+
+// `TupleSchemaElement::MaybeDouble`
+message MaybeDouble {}
+
+// `TupleSchemaElement::Float`
+message Float {}
+
+// `TupleSchemaElement::MaybeFloat`
+message MaybeFloat {}
+
+// `TupleSchemaElement::Integer`
+message Integer {}
+
+// `TupleSchemaElement::MaybeInteger`
+message MaybeInteger {}
+
+// `TupleSchemaElement::Boolean`
+message Boolean {}
+
+// `TupleSchemaElement::MaybeBoolean`
+message MaybeBoolean {}
+
+// `TupleSchemaElement::String`
+message String {}
+
+// `TupleSchemaElement::MaybeString`
+message MaybeString {}
+
+// `TupleSchemaElement::Bytes`
+message Bytes {}
+
+// `TupleSchemaElement::ListOfBytes`
+message MaybeBytes {}
+
+// `TupleSchemaElement::Uuid`
+message Uuid {}
+
+// `TupleSchemaElement::MaybeUuid`
+message MaybeUuid {}
+
+// `TupleSchemaElement::Versionstamp`
+message Versionstamp {}
+
+// `TupleSchemaElement::ListOfDouble`
+message ListOfDouble {}
+
+// `TupleSchemaElement::ListOfFloat`
+message ListOfFloat {}
+
+// `TupleSchemaElement::ListOfInteger`
+message ListOfInteger {}
+
+// `TupleSchemaElement::ListOfBoolean`
+message ListOfBoolean {}
+
+// `TupleSchemaElement::ListOfString`
+message ListOfString {}
+
+// `TupleSchemaElement::ListOfBytes`
+message ListOfBytes {}
+
+// `TupleSchemaElement::ListOfUuid`
+message ListOfUuid {}
+
+// Schema element for primary key.
+message PrimaryKeySchemaElement {
+  // Required.
+  oneof primary_key_schema_element {
+    String string = 1;
+    Double double = 2;
+    Float float = 3;
+    Integer integer = 4;
+    Boolean boolean = 5;
+    Bytes bytes = 6;
+    Uuid uuid = 7;
+  }
+}
+
+// Primary key schema, containing a list of `PrimaryKeySchemaElement`.
+message PrimaryKeySchema {
+  // At-least there *must* be one element.
+  repeated PrimaryKeySchemaElement primary_key_schema_elements = 1;
+}
+
+// Schema element for index key and value.
+message IndexSchemaElement {
+  // Required.
+  oneof index_schema_element {
+    String string = 1;
+    MaybeString maybe_string = 2;
+    Double double = 3;
+    MaybeDouble maybe_double = 4;
+    Float float = 5;
+    MaybeFloat maybe_float = 6;
+    Integer integer = 7;
+    MaybeInteger maybe_integer = 8;
+    Boolean boolean = 9;
+    MaybeBoolean maybe_boolean = 10;
+    Bytes bytes = 11;
+    MaybeBytes maybe_bytes = 12;
+    Uuid uuid = 13;
+    MaybeUuid maybe_uuid = 14;
+    Versionstamp versionstamp = 15;
+    ListOfString list_of_string = 16;
+    ListOfDouble list_of_double = 17;
+    ListOfFloat list_of_float = 18;
+    ListOfInteger list_of_integer = 19;
+    ListOfBoolean list_of_boolean = 20;
+    ListOfBytes list_of_bytes = 21;
+    ListOfUuid list_of_uuid = 22;
+  }
+}
+
+// Index schema containing a list of `IndexSchemaElement`.
+message IndexSchema {
+  // At-least there *must* be two elements when used as key, and one
+  // element when used as value.
+  repeated IndexSchemaElement index_schema_elements = 1;
+}
