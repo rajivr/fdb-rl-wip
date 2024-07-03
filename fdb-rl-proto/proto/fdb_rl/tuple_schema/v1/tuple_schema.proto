@@ -2,129 +2,95 @@ syntax = "proto3";
 
 package fdb_rl.tuple_schema.v1;
 
-// Protobuf adaptation of `fdb::tuple::TupleSchemaElement`.
-//
-// We only have support a subset of `fdb::tuple::TupleSchemaElement`
-// variants that are useful for primary key and index key and value.
-
-// `TupleSchemaElement::Double`
-message Double {}
-
-// `TupleSchemaElement::MaybeDouble`
-message MaybeDouble {}
-
-// `TupleSchemaElement::Float`
-message Float {}
-
-// `TupleSchemaElement::MaybeFloat`
-message MaybeFloat {}
-
-// `TupleSchemaElement::Integer`
-message Integer {}
-
-// `TupleSchemaElement::MaybeInteger`
-message MaybeInteger {}
-
-// `TupleSchemaElement::Boolean`
-message Boolean {}
-
-// `TupleSchemaElement::MaybeBoolean`
-message MaybeBoolean {}
-
-// `TupleSchemaElement::String`
-message String {}
-
-// `TupleSchemaElement::MaybeString`
-message MaybeString {}
-
-// `TupleSchemaElement::Bytes`
-message Bytes {}
-
-// `TupleSchemaElement::ListOfBytes`
-message MaybeBytes {}
-
-// `TupleSchemaElement::Uuid`
-message Uuid {}
-
-// `TupleSchemaElement::MaybeUuid`
-message MaybeUuid {}
-
-// `TupleSchemaElement::Versionstamp`
-message Versionstamp {}
-
-// `TupleSchemaElement::ListOfDouble`
-message ListOfDouble {}
-
-// `TupleSchemaElement::ListOfFloat`
-message ListOfFloat {}
-
-// `TupleSchemaElement::ListOfInteger`
-message ListOfInteger {}
-
-// `TupleSchemaElement::ListOfBoolean`
-message ListOfBoolean {}
-
-// `TupleSchemaElement::ListOfString`
-message ListOfString {}
-
-// `TupleSchemaElement::ListOfBytes`
-message ListOfBytes {}
-
-// `TupleSchemaElement::ListOfUuid`
-message ListOfUuid {}
-
 // Schema element for primary key.
-message PrimaryKeySchemaElement {
-  // Required.
-  oneof primary_key_schema_element {
-    String string = 1;
-    Double double = 2;
-    Float float = 3;
-    Integer integer = 4;
-    Boolean boolean = 5;
-    Bytes bytes = 6;
-    Uuid uuid = 7;
-  }
+enum PrimaryKeySchemaElement {
+  // Unspecified
+  PRIMARY_KEY_SCHEMA_ELEMENT_UNSPECIFIED = 0;
+  // `TupleSchemaElement::String`
+  PRIMARY_KEY_SCHEMA_ELEMENT_STRING = 1;
+  // `TupleSchemaElement::Double`
+  PRIMARY_KEY_SCHEMA_ELEMENT_DOUBLE = 2;
+  // `TupleSchemaElement::Float`
+  PRIMARY_KEY_SCHEMA_ELEMENT_FLOAT = 3;
+  // `TupleSchemaElement::Integer`
+  PRIMARY_KEY_SCHEMA_ELEMENT_INTEGER = 4;
+  // `TupleSchemaElement::Boolean`
+  PRIMARY_KEY_SCHEMA_ELEMENT_BOOLEAN = 5;
+  // `TupleSchemaElement::Bytes`
+  PRIMARY_KEY_SCHEMA_ELEMENT_BYTES = 6;
+  // `TupleSchemaElement::Uuid`
+  PRIMARY_KEY_SCHEMA_ELEMENT_UUID = 7;
 }
 
-// Primary key schema, containing a list of `PrimaryKeySchemaElement`.
+// Primary key schema
 message PrimaryKeySchema {
   // At-least there *must* be one element.
-  repeated PrimaryKeySchemaElement primary_key_schema_elements = 1;
+  repeated PrimaryKeySchemaElement fdb_key_schema = 1;
 }
 
 // Schema element for index key and value.
-message IndexSchemaElement {
-  // Required.
-  oneof index_schema_element {
-    String string = 1;
-    MaybeString maybe_string = 2;
-    Double double = 3;
-    MaybeDouble maybe_double = 4;
-    Float float = 5;
-    MaybeFloat maybe_float = 6;
-    Integer integer = 7;
-    MaybeInteger maybe_integer = 8;
-    Boolean boolean = 9;
-    MaybeBoolean maybe_boolean = 10;
-    Bytes bytes = 11;
-    MaybeBytes maybe_bytes = 12;
-    Uuid uuid = 13;
-    MaybeUuid maybe_uuid = 14;
-    Versionstamp versionstamp = 15;
-    ListOfString list_of_string = 16;
-    ListOfDouble list_of_double = 17;
-    ListOfFloat list_of_float = 18;
-    ListOfInteger list_of_integer = 19;
-    ListOfBoolean list_of_boolean = 20;
-    ListOfBytes list_of_bytes = 21;
-    ListOfUuid list_of_uuid = 22;
-  }
+enum IndexSchemaElement {
+  // Unspecified
+  INDEX_SCHEMA_ELEMENT_UNSPECIFIED = 0;
+  // `TupleSchemaElement::String`
+  INDEX_SCHEMA_ELEMENT_STRING = 1;
+  // `TupleSchemaElement::MaybeString`
+  INDEX_SCHEMA_ELEMENT_MAYBE_STRING = 2;
+  // ``TupleSchemaElement::Double``
+  INDEX_SCHEMA_ELEMENT_DOUBLE = 3;
+  // ``TupleSchemaElement::MaybeDouble``
+  INDEX_SCHEMA_ELEMENT_MAYBE_DOUBLE = 4;
+  // `TupleSchemaElement::Float`
+  INDEX_SCHEMA_ELEMENT_FLOAT = 5;
+  // `TupleSchemaElement::MaybeFloat`
+  INDEX_SCHEMA_ELEMENT_MAYBE_FLOAT = 6;
+  // `TupleSchemaElement::Integer`
+  INDEX_SCHEMA_ELEMENT_INTEGER = 7;
+  // `TupleSchemaElement::MaybeInteger`
+  INDEX_SCHEMA_ELEMENT_MAYBE_INTEGER = 8;
+  // `TupleSchemaElement::Boolean`
+  INDEX_SCHEMA_ELEMENT_BOOLEAN = 9;
+  // `TupleSchemaElement::MaybeBoolean`
+  INDEX_SCHEMA_ELEMENT_MAYBE_BOOLEAN = 10;
+  // `TupleSchemaElement::Bytes`
+  INDEX_SCHEMA_ELEMENT_BYTES = 11;
+  // `TupleSchemaElement::MaybeString`
+  INDEX_SCHEMA_ELEMENT_MAYBE_BYTES = 12;
+  // `TupleSchemaElement::Uuid`
+  INDEX_SCHEMA_ELEMENT_UUID = 13;
+  // `TupleSchemaElement::MaybeUuid`
+  INDEX_SCHEMA_ELEMENT_MAYBE_UUID = 14;
+  // `TupleSchemaElement::Versionstamp`
+  INDEX_SCHEMA_ELEMENT_VERSIONSTAMP = 15;
+  // `TupleSchemaElement::ListOfString`
+  INDEX_SCHEMA_ELEMENT_LIST_OF_STRING = 16;
+  // `TupleSchemaElement::ListOfDouble`
+  INDEX_SCHEMA_ELEMENT_LIST_OF_DOUBLE = 17;
+  // `TupleSchemaElement::ListOfFloat`
+  INDEX_SCHEMA_ELEMENT_LIST_OF_FLOAT = 18;
+  // `TupleSchemaElement::ListOfInteger`
+  INDEX_SCHEMA_ELEMENT_LIST_OF_INTEGER = 19;
+  // `TupleSchemaElement::ListOfBoolean`
+  INDEX_SCHEMA_ELEMENT_LIST_OF_BOOLEAN = 20;
+  // `TupleSchemaElement::ListOfBytes`
+  INDEX_SCHEMA_ELEMENT_LIST_OF_BYTES = 21;
+  // `TupleSchemaElement::ListOfUuid`
+  INDEX_SCHEMA_ELEMENT_LIST_OF_UUID = 22;
 }
 
-// Index schema containing a list of `IndexSchemaElement`.
+// Schema for the value part of FDB key-value that represents an Index
+// entry.
+//
+// We need to define this because we cannot have `optional repeated`
+// in protobuf.
+message IndexSchemaValue {
+  repeated IndexSchemaElement value = 1;
+}
+
+// Index schema
 message IndexSchema {
-  // At-least there *must* be two elements when used as key, and one
-  // element when used as value.
-  repeated IndexSchemaElement index_schema_elements = 1;
+  // There must be at-least two elements.
+  repeated IndexSchemaElement fdb_key_schema = 1;
+  // If present, there must be at-least one element.
+  optional IndexSchemaValue fdb_value_schema = 2;
 }

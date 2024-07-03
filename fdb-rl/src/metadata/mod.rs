@@ -1,6 +1,7 @@
 //! TODO
 
 pub(crate) mod error;
+pub(crate) mod tuple_schema;
 
 use fdb::error::FdbResult;
 use fdb::tuple::Tuple;
@@ -8,6 +9,11 @@ use fdb::tuple::Tuple;
 use std::collections::HashMap;
 
 use crate::protobuf::WellFormedDynamicMessage;
+
+pub use tuple_schema::{
+    IndexSchema, IndexSchemaElement, IndexSchemaFdbKey, IndexSchemaFdbValue, PrimaryKeySchema,
+    PrimaryKeySchemaElement,
+};
 
 // /// TODO
 // pub(crate) struct KeyAndIndexFunctions<FnPK, FnIdx>
@@ -123,43 +129,47 @@ mod tests {
         incarnation_version: Option<u64>,
         local_version: u16,
     ) -> FdbResult<Vec<(Tuple, Option<Tuple>)>> {
-        // println!("{:?}", Value::try_from(well_formed_dynamic_message)?);
+        println!("{:?}", Value::try_from(well_formed_dynamic_message)?);
 
-        let mut bindings = MapBindings::default();
-        bindings.insert("record", Value::try_from(well_formed_dynamic_message)?);
+        // let mut bindings = MapBindings::default();
+        // bindings.insert("record", Value::try_from(well_formed_dynamic_message)?);
 
-        let catalog = PartiqlCatalog::default();
+        // let catalog = PartiqlCatalog::default();
 
-        let logical_planner = LogicalPlanner::new(&catalog);
-        let mut eval_planner = EvaluatorPlanner::new(EvaluationMode::Permissive, &catalog);
+        // let logical_planner = LogicalPlanner::new(&catalog);
+        // let mut eval_planner = EvaluatorPlanner::new(EvaluationMode::Permissive, &catalog);
 
-        let parser = Parser::default();
-        // let parsed_ast = parser.parse("SELECT VALUE { 'key': [ { 'fdb_type': 'v1_uuid', 'fdb_value': r.fdb_rl_value.primary_key.fdb_rl_value }, { 'fdb_type': 'versionstamp', 'fdb_value': {'incarnation_version': 10, 'local_version': 20} } ], 'value': [ { 'fdb_type': 'string', 'fdb_value':  r.fdb_rl_value.hello.fdb_rl_value } ] } FROM record AS r").unwrap();
+        // let parser = Parser::default();
 
-        let query = format!(
-	    "SELECT VALUE {{ 'key': [ {{ 'fdb_type': 'v1_uuid', 'fdb_value': r.fdb_rl_value.primary_key.fdb_rl_value }}, {{ 'fdb_type': 'versionstamp', 'fdb_value': {{ 'incarnation_version': {incarnation_version}, 'local_version': {local_version} }} }} ], 'value': [ {{ 'fdb_type': 'string', 'fdb_value':  r.fdb_rl_value.world.fdb_rl_value }} ] }} FROM record AS r",
-	    incarnation_version=incarnation_version
-		.map(|x| format!("{}", x))
-		.unwrap_or_else(|| "NULL".to_string()),
-	    local_version=local_version
-	);
+        // let parsed_ast = parser.parse("SELECT VALUE { 'repeat_me': ( SELECT VALUE fdb_rl_value FROM repeat_me.fdb_rl_value AS x AT i ORDER BY i ) } FROM record AS r, r.fdb_rl_value.repeat_me AS repeat_me").unwrap();
 
-        let parsed_ast = parser.parse(query.as_str()).unwrap();
+        // let parsed_ast = parser.parse("SELECT VALUE { 'attr': CAST(repeat_me.fdb_rl_value[*].fdb_rl_value AS LIST) } FROM record AS r, r.fdb_rl_value.repeat_me AS repeat_me").unwrap();
 
-        let logical_plan = logical_planner.lower(&parsed_ast).unwrap();
-        let mut eval_plan = eval_planner.compile(&logical_plan).unwrap();
+        // // let parsed_ast = parser.parse("SELECT VALUE { 'key': [ { 'fdb_type': 'v1_uuid', 'fdb_value': r.fdb_rl_value.primary_key.fdb_rl_value }, { 'fdb_type': 'versionstamp', 'fdb_value': {'incarnation_version': 10, 'local_version': 20} } ], 'value': [ { 'fdb_type': 'string', 'fdb_value':  r.fdb_rl_value.hello.fdb_rl_value } ] } FROM record AS r").unwrap();
 
-        let context = BasicContext::new(
-            bindings,
-            SystemContext {
-                now: DateTime::from_system_now_utc(),
-            },
-        );
+        // let query = format!(
+        //     "SELECT VALUE {{ 'key': [ {{ 'fdb_type': 'v1_uuid', 'fdb_value': r.fdb_rl_value.primary_key.fdb_rl_value }}, {{ 'fdb_type': 'versionstamp', 'fdb_value': {{ 'incarnation_version': {incarnation_version}, 'local_version': {local_version} }} }} ], 'value': [ {{ 'fdb_type': 'string', 'fdb_value':  r.fdb_rl_value.world.fdb_rl_value }} ] }} FROM record AS r",
+        //     incarnation_version=incarnation_version
+        // 	.map(|x| format!("{}", x))
+        // 	.unwrap_or_else(|| "NULL".to_string()),
+        //     local_version=local_version
+        // );
+        // let parsed_ast = parser.parse(query.as_str()).unwrap();
 
-        let evaluated = eval_plan.execute_mut(&context).unwrap();
+        // let logical_plan = logical_planner.lower(&parsed_ast).unwrap();
+        // let mut eval_plan = eval_planner.compile(&logical_plan).unwrap();
 
-        println!("{:?}", evaluated.result);
-        println!("{:?}", index_value(evaluated.result));
+        // let context = BasicContext::new(
+        //     bindings,
+        //     SystemContext {
+        //         now: DateTime::from_system_now_utc(),
+        //     },
+        // );
+
+        // let evaluated = eval_plan.execute_mut(&context).unwrap();
+
+        // println!("{:?}", evaluated.result);
+        // // println!("{:?}", index_value(evaluated.result));
 
         Err(FdbError::new(123))
     }
@@ -217,24 +227,20 @@ mod tests {
 
     #[test]
     fn wip() {
-        use fdb_rl_proto::fdb_rl::field::v1::Uuid as FdbRLWktV1UuidProto;
-        use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_dynamic_message::v1::HelloWorldWktV1Uuid;
-        use uuid::Uuid;
-
-        let hello_world_wkt_v1_uuid = HelloWorldWktV1Uuid {
-            primary_key: Some(FdbRLWktV1UuidProto::from(
-                Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e").unwrap(),
-            )),
-            hello: Some("hello".to_string()),
-            world: None,
+        use fdb_rl_proto::fdb_rl_test::java::proto::expression_tests::v1::TestScalarFieldAccess;
+        let test_scalar_field_access = TestScalarFieldAccess {
+            field: Some("Plants".to_string()),
+            repeat_me: vec!["Boxes".to_string(), "Bowls".to_string()],
+            bytes_field: None,
+            uuid_field: None,
         };
 
         let well_formed_message_descriptor =
-            WellFormedMessageDescriptor::try_from(hello_world_wkt_v1_uuid.descriptor()).unwrap();
+            WellFormedMessageDescriptor::try_from(test_scalar_field_access.descriptor()).unwrap();
 
         let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
             well_formed_message_descriptor,
-            &hello_world_wkt_v1_uuid,
+            &test_scalar_field_access,
         ))
         .unwrap();
 

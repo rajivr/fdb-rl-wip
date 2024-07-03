@@ -1,164 +1,371 @@
-// TODO: Continue from here.
+// TODO (write tests)
+
+use fdb::error::{FdbError, FdbResult};
+
+use std::convert::TryFrom;
+
+use crate::metadata::{
+    IndexSchema, IndexSchemaElement, IndexSchemaFdbKey, IndexSchemaFdbValue, PrimaryKeySchema,
+    PrimaryKeySchemaElement,
+};
+
+use super::error::PROTOBUF_TUPLE_SCHEMA_INVALID_PROTO;
 
 /// Protobuf types
 pub(crate) mod pb {
-    use fdb::error::{FdbError, FdbResult};
-
-    use super::super::error::PROTOBUF_TUPLE_SCHEMA_INVALID_PROTO;
-
-    use std::convert::{TryFrom, TryInto};
-
     /// Protobuf generated types renamed to prepend `Proto` and append
     /// version (and add `Enum` suffix).
     pub(crate) use fdb_rl_proto::fdb_rl::tuple_schema::v1::{
-        Boolean as ProtoBooleanV1, Bytes as ProtoBytesV1, Double as ProtoDoubleV1,
-        Float as ProtoFloatV1, IndexSchema as ProtoIndexSchemaV1,
-        IndexSchemaElement as ProtoIndexSchemaElementV1, Integer as ProtoIntegerV1,
-        ListOfBoolean as ProtoListOfBooleanV1, ListOfBytes as ProtoListOfBytesV1,
-        ListOfDouble as ProtoListOfDoubleV1, ListOfFloat as ProtoListOfFloatV1,
-        ListOfInteger as ProtoListOfIntegerV1, ListOfString as ProtoListOfStringV1,
-        ListOfUuid as ProtoListOfUuidV1, MaybeBoolean as ProtoMaybeBooleanV1,
-        MaybeDouble as ProtoMaybeDoubleV1, MaybeFloat as ProtoMaybeFloatV1,
-        MaybeInteger as ProtoMaybeIntegerV1, MaybeString as ProtoMaybeStringV1,
-        MaybeUuid as ProtoMaybeUuidV1, PrimaryKeySchema as ProtoPrimaryKeySchemaV1,
-        PrimaryKeySchemaElement as ProtoPrimaryKeyElementV1, String as ProtoStringV1,
-        Uuid as ProtoUuidV1, Versionstamp as ProtoVersionstampV1,
+        IndexSchema as ProtoIndexSchemaV1, IndexSchemaElement as ProtoIndexSchemaElementEnumV1,
+        IndexSchemaValue as ProtoIndexSchemaValueV1, PrimaryKeySchema as ProtoPrimaryKeySchemaV1,
+        PrimaryKeySchemaElement as ProtoPrimaryKeySchemaElementEnumV1,
     };
+}
 
-    /// Protobuf generated types renamed to prepend `Proto` and append
-    /// version (and add `Enum` suffix).
-    pub(crate) use fdb_rl_proto::fdb_rl::tuple_schema::v1::index_schema_element::IndexSchemaElement as ProtoIndexSchemaElementEnumV1;
+/// Internal representation of `PrimaryKeySchema`
+///
+/// We do not do any validation checks on this type. Do not assume it
+/// to be well formed. Instead use this *only* as an intermediary type
+/// for serializing and deserializing from protobuf.
+pub(crate) enum PrimaryKeySchemaInternal {
+    V1(pb::ProtoPrimaryKeySchemaV1),
+}
 
-    /// Protobuf generated types renamed to prepend `Proto` and append
-    /// version (and add `Enum` suffix).
-    pub(crate) use fdb_rl_proto::fdb_rl::tuple_schema::v1::primary_key_schema_element::PrimaryKeySchemaElement as ProtoPrimaryKeySchemaElementEnumV1;
+impl From<PrimaryKeySchema> for PrimaryKeySchemaInternal {
+    // When we have a value of type `PrimaryKeySchema`, we assume it
+    // is well formed. So, we convert it directly into a value of type
+    // `PrimaryKeySchemaInternal` without any additional checks.
+    fn from(primary_key_schema: PrimaryKeySchema) -> PrimaryKeySchemaInternal {
+        let (fdb_key_schema,) = primary_key_schema.into_parts();
 
-    /// Protobuf message
-    /// `fdb_rl.tuple_schema.v1.PrimaryKeySchemaElement.primary_key_schema_element`
-    /// is a `Required` field.
-    ///
-    /// So, we need to define this type.
-    #[derive(Clone, Debug, PartialEq)]
-    pub(crate) struct PrimaryKeySchemaElementInternalV1 {
-        pub(crate) primary_key_schema_element: ProtoPrimaryKeySchemaElementEnumV1,
-    }
+        let mut proto_fdb_key_schema = Vec::<i32>::new();
 
-    impl TryFrom<ProtoPrimaryKeyElementV1> for PrimaryKeySchemaElementInternalV1 {
-        type Error = FdbError;
-
-        fn try_from(
-            proto_primary_key_element_v1: ProtoPrimaryKeyElementV1,
-        ) -> FdbResult<PrimaryKeySchemaElementInternalV1> {
-            let ProtoPrimaryKeyElementV1 {
-                primary_key_schema_element,
-            } = proto_primary_key_element_v1;
-
-            primary_key_schema_element
-                .map(|x| PrimaryKeySchemaElementInternalV1 {
-                    primary_key_schema_element: x,
-                })
-                .ok_or_else(|| FdbError::new(PROTOBUF_TUPLE_SCHEMA_INVALID_PROTO))
+        for x in fdb_key_schema {
+            proto_fdb_key_schema.push(i32::from(match x {
+                PrimaryKeySchemaElement::String => pb::ProtoPrimaryKeySchemaElementEnumV1::String,
+                PrimaryKeySchemaElement::Double => pb::ProtoPrimaryKeySchemaElementEnumV1::Double,
+                PrimaryKeySchemaElement::Float => pb::ProtoPrimaryKeySchemaElementEnumV1::Float,
+                PrimaryKeySchemaElement::Integer => pb::ProtoPrimaryKeySchemaElementEnumV1::Integer,
+                PrimaryKeySchemaElement::Boolean => pb::ProtoPrimaryKeySchemaElementEnumV1::Boolean,
+                PrimaryKeySchemaElement::Bytes => pb::ProtoPrimaryKeySchemaElementEnumV1::Bytes,
+                PrimaryKeySchemaElement::Uuid => pb::ProtoPrimaryKeySchemaElementEnumV1::Uuid,
+            }));
         }
+
+        PrimaryKeySchemaInternal::V1(pb::ProtoPrimaryKeySchemaV1 {
+            fdb_key_schema: proto_fdb_key_schema,
+        })
     }
+}
 
-    impl From<PrimaryKeySchemaElementInternalV1> for ProtoPrimaryKeyElementV1 {
-        fn from(
-            primary_key_schema_element_internal_v1: PrimaryKeySchemaElementInternalV1,
-        ) -> ProtoPrimaryKeyElementV1 {
-            let PrimaryKeySchemaElementInternalV1 {
-                primary_key_schema_element,
-            } = primary_key_schema_element_internal_v1;
+impl TryFrom<PrimaryKeySchemaInternal> for PrimaryKeySchema {
+    type Error = FdbError;
 
-            ProtoPrimaryKeyElementV1 {
-                primary_key_schema_element: Some(primary_key_schema_element),
-            }
+    fn try_from(
+        primary_key_schema_internal: PrimaryKeySchemaInternal,
+    ) -> FdbResult<PrimaryKeySchema> {
+        let PrimaryKeySchemaInternal::V1(pb::ProtoPrimaryKeySchemaV1 { fdb_key_schema }) =
+            primary_key_schema_internal;
+
+        let mut metadata_fdb_key_schema = Vec::<PrimaryKeySchemaElement>::new();
+
+        for x in fdb_key_schema {
+            let primary_key_schema_element =
+                match pb::ProtoPrimaryKeySchemaElementEnumV1::try_from(x)
+                    .map_err(|_| FdbError::new(PROTOBUF_TUPLE_SCHEMA_INVALID_PROTO))?
+                {
+                    pb::ProtoPrimaryKeySchemaElementEnumV1::Unspecified => {
+                        return Err(FdbError::new(PROTOBUF_TUPLE_SCHEMA_INVALID_PROTO))
+                    }
+                    pb::ProtoPrimaryKeySchemaElementEnumV1::String => {
+                        PrimaryKeySchemaElement::String
+                    }
+                    pb::ProtoPrimaryKeySchemaElementEnumV1::Double => {
+                        PrimaryKeySchemaElement::Double
+                    }
+                    pb::ProtoPrimaryKeySchemaElementEnumV1::Float => PrimaryKeySchemaElement::Float,
+                    pb::ProtoPrimaryKeySchemaElementEnumV1::Integer => {
+                        PrimaryKeySchemaElement::Integer
+                    }
+                    pb::ProtoPrimaryKeySchemaElementEnumV1::Boolean => {
+                        PrimaryKeySchemaElement::Boolean
+                    }
+                    pb::ProtoPrimaryKeySchemaElementEnumV1::Bytes => PrimaryKeySchemaElement::Bytes,
+                    pb::ProtoPrimaryKeySchemaElementEnumV1::Uuid => PrimaryKeySchemaElement::Uuid,
+                };
+
+            metadata_fdb_key_schema.push(primary_key_schema_element);
         }
+
+        PrimaryKeySchema::try_from(metadata_fdb_key_schema)
+            .map_err(|_| FdbError::new(PROTOBUF_TUPLE_SCHEMA_INVALID_PROTO))
     }
+}
 
-    /// Protobuf message
-    /// `fdb_rl.tuple_schema.v1.PrimaryKeySchemaElement.primary_key_schema_element`
-    /// is a `Required` field (transitive requirement).
-    ///
-    /// Protobuf message
-    /// `fdb_rl.tuple_schema.v1.PrimaryKeySchema.primary_key_schema_elements`
-    /// has a requirment that there *must* be at-least one element
-    /// indicating the primary key. But we won't check this
-    /// here. Instead we will do it outside of the the protobuf layer.
-    ///
-    /// So, we need to define this type.
-    #[derive(Clone, Debug, PartialEq)]
-    pub(crate) struct PrimaryKeySchemaInternalV1 {
-        pub(crate) primary_key_schema_elements: Vec<PrimaryKeySchemaElementInternalV1>,
-    }
+/// Internal representation of `IndexSchema`
+///
+/// We do not do any validation checks on this type. Do not assume it
+/// to be well formed. Instead use this *only* as an intermediary type
+/// for serializing and deserializing from protobuf.
+pub(crate) enum IndexSchemaInternal {
+    V1(pb::ProtoIndexSchemaV1),
+}
 
-    impl TryFrom<ProtoPrimaryKeySchemaV1> for PrimaryKeySchemaInternalV1 {
-        type Error = FdbError;
+impl From<IndexSchema> for IndexSchemaInternal {
+    // When we have a value of type `IndexSchema`, we assume it is
+    // well formed. So, we convert it directly into a value of type
+    // `IndexSchemaInternal` without any additional checks.
+    fn from(index_schema: IndexSchema) -> IndexSchemaInternal {
+        let (fdb_key_schema, fdb_value_schema) = index_schema.into_parts();
 
-        fn try_from(
-            proto_primary_key_schema_v1: ProtoPrimaryKeySchemaV1,
-        ) -> FdbResult<PrimaryKeySchemaInternalV1> {
-            let ProtoPrimaryKeySchemaV1 {
-                primary_key_schema_elements,
-            } = proto_primary_key_schema_v1;
+        let mut proto_fdb_key_schema = Vec::<i32>::new();
 
-            let mut res = Vec::<PrimaryKeySchemaElementInternalV1>::new();
+        for x in fdb_key_schema {
+            proto_fdb_key_schema.push(i32::from(match x {
+                IndexSchemaElement::String => pb::ProtoIndexSchemaElementEnumV1::String,
+                IndexSchemaElement::MaybeString => pb::ProtoIndexSchemaElementEnumV1::MaybeString,
+                IndexSchemaElement::Double => pb::ProtoIndexSchemaElementEnumV1::Double,
+                IndexSchemaElement::MaybeDouble => pb::ProtoIndexSchemaElementEnumV1::MaybeDouble,
+                IndexSchemaElement::Float => pb::ProtoIndexSchemaElementEnumV1::Float,
+                IndexSchemaElement::MaybeFloat => pb::ProtoIndexSchemaElementEnumV1::MaybeFloat,
+                IndexSchemaElement::Integer => pb::ProtoIndexSchemaElementEnumV1::Integer,
+                IndexSchemaElement::MaybeInteger => pb::ProtoIndexSchemaElementEnumV1::MaybeInteger,
+                IndexSchemaElement::Boolean => pb::ProtoIndexSchemaElementEnumV1::Boolean,
+                IndexSchemaElement::MaybeBoolean => pb::ProtoIndexSchemaElementEnumV1::MaybeBoolean,
+                IndexSchemaElement::Bytes => pb::ProtoIndexSchemaElementEnumV1::Bytes,
+                IndexSchemaElement::MaybeBytes => pb::ProtoIndexSchemaElementEnumV1::MaybeBytes,
+                IndexSchemaElement::Uuid => pb::ProtoIndexSchemaElementEnumV1::Uuid,
+                IndexSchemaElement::MaybeUuid => pb::ProtoIndexSchemaElementEnumV1::MaybeUuid,
+                IndexSchemaElement::Versionstamp => pb::ProtoIndexSchemaElementEnumV1::Versionstamp,
+                IndexSchemaElement::ListOfString => pb::ProtoIndexSchemaElementEnumV1::ListOfString,
+                IndexSchemaElement::ListOfDouble => pb::ProtoIndexSchemaElementEnumV1::ListOfDouble,
+                IndexSchemaElement::ListOfFloat => pb::ProtoIndexSchemaElementEnumV1::ListOfFloat,
+                IndexSchemaElement::ListOfInteger => {
+                    pb::ProtoIndexSchemaElementEnumV1::ListOfInteger
+                }
+                IndexSchemaElement::ListOfBoolean => {
+                    pb::ProtoIndexSchemaElementEnumV1::ListOfBoolean
+                }
+                IndexSchemaElement::ListOfBytes => pb::ProtoIndexSchemaElementEnumV1::ListOfBytes,
+                IndexSchemaElement::ListOfUuid => pb::ProtoIndexSchemaElementEnumV1::ListOfUuid,
+            }));
+        }
 
-            for x in primary_key_schema_elements {
-                res.push(TryInto::<PrimaryKeySchemaElementInternalV1>::try_into(x)?);
-            }
+        let proto_fdb_value_schema = fdb_value_schema
+            .map(|list_index_schema_element| {
+                let mut proto_fdb_value_schema = Vec::<i32>::new();
 
-            Ok(PrimaryKeySchemaInternalV1 {
-                primary_key_schema_elements: res,
+                for x in list_index_schema_element {
+                    proto_fdb_value_schema.push(i32::from(match x {
+                        IndexSchemaElement::String => pb::ProtoIndexSchemaElementEnumV1::String,
+                        IndexSchemaElement::MaybeString => {
+                            pb::ProtoIndexSchemaElementEnumV1::MaybeString
+                        }
+                        IndexSchemaElement::Double => pb::ProtoIndexSchemaElementEnumV1::Double,
+                        IndexSchemaElement::MaybeDouble => {
+                            pb::ProtoIndexSchemaElementEnumV1::MaybeDouble
+                        }
+                        IndexSchemaElement::Float => pb::ProtoIndexSchemaElementEnumV1::Float,
+                        IndexSchemaElement::MaybeFloat => {
+                            pb::ProtoIndexSchemaElementEnumV1::MaybeFloat
+                        }
+                        IndexSchemaElement::Integer => pb::ProtoIndexSchemaElementEnumV1::Integer,
+                        IndexSchemaElement::MaybeInteger => {
+                            pb::ProtoIndexSchemaElementEnumV1::MaybeInteger
+                        }
+                        IndexSchemaElement::Boolean => pb::ProtoIndexSchemaElementEnumV1::Boolean,
+                        IndexSchemaElement::MaybeBoolean => {
+                            pb::ProtoIndexSchemaElementEnumV1::MaybeBoolean
+                        }
+                        IndexSchemaElement::Bytes => pb::ProtoIndexSchemaElementEnumV1::Bytes,
+                        IndexSchemaElement::MaybeBytes => {
+                            pb::ProtoIndexSchemaElementEnumV1::MaybeBytes
+                        }
+                        IndexSchemaElement::Uuid => pb::ProtoIndexSchemaElementEnumV1::Uuid,
+                        IndexSchemaElement::MaybeUuid => {
+                            pb::ProtoIndexSchemaElementEnumV1::MaybeUuid
+                        }
+                        IndexSchemaElement::Versionstamp => {
+                            pb::ProtoIndexSchemaElementEnumV1::Versionstamp
+                        }
+                        IndexSchemaElement::ListOfString => {
+                            pb::ProtoIndexSchemaElementEnumV1::ListOfString
+                        }
+                        IndexSchemaElement::ListOfDouble => {
+                            pb::ProtoIndexSchemaElementEnumV1::ListOfDouble
+                        }
+                        IndexSchemaElement::ListOfFloat => {
+                            pb::ProtoIndexSchemaElementEnumV1::ListOfFloat
+                        }
+                        IndexSchemaElement::ListOfInteger => {
+                            pb::ProtoIndexSchemaElementEnumV1::ListOfInteger
+                        }
+                        IndexSchemaElement::ListOfBoolean => {
+                            pb::ProtoIndexSchemaElementEnumV1::ListOfBoolean
+                        }
+                        IndexSchemaElement::ListOfBytes => {
+                            pb::ProtoIndexSchemaElementEnumV1::ListOfBytes
+                        }
+                        IndexSchemaElement::ListOfUuid => {
+                            pb::ProtoIndexSchemaElementEnumV1::ListOfUuid
+                        }
+                    }));
+                }
+
+                proto_fdb_value_schema
             })
+            .map(|value| pb::ProtoIndexSchemaValueV1 { value });
+
+        IndexSchemaInternal::V1(pb::ProtoIndexSchemaV1 {
+            fdb_key_schema: proto_fdb_key_schema,
+            fdb_value_schema: proto_fdb_value_schema,
+        })
+    }
+}
+
+impl TryFrom<IndexSchemaInternal> for IndexSchema {
+    type Error = FdbError;
+
+    fn try_from(index_schema_internal: IndexSchemaInternal) -> FdbResult<IndexSchema> {
+        let IndexSchemaInternal::V1(pb::ProtoIndexSchemaV1 {
+            fdb_key_schema,
+            fdb_value_schema,
+        }) = index_schema_internal;
+
+        let mut metadata_fdb_key_schema = Vec::<IndexSchemaElement>::new();
+
+        for x in fdb_key_schema {
+            let index_schema_element = match pb::ProtoIndexSchemaElementEnumV1::try_from(x)
+                .map_err(|_| FdbError::new(PROTOBUF_TUPLE_SCHEMA_INVALID_PROTO))?
+            {
+                pb::ProtoIndexSchemaElementEnumV1::Unspecified => {
+                    return Err(FdbError::new(PROTOBUF_TUPLE_SCHEMA_INVALID_PROTO))
+                }
+                pb::ProtoIndexSchemaElementEnumV1::String => IndexSchemaElement::String,
+                pb::ProtoIndexSchemaElementEnumV1::MaybeString => IndexSchemaElement::MaybeString,
+                pb::ProtoIndexSchemaElementEnumV1::Double => IndexSchemaElement::Double,
+                pb::ProtoIndexSchemaElementEnumV1::MaybeDouble => IndexSchemaElement::MaybeDouble,
+                pb::ProtoIndexSchemaElementEnumV1::Float => IndexSchemaElement::Float,
+                pb::ProtoIndexSchemaElementEnumV1::MaybeFloat => IndexSchemaElement::MaybeFloat,
+                pb::ProtoIndexSchemaElementEnumV1::Integer => IndexSchemaElement::Integer,
+                pb::ProtoIndexSchemaElementEnumV1::MaybeInteger => IndexSchemaElement::MaybeInteger,
+                pb::ProtoIndexSchemaElementEnumV1::Boolean => IndexSchemaElement::Boolean,
+                pb::ProtoIndexSchemaElementEnumV1::MaybeBoolean => IndexSchemaElement::MaybeBoolean,
+                pb::ProtoIndexSchemaElementEnumV1::Bytes => IndexSchemaElement::Bytes,
+                pb::ProtoIndexSchemaElementEnumV1::MaybeBytes => IndexSchemaElement::MaybeBytes,
+                pb::ProtoIndexSchemaElementEnumV1::Uuid => IndexSchemaElement::Uuid,
+                pb::ProtoIndexSchemaElementEnumV1::MaybeUuid => IndexSchemaElement::MaybeUuid,
+                pb::ProtoIndexSchemaElementEnumV1::Versionstamp => IndexSchemaElement::Versionstamp,
+                pb::ProtoIndexSchemaElementEnumV1::ListOfString => IndexSchemaElement::ListOfString,
+                pb::ProtoIndexSchemaElementEnumV1::ListOfDouble => IndexSchemaElement::ListOfDouble,
+                pb::ProtoIndexSchemaElementEnumV1::ListOfFloat => IndexSchemaElement::ListOfFloat,
+                pb::ProtoIndexSchemaElementEnumV1::ListOfInteger => {
+                    IndexSchemaElement::ListOfInteger
+                }
+                pb::ProtoIndexSchemaElementEnumV1::ListOfBoolean => {
+                    IndexSchemaElement::ListOfBoolean
+                }
+                pb::ProtoIndexSchemaElementEnumV1::ListOfBytes => IndexSchemaElement::ListOfBytes,
+                pb::ProtoIndexSchemaElementEnumV1::ListOfUuid => IndexSchemaElement::ListOfUuid,
+            };
+
+            metadata_fdb_key_schema.push(index_schema_element)
         }
+
+        let metadata_fdb_value_schema = FdbResult::<_>::Ok(fdb_value_schema).and_then(|x| {
+            Ok(match x {
+                None => None,
+                Some(index_schema_value) => {
+                    let pb::ProtoIndexSchemaValueV1 { value } = index_schema_value;
+
+                    let mut metadata_fdb_value_schema_inner = Vec::<IndexSchemaElement>::new();
+
+                    for x in value {
+                        let index_schema_element =
+                            match pb::ProtoIndexSchemaElementEnumV1::try_from(x)
+                                .map_err(|_| FdbError::new(PROTOBUF_TUPLE_SCHEMA_INVALID_PROTO))?
+                            {
+                                pb::ProtoIndexSchemaElementEnumV1::Unspecified => {
+                                    return Err(FdbError::new(PROTOBUF_TUPLE_SCHEMA_INVALID_PROTO))
+                                }
+                                pb::ProtoIndexSchemaElementEnumV1::String => {
+                                    IndexSchemaElement::String
+                                }
+                                pb::ProtoIndexSchemaElementEnumV1::MaybeString => {
+                                    IndexSchemaElement::MaybeString
+                                }
+                                pb::ProtoIndexSchemaElementEnumV1::Double => {
+                                    IndexSchemaElement::Double
+                                }
+                                pb::ProtoIndexSchemaElementEnumV1::MaybeDouble => {
+                                    IndexSchemaElement::MaybeDouble
+                                }
+                                pb::ProtoIndexSchemaElementEnumV1::Float => {
+                                    IndexSchemaElement::Float
+                                }
+                                pb::ProtoIndexSchemaElementEnumV1::MaybeFloat => {
+                                    IndexSchemaElement::MaybeFloat
+                                }
+                                pb::ProtoIndexSchemaElementEnumV1::Integer => {
+                                    IndexSchemaElement::Integer
+                                }
+                                pb::ProtoIndexSchemaElementEnumV1::MaybeInteger => {
+                                    IndexSchemaElement::MaybeInteger
+                                }
+                                pb::ProtoIndexSchemaElementEnumV1::Boolean => {
+                                    IndexSchemaElement::Boolean
+                                }
+                                pb::ProtoIndexSchemaElementEnumV1::MaybeBoolean => {
+                                    IndexSchemaElement::MaybeBoolean
+                                }
+                                pb::ProtoIndexSchemaElementEnumV1::Bytes => {
+                                    IndexSchemaElement::Bytes
+                                }
+                                pb::ProtoIndexSchemaElementEnumV1::MaybeBytes => {
+                                    IndexSchemaElement::MaybeBytes
+                                }
+                                pb::ProtoIndexSchemaElementEnumV1::Uuid => IndexSchemaElement::Uuid,
+                                pb::ProtoIndexSchemaElementEnumV1::MaybeUuid => {
+                                    IndexSchemaElement::MaybeUuid
+                                }
+                                pb::ProtoIndexSchemaElementEnumV1::Versionstamp => {
+                                    IndexSchemaElement::Versionstamp
+                                }
+                                pb::ProtoIndexSchemaElementEnumV1::ListOfString => {
+                                    IndexSchemaElement::ListOfString
+                                }
+                                pb::ProtoIndexSchemaElementEnumV1::ListOfDouble => {
+                                    IndexSchemaElement::ListOfDouble
+                                }
+                                pb::ProtoIndexSchemaElementEnumV1::ListOfFloat => {
+                                    IndexSchemaElement::ListOfFloat
+                                }
+                                pb::ProtoIndexSchemaElementEnumV1::ListOfInteger => {
+                                    IndexSchemaElement::ListOfInteger
+                                }
+                                pb::ProtoIndexSchemaElementEnumV1::ListOfBoolean => {
+                                    IndexSchemaElement::ListOfBoolean
+                                }
+                                pb::ProtoIndexSchemaElementEnumV1::ListOfBytes => {
+                                    IndexSchemaElement::ListOfBytes
+                                }
+                                pb::ProtoIndexSchemaElementEnumV1::ListOfUuid => {
+                                    IndexSchemaElement::ListOfUuid
+                                }
+                            };
+
+                        metadata_fdb_value_schema_inner.push(index_schema_element);
+                    }
+
+                    Some(metadata_fdb_value_schema_inner)
+                }
+            })
+        })?;
+
+        IndexSchema::try_from((
+            IndexSchemaFdbKey(metadata_fdb_key_schema),
+            IndexSchemaFdbValue(metadata_fdb_value_schema),
+        ))
+        .map_err(|_| FdbError::new(PROTOBUF_TUPLE_SCHEMA_INVALID_PROTO))
     }
-
-    impl From<PrimaryKeySchemaInternalV1> for ProtoPrimaryKeySchemaV1 {
-        fn from(
-            primary_key_schema_internal_v1: PrimaryKeySchemaInternalV1,
-        ) -> ProtoPrimaryKeySchemaV1 {
-            let PrimaryKeySchemaInternalV1 {
-                primary_key_schema_elements,
-            } = primary_key_schema_internal_v1;
-
-            let primary_key_schema_elements = primary_key_schema_elements
-                .into_iter()
-                .map(ProtoPrimaryKeyElementV1::from)
-                .collect::<Vec<ProtoPrimaryKeyElementV1>>();
-
-            ProtoPrimaryKeySchemaV1 {
-                primary_key_schema_elements,
-            }
-        }
-    }
-
-    /// Protobuf message
-    /// `fdb_rl.tuple_schema.v1.IndexSchemaElement.index_schema_element`
-    /// is a `Required` field.
-    ///
-    /// So, we need to define this type.
-    #[derive(Clone, Debug, PartialEq)]
-    pub(crate) struct IndexSchemaElementInternalV1 {
-        pub(crate) index_schema_element: ProtoIndexSchemaElementEnumV1,
-    }
-
-    impl TryFrom<ProtoIndexSchemaElementV1> for IndexSchemaElementInternalV1 {
-        type Error = FdbError;
-
-        fn try_from(
-            proto_index_schema_element_v1: ProtoIndexSchemaElementV1,
-        ) -> FdbResult<IndexSchemaElementInternalV1> {
-            todo!();
-        }
-    }
-
-    impl From<IndexSchemaElementInternalV1> for ProtoIndexSchemaElementV1 {
-        fn from(
-            index_schema_element_internal_v1: IndexSchemaElementInternalV1,
-        ) -> ProtoIndexSchemaElementV1 {
-            todo!();
-        }
-    }
-
-    // TODO: Continue from here.
 }
