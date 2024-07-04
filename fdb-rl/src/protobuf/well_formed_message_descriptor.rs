@@ -938,6 +938,22 @@ mod tests {
                     .is_evolvable_to(new_well_formed_message_descriptor));
             }
 
+            // Evolution when adding a `repeated` field.
+            {
+                use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_message_descriptor::evolution::v1::HelloWorld as OldHelloWorld;
+		use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_message_descriptor::evolution::v5::HelloWorld as NewHelloWorld;
+
+                let old_well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(OldHelloWorld::default().descriptor())
+                        .unwrap();
+                let new_well_formed_message_descriptor =
+                    WellFormedMessageDescriptor::try_from(NewHelloWorld::default().descriptor())
+                        .unwrap();
+
+                assert!(old_well_formed_message_descriptor
+                    .is_evolvable_to(new_well_formed_message_descriptor));
+            }
+
             // Java
             {
                 // `dropField()`

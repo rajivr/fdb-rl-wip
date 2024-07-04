@@ -1765,7 +1765,7 @@ mod tests {
                         well_formed_dynamic_message
                     );
                 }
-                // Evolved message descriptor
+                // Evolved message descriptor (optional)
                 {
                     use fdb_rl_proto::fdb_rl::field::v1::Uuid as FdbRLWktV1UuidProto;
                     use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_message_descriptor::good::v1::HelloWorld as MetadataHelloWorld;
@@ -1834,6 +1834,98 @@ mod tests {
                         hello: Some("hello".to_string()),
                         world: Some("world".to_string()),
                         hello_world: None,
+                    };
+
+                    let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+                        well_formed_message_descriptor,
+                        &code_hello_world,
+                    ))
+                    .unwrap();
+
+                    let dynamic_message = well_formed_dynamic_message.inner;
+
+                    assert_eq!(
+                        dynamic_message.transcode_to::<MetadataHelloWorld>(),
+                        Ok(metadata_hello_world)
+                    );
+
+                    assert_eq!(
+                        dynamic_message.transcode_to::<CodeHelloWorld>(),
+                        Ok(code_hello_world)
+                    );
+                }
+                // Evolved message descriptor (repeated)
+                {
+                    use fdb_rl_proto::fdb_rl::field::v1::Uuid as FdbRLWktV1UuidProto;
+                    use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_message_descriptor::good::v1::HelloWorld as MetadataHelloWorld;
+		    use fdb_rl_proto::fdb_rl_test::protobuf::well_formed_message_descriptor::good::v3::HelloWorld as CodeHelloWorld;
+
+                    let well_formed_message_descriptor = WellFormedMessageDescriptor::try_from(
+                        MetadataHelloWorld::default().descriptor(),
+                    )
+                    .unwrap();
+
+                    // Does not have the repeated field `hello_world`.
+                    let metadata_hello_world = MetadataHelloWorld {
+                        primary_key: Some(FdbRLWktV1UuidProto::from(
+                            Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e").unwrap(),
+                        )),
+                        hello: Some("hello".to_string()),
+                        world: Some("world".to_string()),
+                    };
+
+                    let code_hello_world = CodeHelloWorld {
+                        primary_key: Some(FdbRLWktV1UuidProto::from(
+                            Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e").unwrap(),
+                        )),
+                        hello: Some("hello".to_string()),
+                        world: Some("world".to_string()),
+                        hello_world: vec!["hello".to_string(), "world".to_string()],
+                    };
+
+                    // The `DynamicMessageFieldSet` would have unknown
+                    // fields [1] [2] for `hello_world`, as it is not
+                    // present in `MetadataHelloWorld` message
+                    // descriptor.
+                    //
+                    // ```
+                    // 4: Unknown(UnknownFieldSet {
+                    //    fields: [
+                    //      UnknownField { number: 4, value: LengthDelimited(b"hello") },
+                    //      UnknownField { number: 4, value: LengthDelimited(b"world") }
+                    //    ]
+                    // })
+                    // ```
+                    //
+                    // We do not allow unknown fields in dynamic
+                    // messages created using message descriptors
+                    // stored in metadata. Therefore it results in an
+                    // error.
+                    //
+                    // [1] https://protobuf.dev/programming-guides/proto3/#unknowns
+                    // [2] https://protobuf.dev/programming-guides/proto2/#unknowns
+
+                    let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((
+                        well_formed_message_descriptor.clone(),
+                        &code_hello_world,
+                    ));
+
+                    assert_eq!(
+                        Err(FdbError::new(PROTOBUF_ILL_FORMED_MESSAGE)),
+                        well_formed_dynamic_message
+                    );
+
+                    // The correct way to this is to first set
+                    // `hello_world` to `vec![]` (empty vector) and
+                    // then update the metadata.
+
+                    let code_hello_world = CodeHelloWorld {
+                        primary_key: Some(FdbRLWktV1UuidProto::from(
+                            Uuid::parse_str("ffffffff-ba5e-ba11-0000-00005ca1ab1e").unwrap(),
+                        )),
+                        hello: Some("hello".to_string()),
+                        world: Some("world".to_string()),
+                        hello_world: vec![],
                     };
 
                     let well_formed_dynamic_message = WellFormedDynamicMessage::try_from((

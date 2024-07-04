@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package fdb_rl_test.protobuf.well_formed_message_descriptor.good.v2;
+package fdb_rl_test.protobuf.well_formed_message_descriptor.good.v3;
 
 import "fdb_rl/field/v1/field.proto";
 
@@ -9,5 +9,5 @@ message HelloWorld {
   optional fdb_rl.field.v1.UUID primary_key = 1;
   optional string hello = 2;
   optional string world = 3;
-  optional string hello_world = 4;
+  repeated string hello_world = 4;
 }
