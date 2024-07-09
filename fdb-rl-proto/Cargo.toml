@@ -19,12 +19,12 @@ default = ["fdb/fdb-7_1"]
 [dependencies]
 bytes = "1"
 fdb = { git = "https://github.com/rajivr/fdb-wip", branch = "main" }
-prost = "0.12"
-prost-reflect = "0.12"
-prost-reflect-derive = "0.12"
-prost-types = "0.12"
+prost = "0.13.0"
+prost-reflect = "0.14.0"
+prost-reflect-derive = "0.14.0"
+prost-types = "0.13.0"
 uuid = { version = "0.8", features = ["v4"] }
 
 [build-dependencies]
-prost-build = "0.12"
-prost-reflect-build = "0.12"
+prost-build = "0.13.0"
+prost-reflect-build = "0.14.0"
