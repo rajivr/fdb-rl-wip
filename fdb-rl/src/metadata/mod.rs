@@ -11,9 +11,10 @@ use std::collections::HashMap;
 use crate::protobuf::WellFormedDynamicMessage;
 
 pub use tuple_schema::{
-    IndexSchema, IndexSchemaElement, IndexSchemaFdbKey, IndexSchemaFdbValue, PrimaryKeySchema,
-    PrimaryKeySchemaElement,
+    IndexSchema, IndexSchemaElement, PrimaryKeySchema, PrimaryKeySchemaElement,
 };
+
+pub(crate) use tuple_schema::{IndexSchemaKey, IndexSchemaValue};
 
 // /// TODO
 // pub(crate) struct KeyAndIndexFunctions<FnPK, FnIdx>

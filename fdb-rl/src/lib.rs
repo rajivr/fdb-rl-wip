@@ -5,7 +5,6 @@
     rust_2018_idioms,
     unreachable_pub
 )]
-#![feature(lazy_cell)]
 #![feature(trait_upcasting)]
 #![feature(type_alias_impl_trait)]
 #![allow(rustdoc::private_intra_doc_links)]

@@ -4,6 +4,8 @@
 //! [`FdbError`]: fdb::error::FdbError
 //! [`FdbResult`]: fdb::error::FdbResult
 
+// TODO: Check what is private and what is not.
+
 // 200 - `cursor` module
 // 210 - `split_helper` module
 // 220 - `RecordContext` type

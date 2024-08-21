@@ -25,7 +25,7 @@ enum PrimaryKeySchemaElement {
 // Primary key schema
 message PrimaryKeySchema {
   // At-least there *must* be one element.
-  repeated PrimaryKeySchemaElement fdb_key_schema = 1;
+  repeated PrimaryKeySchemaElement key_schema = 1;
 }
 
 // Schema element for index key and value.
@@ -78,19 +78,31 @@ enum IndexSchemaElement {
   INDEX_SCHEMA_ELEMENT_LIST_OF_UUID = 22;
 }
 
+// Schema for the key part of FDB key-value that represents an Index
+// entry.
+message IndexSchemaKey {
+  // At-least there *must* be one element and you cannot have multiple
+  // `INDEX_SCHEMA_ELEMENT_VERSIONSTAMP`.
+  repeated IndexSchemaElement index_schema = 1;
+  // At-least there *must* be one element.
+  repeated PrimaryKeySchemaElement primary_key_schema = 2;
+}
+
 // Schema for the value part of FDB key-value that represents an Index
 // entry.
-//
-// We need to define this because we cannot have `optional repeated`
-// in protobuf.
 message IndexSchemaValue {
-  repeated IndexSchemaElement value = 1;
+  // At-least there *must* be one element and you cannot have multiple
+  // `INDEX_SCHEMA_ELEMENT_VERSIONSTAMP`.
+  repeated IndexSchemaElement index_schema = 1;
 }
 
 // Index schema
+//
+// If `key_schema` has `INDEX_SCHEMA_ELEMENT_VERSIONSTAMP`, then
+// `value_schema` *cannot* have `INDEX_SCHEMA_ELEMENT_VERSIONSTAMP`
+// and vice-versa.
 message IndexSchema {
-  // There must be at-least two elements.
-  repeated IndexSchemaElement fdb_key_schema = 1;
-  // If present, there must be at-least one element.
-  optional IndexSchemaValue fdb_value_schema = 2;
+  // Required
+  IndexSchemaKey key_schema = 1;
+  IndexSchemaValue value_schema = 2;
 }
