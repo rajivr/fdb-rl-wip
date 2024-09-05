@@ -400,34 +400,355 @@ mod tests {
     }
 
     mod index_schema_key {
-        // TODO
+        use fdb::error::FdbError;
+
+        use std::convert::TryFrom;
+
+        use super::super::super::error::METADATA_INVALID_INDEX_SCHEMA;
+        use super::super::{IndexSchemaElement, IndexSchemaKey, PrimaryKeySchemaElement};
+
+        #[test]
+        fn has_versionstamp() {
+            // true
+            {
+                let index_schema_key = IndexSchemaKey::try_from((
+                    vec![IndexSchemaElement::String, IndexSchemaElement::Versionstamp],
+                    vec![PrimaryKeySchemaElement::Uuid],
+                ))
+                .unwrap();
+
+                assert!(index_schema_key.has_versionstamp());
+            }
+            // false
+            {
+                let index_schema_key = IndexSchemaKey::try_from((
+                    vec![IndexSchemaElement::String],
+                    vec![PrimaryKeySchemaElement::Uuid],
+                ))
+                .unwrap();
+
+                assert!(!index_schema_key.has_versionstamp());
+            }
+        }
+
+        #[test]
+        fn try_from_tuple_vec_index_schema_element_vec_primary_key_schema_element_try_from() {
+            // invalid
+            {
+                // empty `Vec<PrimaryKeySchemaElement>`
+                {
+                    assert_eq!(
+                        Err(FdbError::new(METADATA_INVALID_INDEX_SCHEMA)),
+                        IndexSchemaKey::try_from((vec![IndexSchemaElement::String], vec![],))
+                    );
+                }
+                // empty `Vec<IndexSchemaElement>`
+                {
+                    assert_eq!(
+                        Err(FdbError::new(METADATA_INVALID_INDEX_SCHEMA)),
+                        IndexSchemaKey::try_from((vec![], vec![PrimaryKeySchemaElement::Uuid])),
+                    );
+                }
+                // multiple `IndexSchemaElement::Versionstamp`
+                {
+                    assert_eq!(
+                        Err(FdbError::new(METADATA_INVALID_INDEX_SCHEMA)),
+                        IndexSchemaKey::try_from((
+                            vec![
+                                IndexSchemaElement::Versionstamp,
+                                IndexSchemaElement::String,
+                                IndexSchemaElement::Versionstamp
+                            ],
+                            vec![PrimaryKeySchemaElement::Uuid],
+                        ))
+                    );
+                }
+            }
+            // valid
+            {
+                // no `IndexSchemaElement::Versionstamp`
+                {
+                    assert_eq!(
+                        IndexSchemaKey::try_from((
+                            vec![IndexSchemaElement::String, IndexSchemaElement::Double],
+                            vec![PrimaryKeySchemaElement::Uuid],
+                        )),
+                        Ok(IndexSchemaKey {
+                            index_schema: vec![
+                                IndexSchemaElement::String,
+                                IndexSchemaElement::Double
+                            ],
+                            primary_key_schema: vec![PrimaryKeySchemaElement::Uuid]
+                        })
+                    );
+                }
+                // one `IndexSchemaElement::Versionstamp`
+                {
+                    assert_eq!(
+                        IndexSchemaKey::try_from((
+                            vec![
+                                IndexSchemaElement::String,
+                                IndexSchemaElement::Double,
+                                IndexSchemaElement::Versionstamp,
+                            ],
+                            vec![PrimaryKeySchemaElement::Uuid],
+                        )),
+                        Ok(IndexSchemaKey {
+                            index_schema: vec![
+                                IndexSchemaElement::String,
+                                IndexSchemaElement::Double,
+                                IndexSchemaElement::Versionstamp,
+                            ],
+                            primary_key_schema: vec![PrimaryKeySchemaElement::Uuid]
+                        })
+                    );
+                }
+            }
+        }
     }
 
     mod index_schema_value {
-        // TODO
+        use fdb::error::FdbError;
+
+        use std::convert::TryFrom;
+
+        use super::super::super::error::METADATA_INVALID_INDEX_SCHEMA;
+
+        use super::super::{IndexSchemaElement, IndexSchemaValue};
+
+        #[test]
+        fn has_versionstamp() {
+            // true
+            {
+                let index_schema_value = IndexSchemaValue::try_from(vec![
+                    IndexSchemaElement::String,
+                    IndexSchemaElement::Versionstamp,
+                ])
+                .unwrap();
+
+                assert!(index_schema_value.has_versionstamp());
+            }
+            // false
+            {
+                let index_schema_value =
+                    IndexSchemaValue::try_from(vec![IndexSchemaElement::String]).unwrap();
+
+                assert!(!index_schema_value.has_versionstamp());
+            }
+        }
+
+        #[test]
+        fn try_from_vec_index_schema_element_try_from() {
+            // invalid
+            {
+                // empty `Vec<IndexSchemaElement>`
+                {
+                    assert_eq!(
+                        Err(FdbError::new(METADATA_INVALID_INDEX_SCHEMA)),
+                        IndexSchemaValue::try_from(vec![]),
+                    );
+                }
+                // multiple `IndexSchemaElement::Versionstamp`
+                {
+                    assert_eq!(
+                        Err(FdbError::new(METADATA_INVALID_INDEX_SCHEMA)),
+                        IndexSchemaValue::try_from(vec![
+                            IndexSchemaElement::Versionstamp,
+                            IndexSchemaElement::String,
+                            IndexSchemaElement::Versionstamp
+                        ])
+                    );
+                }
+            }
+            // valid
+            {
+                // no `IndexSchemaElement::Versionstamp`
+                {
+                    assert_eq!(
+                        IndexSchemaValue::try_from(vec![
+                            IndexSchemaElement::String,
+                            IndexSchemaElement::Double
+                        ]),
+                        Ok(IndexSchemaValue {
+                            index_schema: vec![
+                                IndexSchemaElement::String,
+                                IndexSchemaElement::Double
+                            ]
+                        })
+                    );
+                }
+                // one `IndexSchemaElement::Versionstamp`
+                {
+                    assert_eq!(
+                        IndexSchemaValue::try_from(vec![
+                            IndexSchemaElement::String,
+                            IndexSchemaElement::Double,
+                            IndexSchemaElement::Versionstamp,
+                        ]),
+                        Ok(IndexSchemaValue {
+                            index_schema: vec![
+                                IndexSchemaElement::String,
+                                IndexSchemaElement::Double,
+                                IndexSchemaElement::Versionstamp,
+                            ],
+                        })
+                    );
+                }
+            }
+        }
     }
 
-    // mod index_schema {
-    //     use fdb::error::FdbError;
+    mod index_schema {
+        use fdb::error::FdbError;
 
-    //     use std::convert::TryFrom;
+        use std::convert::TryFrom;
 
-    //     use super::super::super::error::METADATA_INVALID_INDEX_SCHEMA;
-    //     use super::super::{
-    //         IndexSchema, IndexSchemaElement, IndexSchemaFdbKey, IndexSchemaFdbValue,
-    //     };
+        use super::super::super::error::METADATA_INVALID_INDEX_SCHEMA;
+        use super::super::{
+            IndexSchema, IndexSchemaElement, IndexSchemaKey, IndexSchemaValue,
+            PrimaryKeySchemaElement,
+        };
 
-    //     #[test]
-    //     fn try_from_index_schema_fdb_key_index_schema_fdb_value_try_from() {
-    //         // Valid
-    //         {
-    // 		let _ = IndexSchema::try_from((IndexSchemaFdbKey(
-    // 		    vec![
-    // 		), IndexSchemaFdbValue(None)));
-    // 	    }
-    //         // Invalid
-    //         {
-    // 	    }
-    //     }
-    // }
+        #[test]
+        fn try_from_tuple_index_schema_key_option_index_schema_value_try_from() {
+            // invalid
+            {
+                // both `key_schema` and `value_schema` contains
+                // `IndexSchemaElement::Versionstamp`
+                {
+                    let key_schema = IndexSchemaKey::try_from((
+                        vec![
+                            IndexSchemaElement::String,
+                            IndexSchemaElement::Double,
+                            IndexSchemaElement::Versionstamp,
+                        ],
+                        vec![PrimaryKeySchemaElement::Uuid],
+                    ))
+                    .unwrap();
+
+                    let value_schema =
+                        IndexSchemaValue::try_from(vec![IndexSchemaElement::Versionstamp]).unwrap();
+
+                    assert_eq!(
+                        Err(FdbError::new(METADATA_INVALID_INDEX_SCHEMA)),
+                        IndexSchema::try_from((key_schema, Some(value_schema)))
+                    );
+                }
+            }
+            // valid
+            {
+                // `value_schema` is `None` and `key_schema` does not
+                // have `IndexSchemaElement::Versionstamp`
+                {
+                    let key_schema = IndexSchemaKey::try_from((
+                        vec![IndexSchemaElement::String, IndexSchemaElement::Double],
+                        vec![PrimaryKeySchemaElement::Uuid],
+                    ))
+                    .unwrap();
+
+                    assert_eq!(
+                        Ok(IndexSchema {
+                            key_schema: IndexSchemaKey {
+                                index_schema: vec![
+                                    IndexSchemaElement::String,
+                                    IndexSchemaElement::Double,
+                                ],
+                                primary_key_schema: vec![PrimaryKeySchemaElement::Uuid]
+                            },
+                            value_schema: None
+                        }),
+                        IndexSchema::try_from((key_schema, None))
+                    );
+                }
+                // `value_schema` is `None` and `key_schema` has
+                // `IndexSchemaElement::Versionstamp`
+                {
+                    let key_schema = IndexSchemaKey::try_from((
+                        vec![
+                            IndexSchemaElement::String,
+                            IndexSchemaElement::Double,
+                            IndexSchemaElement::Versionstamp,
+                        ],
+                        vec![PrimaryKeySchemaElement::Uuid],
+                    ))
+                    .unwrap();
+
+                    assert_eq!(
+                        Ok(IndexSchema {
+                            key_schema: IndexSchemaKey {
+                                index_schema: vec![
+                                    IndexSchemaElement::String,
+                                    IndexSchemaElement::Double,
+                                    IndexSchemaElement::Versionstamp,
+                                ],
+                                primary_key_schema: vec![PrimaryKeySchemaElement::Uuid]
+                            },
+                            value_schema: None
+                        }),
+                        IndexSchema::try_from((key_schema, None))
+                    );
+                }
+                // `value_schema` is `Some(...)`, where `...` has
+                // `IndexSchemaElement::Versionstamp`, and
+                // `key_schema` does not have
+                // `IndexSchemaElement::Versionstamp`
+                {
+                    let key_schema = IndexSchemaKey::try_from((
+                        vec![IndexSchemaElement::String, IndexSchemaElement::Double],
+                        vec![PrimaryKeySchemaElement::Uuid],
+                    ))
+                    .unwrap();
+
+                    let value_schema =
+                        IndexSchemaValue::try_from(vec![IndexSchemaElement::Versionstamp]).unwrap();
+
+                    assert_eq!(
+                        Ok(IndexSchema {
+                            key_schema: IndexSchemaKey {
+                                index_schema: vec![
+                                    IndexSchemaElement::String,
+                                    IndexSchemaElement::Double,
+                                ],
+                                primary_key_schema: vec![PrimaryKeySchemaElement::Uuid]
+                            },
+                            value_schema: Some(IndexSchemaValue {
+                                index_schema: vec![IndexSchemaElement::Versionstamp],
+                            }),
+                        }),
+                        IndexSchema::try_from((key_schema, Some(value_schema)))
+                    );
+                }
+                // `value_schema` is `Some(...)`, where `...` does not
+                // have `IndexSchemaElement::Versionstamp`, and
+                // `key_schema` does not have
+                // `IndexSchemaElement::Versionstamp`
+                {
+                    let key_schema = IndexSchemaKey::try_from((
+                        vec![IndexSchemaElement::String, IndexSchemaElement::Double],
+                        vec![PrimaryKeySchemaElement::Uuid],
+                    ))
+                    .unwrap();
+
+                    let value_schema =
+                        IndexSchemaValue::try_from(vec![IndexSchemaElement::Integer]).unwrap();
+
+                    assert_eq!(
+                        Ok(IndexSchema {
+                            key_schema: IndexSchemaKey {
+                                index_schema: vec![
+                                    IndexSchemaElement::String,
+                                    IndexSchemaElement::Double,
+                                ],
+                                primary_key_schema: vec![PrimaryKeySchemaElement::Uuid]
+                            },
+                            value_schema: Some(IndexSchemaValue {
+                                index_schema: vec![IndexSchemaElement::Integer],
+                            }),
+                        }),
+                        IndexSchema::try_from((key_schema, Some(value_schema)))
+                    );
+                }
+            }
+        }
+    }
 }
